@@ -14,6 +14,7 @@ import TeamFeedScreen from '../screens/TeamFeedScreen.tsx';
 import ProfileScreen from '../screens/ProfileScreen.tsx';
 import VerificationFeedScreen from '../screens/VerificationFeedScreen';
 import QuestVerificationScreen from '../screens/QuestVerificationScreen';
+import RecordAddScreen from '../screens/RecordAddScreen';
 import { useAppContext } from '../contexts/AppContext';
 
 const Stack = createNativeStackNavigator();
@@ -48,6 +49,16 @@ const MainTabs = () => {
         name="Home" 
         component={HomeScreen} 
         options={{ title: '홈' }}
+      />
+      <Tab.Screen 
+        name="RecordAdd" 
+        component={RecordAddScreen} 
+        options={{ 
+          title: '기록 추가',
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'add-circle' : 'add-circle-outline'} size={size} color={color} />
+          ),
+        }}
       />
       <Tab.Screen 
         name="TeamTab" 

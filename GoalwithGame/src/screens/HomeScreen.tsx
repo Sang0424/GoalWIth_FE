@@ -482,7 +482,7 @@ const HomeScreen = (): ReactElement => {
         <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
         {/* Character and Stats Section */}
         <View style={styles.characterContainer}>
-          <Character size={150} level={user?.level} />
+          <CharacterAvatar size={150} level={user?.level} />
           <View style={styles.statsContainer}>
             <Text style={styles.welcomeText}>안녕하세요, {user?.name}님!</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>

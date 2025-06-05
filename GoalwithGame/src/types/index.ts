@@ -23,5 +23,25 @@ export interface User {
   };
 }
 
+export interface Quest {
+  id: string;
+  title: string;
+  description: string;
+  tags: string[];
+  status: 'active' | 'completed';
+  createdAt: Date;
+  userId: string;
+}
+
+export interface Record {
+  id: string;
+  questId: string;
+  text: string;
+  tags: string[];
+  images: string[]; // Store image URLs or paths
+  createdAt: Date;
+  userId: string;
+}
+
 // Export other shared types as needed
 // Add more shared types here as needed

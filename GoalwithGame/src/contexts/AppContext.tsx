@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { User } from '../types';
+import { User, Record } from '../types';
 
 // User type is now imported from shared types
 
@@ -64,6 +64,7 @@ interface AppContextType {
   teams: Team[];
   addQuest: (quest: Omit<Quest, 'id' | 'records'>) => void;
   addQuestRecord: (questId: string, record: Omit<QuestRecord, 'id' | 'verifications' | 'isVerified'>) => void;
+  addRecord: (record: Record) => void;
   createTeam: (name: string) => void;
   addTeamPost: (teamId: string, post: Omit<TeamPost, 'id' | 'likes' | 'comments' | 'createdAt'>) => void;
   likeTeamPost: (teamId: string, postId: string, userId: string) => void;
@@ -318,6 +319,25 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     return verificationFeed;
   };
 
+  const addRecord = (record: Record) => {
+    const questIndex = quests.findIndex(q => q.id === record.questId);
+    if (questIndex === -1) return;
+
+    const newQuest = {
+      ...quests[questIndex],
+      records: [...quests[questIndex].records, {
+        id: record.id,
+        date: record.createdAt.toString(),
+        text: record.text,
+        image: record.images[0], // Only show first image in quest record
+        verifications: [],
+        isVerified: false,
+      }],
+    };
+
+    setQuests([...quests.slice(0, questIndex), newQuest, ...quests.slice(questIndex + 1)]);
+  };
+
   const submitQuestForVerification = (
     questId: string, 
     record: Omit<QuestRecord, 'id' | 'verifications' | 'isVerified'>
@@ -340,7 +360,7 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         return quest;
       })
     );
-  };
+  };;
 
   return (
     <AppContext.Provider 
@@ -350,6 +370,7 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         teams,
         addQuest,
         addQuestRecord,
+        addRecord,
         createTeam,
         addTeamPost,
         likeTeamPost,
@@ -366,9 +387,11 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   );
 };
 
+export default AppProvider;
+
 export const useAppContext = () => {
   const context = useContext(AppContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAppContext must be used within an AppProvider');
   }
   return context;

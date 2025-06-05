@@ -42,7 +42,7 @@ const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
           borderColor: colors[1] || colors[0] // Use the second color or first as border color
         }]}>
           <Image 
-            source={require('../assets/character/character_base.png')} 
+            source={require('../assets/character/pico_base.png')} 
             style={styles.characterImage}
             resizeMode="contain"
           />
