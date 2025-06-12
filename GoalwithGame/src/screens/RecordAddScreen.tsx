@@ -1,26 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, SafeAreaView } from 'react-native';
 import { useAppContext } from '../contexts/AppContext';
-import { Record } from '../types';
 import * as ImagePicker from 'react-native-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { TextInput } from 'react-native';
 import type { AppNavigatorParamList } from '../navigation/types';
-
-// Use the Quest type from AppContext
-interface Quest {
-  id: string;
-  title: string;
-  isMain: boolean;
-  startDate: string;
-  endDate: string;
-  completed: boolean;
-  verificationRequired: boolean;
-  verificationCount: number;
-  requiredVerifications: number;
-  records: QuestRecord[];
-}
+import { UserRecord } from '../types';
+import { Quest } from '../types/quest.types';
 
 interface QuestRecord {
   id: string;
@@ -76,13 +63,13 @@ const RecordAddScreen: React.FC = () => {
   const handleSubmit = () => {
     if (!selectedQuest || !text) return;
     
-    const newRecord: Record = {
+    const newRecord: Omit<UserRecord, 'id'> & { id: string } = {
       id: Date.now().toString(),
       questId: selectedQuest.id,
       text,
       tags,
       images,
-      createdAt: new Date(),
+      createdAt: new Date(),  // Changed to Date object
       userId: user.id,
     };
 

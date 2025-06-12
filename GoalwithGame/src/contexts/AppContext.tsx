@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { User, Record } from '../types';
+import { User, UserRecord } from '../types';
 
 // User type is now imported from shared types
 
@@ -64,7 +64,7 @@ interface AppContextType {
   teams: Team[];
   addQuest: (quest: Omit<Quest, 'id' | 'records'>) => void;
   addQuestRecord: (questId: string, record: Omit<QuestRecord, 'id' | 'verifications' | 'isVerified'>) => void;
-  addRecord: (record: Record) => void;
+  addRecord: (record: UserRecord) => void;
   createTeam: (name: string) => void;
   addTeamPost: (teamId: string, post: Omit<TeamPost, 'id' | 'likes' | 'comments' | 'createdAt'>) => void;
   likeTeamPost: (teamId: string, postId: string, userId: string) => void;
@@ -319,7 +319,7 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     return verificationFeed;
   };
 
-  const addRecord = (record: Record) => {
+  const addRecord = (record: UserRecord) => {
     const questIndex = quests.findIndex(q => q.id === record.questId);
     if (questIndex === -1) return;
 

@@ -11,13 +11,22 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AppNavigatorParamList } from '../navigation/types';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAppContext } from '../contexts/AppContext';
+import { Team } from '../types/team.types';
+
+// Extend the AppNavigatorParamList to include TeamFeed and TeamCreate
+type ExtendedAppNavigatorParamList = AppNavigatorParamList & {
+  TeamFeed: { teamId: string };
+  TeamCreate: undefined;
+};
 
 // Define the navigation prop type
-type TeamScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'TeamScreen'>;
+type TeamScreenNavigationProp = NativeStackNavigationProp<ExtendedAppNavigatorParamList>;
 
-// Define the team type
+// Moved to types/team.types.d.ts
+/*
 interface Team {
   id: string;
   name: string;
@@ -31,6 +40,7 @@ interface Team {
     userId: string;
   }>;
 }
+*/
 
 // Define the root stack param list
 interface RootStackParamList {
@@ -44,13 +54,23 @@ const TeamScreen = () => {
   const navigation = useNavigation<TeamScreenNavigationProp>();
   const { teams, user } = useAppContext();
   
+  // Handle team press to navigate to TeamFeed
+  const handleTeamPress = (teamId: string) => {
+    navigation.navigate('TeamFeed', { teamId });
+  };
+  
+  // Handle create team button press
+  const handleCreateTeam = () => {
+    navigation.navigate('TeamCreate');
+  };
+  
   const myTeams = teams.filter(team => team.members.includes(user.id));
   const otherTeams = teams.filter(team => !team.members.includes(user.id));
 
   const renderTeamItem: ListRenderItem<Team> = ({ item }) => (
     <TouchableOpacity 
       style={styles.teamCard}
-      onPress={() => navigation.navigate('TeamFeed', { teamId: item.id })}
+      onPress={() => handleTeamPress(item.id)}
     >
       <View style={styles.teamHeader}>
         <View style={styles.teamAvatar}>
@@ -64,7 +84,7 @@ const TeamScreen = () => {
         </View>
         <MaterialIcons name="chevron-right" size={24} color="#999" />
       </View>
-      {item.feed.length > 0 && (
+      {item.feed && item.feed.length > 0 && item.feed[0] && (
         <View style={styles.recentActivity}>
           <Text style={styles.recentActivityTitle}>최근 활동</Text>
           <View style={styles.recentPost}>
@@ -73,7 +93,7 @@ const TeamScreen = () => {
               numberOfLines={2}
               ellipsizeMode="tail"
             >
-              {item.feed[0].content}
+              {item.feed[0].content || '내용 없음'}
             </Text>
             {item.feed[0].image && (
               <Image 
@@ -101,7 +121,7 @@ const TeamScreen = () => {
               <Text style={styles.title}>내 팀</Text>
               <TouchableOpacity 
                 style={styles.createButton}
-                onPress={() => navigation.navigate('TeamCreate')}
+                onPress={handleCreateTeam}
               >
                 <MaterialIcons name="add" size={20} color="white" />
                 <Text style={styles.createButtonText}>팀 생성</Text>

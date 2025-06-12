@@ -33,7 +33,7 @@ export interface Quest {
   userId: string;
 }
 
-export interface Record {
+export interface UserRecord {
   id: string;
   questId: string;
   text: string;

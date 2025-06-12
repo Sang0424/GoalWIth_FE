@@ -13,16 +13,17 @@ import {
   ActivityIndicator,
   TouchableWithoutFeedback,
   Keyboard,
+  Switch,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetBackdropProps, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useAppContext } from '../contexts/AppContext';
 import CharacterAvatar from '../components/CharacterAvatar';
-import Character from '../components/Character';
+import Logo from '../components/Logo';
 
 interface RootStackParamList {
   Home: undefined;
@@ -96,7 +97,11 @@ const defaultUser: User = {
 const HomeScreen = (): ReactElement => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user, quests, addQuest } = useAppContext();
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const bottomSheetRef = useRef<any>(null);
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  const [snapPoints] = useState(['90%']);
+
+  // State for quest form
   const [isMainQuest, setIsMainQuest] = useState(true);
   const [newQuestTitle, setNewQuestTitle] = useState('');
   const [newQuestDescription, setNewQuestDescription] = useState('');
@@ -104,6 +109,12 @@ const HomeScreen = (): ReactElement => {
   const [endDate, setEndDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // Default to 1 week from now
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
+  const [reward, setReward] = useState('');
+  const [verificationRequired, setVerificationRequired] = useState(false);
+  const [requiredVerifications, setRequiredVerifications] = useState(3);
+  const [category, setCategory] = useState('');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   // Use default user if user is not available
   const safeUser = user || defaultUser;
@@ -119,39 +130,69 @@ const HomeScreen = (): ReactElement => {
   const mainQuest = quests.find((quest: Quest) => quest.isMain);
   const subQuests = quests.filter((quest: Quest) => !quest.isMain).slice(0, 5);
 
-  // Get border color based on user level (moved to CharacterAvatar)
-
-
 
   // Handle submitting a new quest
   const handleSubmitQuest = useCallback(() => {
     if (newQuestTitle.trim() === '') {
-      Alert.alert('Error', 'Please enter a quest title');
+      Alert.alert('오류', '퀘스트 제목을 입력해주세요');
       return;
     }
 
     if (startDate >= endDate) {
-      Alert.alert('Error', 'End date must be after start date');
+      Alert.alert('오류', '종료일은 시작일 이후여야 합니다');
       return;
     }
 
-      const newQuest = {
+    if (verificationRequired && requiredVerifications < 1) {
+      Alert.alert('오류', '필요 인증 횟수는 1회 이상이어야 합니다');
+      return;
+    }
+
+    const newQuest = {
       title: newQuestTitle,
       description: newQuestDescription || '',
       isMain: isMainQuest,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
+      difficulty,
+      reward: reward ? parseInt(reward, 10) : 0,
+      category: category || null,
       completed: false,
-      verificationRequired: false,
+      verificationRequired,
       verificationCount: 0,
-      requiredVerifications: 3
+      requiredVerifications: verificationRequired ? requiredVerifications : 0,
+      status: 'in_progress',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     addQuest(newQuest);
+    
+    // Reset form
+    setNewQuestTitle('');
+    setNewQuestDescription('');
+    setReward('');
+    setVerificationRequired(false);
+    setRequiredVerifications(3);
+    setCategory('');
+    
     Keyboard.dismiss();
     closeDatePickers();
     bottomSheetRef.current?.close();
-  }, [newQuestTitle, newQuestDescription, isMainQuest, startDate, endDate, addQuest]);
+    
+  }, [
+    newQuestTitle, 
+    newQuestDescription, 
+    isMainQuest, 
+    startDate, 
+    endDate, 
+    difficulty,
+    reward,
+    category,
+    verificationRequired,
+    requiredVerifications,
+    addQuest
+  ]);
 
   // Handle date change for date pickers
   const onStartDateChange = (event: any, selectedDate?: Date) => {
@@ -195,43 +236,75 @@ const HomeScreen = (): ReactElement => {
 
   // Handle closing the bottom sheet
   const handleCloseBottomSheet = useCallback(() => {
-    // First dismiss the keyboard
+    // Dismiss the keyboard
     Keyboard.dismiss();
     closeDatePickers();
-    
-    // Wait for the keyboard to fully dismiss before closing the bottom sheet
-    const keyboardDismissListener = Keyboard.addListener('keyboardDidHide', () => {
-      keyboardDismissListener.remove();
-      bottomSheetRef.current?.close();
-    });
-    
-    // Fallback in case keyboard wasn't open
-    setTimeout(() => {
-      if (!keyboardDismissListener.remove) return;
-      keyboardDismissListener.remove();
-      bottomSheetRef.current?.close();
-    }, 100);
+    // Reset all form states
+    setNewQuestTitle('');
+    setNewQuestDescription('');
+    setStartDate(new Date());
+    setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    setVerificationRequired(false);
+    setRequiredVerifications(3);
+    setCategory('');
+    // Close the bottom sheet
+    setIsBottomSheetOpen(false);
   }, [closeDatePickers]);
+
+  // Track bottom sheet state changes
+  React.useEffect(() => {
+    console.log('BottomSheet mounted');
+    
+    const checkState = () => {
+      if (!bottomSheetRef.current) return;
+      
+      // Try to get the current state
+      const currentState = bottomSheetRef.current.state?.index !== -1;
+      if (currentState !== isBottomSheetOpen) {
+        console.log('BottomSheet state changed to:', currentState ? 'OPEN' : 'CLOSED');
+        setIsBottomSheetOpen(currentState);
+      }
+    };
+    
+    // Initial check after a short delay
+    const timer = setTimeout(checkState, 100);
+    
+    // Check state periodically
+    const interval = setInterval(checkState, 500);
+    
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timer);
+    };
+  }, [isBottomSheetOpen]);
 
   // Handle opening the bottom sheet for adding a new quest
   const handleAddQuest = useCallback((isMain: boolean) => {
     // Check if we can add more quests
     if (isMain && quests.some(q => q.isMain)) {
-      Alert.alert('Error', 'You can only have one main quest');
+      Alert.alert('Error', '메인 퀘스트는 하나씩만 생성 가능합니다');
       return;
     } else if (!isMain && quests.filter(q => !q.isMain).length >= 5) {
-      Alert.alert('Error', 'You can have up to 5 sub-quests');
+      Alert.alert('Error', '서브 퀘스트는 최대 5개까지만 생성 가능합니다');
       return;
     }
     
+    // Reset form state
     setIsMainQuest(isMain);
     setNewQuestTitle('');
     setNewQuestDescription('');
     setStartDate(new Date());
     setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    setVerificationRequired(false);
+    setRequiredVerifications(3);
+    setCategory('');
     closeDatePickers();
     Keyboard.dismiss();
-    bottomSheetRef.current?.expand();
+    
+    // Open the bottom sheet after a small delay
+    setTimeout(() => {
+      setIsBottomSheetOpen(true);
+    }, 50);
   }, [quests, closeDatePickers]);
 
   // Render backdrop for bottom sheet
@@ -345,27 +418,25 @@ const HomeScreen = (): ReactElement => {
         style={styles.emptyStateIcon}
       />
       <Text style={styles.emptyStateText}>
-        {isMain ? 'No main quest yet' : 'No sub-quests yet'}
+        {isMain ? '메인 퀘스트를 생성해보세요' : '서브 퀘스트를 생성해보세요'}
       </Text>
       <Text style={styles.emptyStateSubtext}>
         {isMain 
-          ? 'Add a main quest to get started!'
-          : 'Add sub-quests to break down your goals'}
+          ? '단 하나의 메인 퀘스트만 생성할 수 있습니다'
+          : '마음껏 서브 퀘스트를 생성해보세요'}
       </Text>
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => handleAddQuest(isMain)}
       >
         <Text style={styles.addButtonText}>
-          {isMain ? 'Add Main Quest' : 'Add Sub-Quest'}
+          {isMain ? '메인 퀘스트 추가' : '서브 퀘스트 추가'}
         </Text>
       </TouchableOpacity>
     </View>
   );
 
   // Handle keyboard show/hide
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
-
   React.useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
@@ -382,9 +453,22 @@ const HomeScreen = (): ReactElement => {
     };
   }, []);
 
+  // Handle reward input with number validation
+  const handleRewardChange = (text: string) => {
+    // Only allow numbers
+    if (text === '' || /^\d+$/.test(text)) {
+      setReward(text);
+    }
+  };
+
+  // Handle verification requirement toggle
+  const toggleVerification = () => {
+    setVerificationRequired(!verificationRequired);
+  };
+
   // Bottom sheet content
   const renderBottomSheetContent = () => (
-    <View style={styles.bottomSheetContent}>
+    <SafeAreaView style={styles.bottomSheetContent}>
       {/* Header with buttons */}
       <View style={styles.headerContainer}>
         <TouchableOpacity 
@@ -398,8 +482,8 @@ const HomeScreen = (): ReactElement => {
         </Text>
         <TouchableOpacity 
           onPress={handleSubmitQuest}
-          style={[styles.headerButton, !newQuestTitle.trim() && { opacity: 0.5 }]}
-          disabled={!newQuestTitle.trim()}
+          style={[styles.headerButton, (!newQuestTitle.trim() || (verificationRequired && requiredVerifications < 1)) && { opacity: 0.5 }]}
+          disabled={!newQuestTitle.trim() || (verificationRequired && requiredVerifications < 1)}
         >
           <Text style={styles.doneButtonText}>완료</Text>
         </TouchableOpacity>
@@ -408,26 +492,67 @@ const HomeScreen = (): ReactElement => {
       <ScrollView 
         style={styles.scrollView}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={keyboardVisible ? styles.keyboardOpenContent : null}
+        contentContainerStyle={[styles.scrollViewContent]}
       >
-        <Text style={styles.inputLabel}>제목*</Text>
-        <TextInput
+        {/* Quest Title */}
+        <Text style={styles.inputLabel}>퀘스트 제목*</Text>
+        <BottomSheetTextInput
           style={styles.input}
           placeholder="퀘스트 제목을 입력하세요"
           value={newQuestTitle}
           onChangeText={setNewQuestTitle}
           autoFocus
           returnKeyType="next"
+          maxLength={50}
         />
         
-        <Text style={styles.inputLabel}>시작일</Text>
-        <TouchableOpacity 
-          style={styles.dateInput} 
-          onPress={() => toggleDatePicker(true)}
-        >
-          <Text style={styles.dateText}>{startDate.toLocaleDateString('ko-KR')}</Text>
-          <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
-        </TouchableOpacity>
+        {/* Difficulty Selection */}
+        <Text style={styles.inputLabel}>난이도</Text>
+        <View style={styles.difficultyContainer}>
+          {['easy', 'normal', 'hard'].map((level) => (
+            <TouchableOpacity
+              key={level}
+              style={[
+                styles.difficultyButton,
+                difficulty === level && styles[`${level}ButtonActive`],
+              ]}
+              onPress={() => setDifficulty(level as 'easy' | 'normal' | 'hard')}
+            >
+              <Text style={[
+                styles.difficultyText,
+                difficulty === level && styles[`${level}Text`]
+              ]}>
+                {level === 'easy' ? '쉬움' : level === 'normal' ? '보통' : '어려움'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Date Range */}
+        <View style={styles.dateRangeContainer}>
+          <View style={styles.dateInputContainer}>
+            <Text style={styles.inputLabel}>시작일</Text>
+            <TouchableOpacity 
+              style={styles.dateInput} 
+              onPress={() => toggleDatePicker(true)}
+            >
+              <MaterialIcons name="event" size={18} color="#666" style={styles.dateIcon} />
+              <Text style={styles.dateText}>{startDate.toLocaleDateString('ko-KR')}</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.dateInputContainer}>
+            <Text style={styles.inputLabel}>종료일</Text>
+            <TouchableOpacity 
+              style={styles.dateInput} 
+              onPress={() => toggleDatePicker(false)}
+            >
+              <MaterialIcons name="event" size={18} color="#666" style={styles.dateIcon} />
+              <Text style={styles.dateText}>{endDate.toLocaleDateString('ko-KR')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {showStartDatePicker && (
           <DateTimePicker
             value={startDate}
@@ -435,17 +560,10 @@ const HomeScreen = (): ReactElement => {
             display="spinner"
             onChange={onStartDateChange}
             locale="ko-KR"
+            textColor="#333"
           />
         )}
 
-        <Text style={[styles.inputLabel, { marginTop: 16 }]}>종료일</Text>
-        <TouchableOpacity 
-          style={styles.dateInput} 
-          onPress={() => toggleDatePicker(false)}
-        >
-          <Text style={styles.dateText}>{endDate.toLocaleDateString('ko-KR')}</Text>
-          <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
-        </TouchableOpacity>
         {showEndDatePicker && (
           <DateTimePicker
             value={endDate}
@@ -454,22 +572,96 @@ const HomeScreen = (): ReactElement => {
             onChange={onEndDateChange}
             minimumDate={startDate}
             locale="ko-KR"
+            textColor="#333"
           />
         )}
 
-        <Text style={[styles.inputLabel, { marginTop: 16 }]}>설명 (선택사항)</Text>
-        <TextInput
+        {/* Quest Description */}
+        <Text style={styles.inputLabel}>상세 설명</Text>
+        <BottomSheetTextInput
           style={[styles.input, styles.multilineInput]}
-          placeholder="퀘스트에 대한 설명을 입력하세요"
+          placeholder="퀘스트에 대한 상세한 설명을 입력하세요"
           value={newQuestDescription}
           onChangeText={setNewQuestDescription}
           multiline
           numberOfLines={4}
-          returnKeyType="done"
+          textAlignVertical="top"
+          maxLength={500}
           blurOnSubmit={true}
         />
+
+        {/* Reward */}
+        <Text style={styles.inputLabel}>보상 (XP)</Text>
+        <View style={styles.rewardContainer}>
+          <TextInput
+            style={[styles.input, styles.rewardInput]}
+            placeholder="0"
+            value={reward}
+            onChangeText={handleRewardChange}
+            keyboardType="number-pad"
+            returnKeyType="done"
+          />
+          <Text style={styles.xpText}>XP</Text>
+        </View>
+
+        {/* Verification Required */}
+        <View style={styles.verificationContainer}>
+          <View style={styles.verificationHeader}>
+            <Text style={styles.inputLabel}>인증 필요</Text>
+            <Switch
+              value={verificationRequired}
+              onValueChange={toggleVerification}
+              trackColor={{ false: '#ddd', true: '#4CAF50' }}
+              thumbColor="#fff"
+            />
+          </View>
+          
+          {verificationRequired && (
+            <View style={styles.verificationSettings}>
+              <Text style={styles.verificationLabel}>필요 인증 횟수</Text>
+              <View style={styles.counterContainer}>
+                <TouchableOpacity 
+                  style={styles.counterButton}
+                  onPress={() => setRequiredVerifications(prev => Math.max(1, prev - 1))}
+                  disabled={requiredVerifications <= 1}
+                >
+                  <Text style={styles.counterButtonText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.counterValue}>{requiredVerifications}</Text>
+                <TouchableOpacity 
+                  style={styles.counterButton}
+                  onPress={() => setRequiredVerifications(prev => prev + 1)}
+                >
+                  <Text style={styles.counterButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Category (optional) */}
+        <Text style={styles.inputLabel}>카테고리 (선택사항)</Text>
+        <View style={styles.categoryContainer}>
+          {['운동', '공부', '생활', '취미', '기타'].map((cat) => (
+            <TouchableOpacity
+              key={cat}
+              style={[
+                styles.categoryButton,
+                category === cat && styles.categoryButtonActive,
+              ]}
+              onPress={() => setCategory(cat)}
+            >
+              <Text style={[
+                styles.categoryText,
+                category === cat && styles.categoryTextActive,
+              ]}>
+                {cat}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 
   return (
@@ -481,6 +673,7 @@ const HomeScreen = (): ReactElement => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
         {/* Character and Stats Section */}
+        <Logo resizeMode="contain" style={{ width: 150, height: 45, marginBottom:16 }}/>
         <View style={styles.characterContainer}>
           <CharacterAvatar size={150} level={user?.level} />
           <View style={styles.statsContainer}>
@@ -514,9 +707,9 @@ const HomeScreen = (): ReactElement => {
         {/* Main Quest Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Main Quest</Text>
+            <Text style={styles.sectionTitle}>메인 퀘스트</Text>
             <TouchableOpacity onPress={() => handleAddQuest(true)}>
-              <Text style={styles.sectionLink}>+ Add</Text>
+              <Text style={styles.sectionLink}>+ 추가</Text>
             </TouchableOpacity>
           </View>
           {mainQuest ? (
@@ -529,9 +722,9 @@ const HomeScreen = (): ReactElement => {
         {/* Sub-Quests Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Sub-Quests</Text>
+            <Text style={styles.sectionTitle}>서브 퀘스트</Text>
             <TouchableOpacity onPress={() => handleAddQuest(false)}>
-              <Text style={styles.sectionLink}>+ Add</Text>
+              <Text style={styles.sectionLink}>+ 추가</Text>
             </TouchableOpacity>
           </View>
           {subQuests.length > 0 ? (
@@ -552,8 +745,8 @@ const HomeScreen = (): ReactElement => {
       {/* Bottom Sheet for Adding Quests */}
       <BottomSheet
         ref={bottomSheetRef}
-        index={-1}
-        snapPoints={['90%']}
+        index={isBottomSheetOpen ? 0 : -1}
+        snapPoints={snapPoints}
         enablePanDownToClose={true}
         backdropComponent={renderBackdrop}
         style={styles.bottomSheet}
@@ -562,6 +755,19 @@ const HomeScreen = (): ReactElement => {
         enableHandlePanningGesture={true}
         enableContentPanningGesture={true}
         onClose={handleCloseBottomSheet}
+        onChange={(index) => {
+          // Only update state if it's different to prevent unnecessary re-renders
+          if (index === -1 && isBottomSheetOpen) {
+            handleCloseBottomSheet();
+          } else if (index !== -1 && !isBottomSheetOpen) {
+            setIsBottomSheetOpen(true);
+          }
+        }}
+        animationConfigs={{
+          damping: 30,  // 감쇠 효과 증가로 튕김 감소
+          stiffness: 250,  // 스프링 강도 조정
+          mass: 0.8  // 질량 감소로 더 빠른 감쇠
+        }}
       >
         {renderBottomSheetContent()}
       </BottomSheet>
@@ -578,108 +784,227 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 5,
+    padding:16
+  },
+  bottomSheetContent: {
     flex: 1,
+    padding: 20,
+    paddingBottom: 30,
   },
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   headerButton: {
     padding: 8,
     minWidth: 60,
   },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+  },
+  doneButtonText: {
+    color: '#4A80F5',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   scrollView: {
     flex: 1,
   },
-  keyboardOpenContent: {
-    paddingBottom: 300, // Extra padding when keyboard is open
-  },
-  bottomSheetContent: {
-    flex: 1,
-    padding: 20,
-    paddingBottom: 40,
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  bottomSheetTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
+  scrollViewContent: {
+    paddingBottom: 30,
   },
   inputLabel: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-    marginTop: 12,
-  },
-  dateInput: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: '#fff',
+    color: '#333',
     marginBottom: 8,
-  },
-  dateText: {
-    fontSize: 16,
+    fontWeight: '500',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 10,
+    padding: 14,
     fontSize: 16,
-    backgroundColor: '#fff',
+    color: '#333',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    marginBottom: 16,
   },
   multilineInput: {
     minHeight: 100,
     textAlignVertical: 'top',
+    paddingTop: 12,
   },
-  buttonRow: {
+  dateRangeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 24,
+    marginBottom: 16,
   },
-  bottomSheetButton: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 8,
+  dateInputContainer: {
+    width: '48%',
+  },
+  dateInput: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  cancelButton: {
-    backgroundColor: '#f5f5f5',
+  dateIcon: {
     marginRight: 8,
   },
-  submitButton: {
-    backgroundColor: '#4CAF50',
-    marginLeft: 8,
-  },
-  cancelButtonText: {
-    color: '#007AFF',
+  dateText: {
     fontSize: 16,
-    fontWeight: '500',
+    color: '#333',
   },
-  doneButtonText: {
-    color: '#007AFF',
+  difficultyContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  difficultyButton: {
+    flex: 1,
+    padding: 12,
+    marginHorizontal: 4,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+  },
+  easyButtonActive: {
+    backgroundColor: '#E8F5E9',
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  normalButtonActive: {
+    backgroundColor: '#E3F2FD',
+    borderWidth: 1,
+    borderColor: '#2196F3',
+  },
+  hardButtonActive: {
+    backgroundColor: '#FFEBEE',
+    borderWidth: 1,
+    borderColor: '#F44336',
+  },
+  difficultyText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  easyText: {
+    color: '#2E7D32',
+    fontWeight: '600',
+  },
+  normalText: {
+    color: '#1565C0',
+    fontWeight: '600',
+  },
+  hardText: {
+    color: '#C62828',
+    fontWeight: '600',
+  },
+  rewardContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  rewardInput: {
+    flex: 1,
+    marginBottom: 0,
+    marginRight: 10,
+  },
+  xpText: {
     fontSize: 16,
+    fontWeight: '600',
+    color: '#FF9800',
+  },
+  verificationContainer: {
+    marginBottom: 16,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 10,
+    padding: 16,
+  },
+  verificationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  verificationSettings: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  verificationLabel: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 8,
+  },
+  counterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  counterButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  counterButtonText: {
+    fontSize: 20,
+    color: '#555',
+    lineHeight: 24,
+  },
+  counterValue: {
+    width: 40,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 10,
+  },
+  categoryButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+    marginRight: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  categoryButtonActive: {
+    backgroundColor: '#E3F2FD',
+    borderColor: '#2196F3',
+  },
+  categoryText: {
+    fontSize: 14,
+    color: '#555',
+  },
+  categoryTextActive: {
+    color: '#1565C0',
     fontWeight: '600',
   },
   completeButton: {
@@ -855,7 +1180,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   addButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#806a5b',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
