@@ -1,33 +1,52 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAppContext } from '../contexts/AppContext';
 import CharacterAvatar from '../components/CharacterAvatar';
 
+// Import types
+import { Quest } from '../types/quest.types';
+import { Team } from '../types/team.types';
+import { User } from '../types/user.types';
+
+// Navigation types
+type RootStackParamList = {
+  Profile: undefined;
+  // Add other screens as needed
+};
+
+type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
+
 const ProfileScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { user, quests, teams } = useAppContext();
   
-  const completedQuests = quests.filter(quest => quest.completed).length;
-  const inProgressQuests = quests.filter(quest => !quest.completed).length;
-  const myTeams = teams.filter(team => team.members.includes(user.id));
+  // Type-safe filtering
+  const completedQuests = quests.filter((quest: Quest) => quest.completed).length;
+  const inProgressQuests = quests.filter((quest: Quest) => !quest.completed).length;
+  const myTeams = teams.filter((team: Team) => team.members.includes(user.id));
   
-  // Calculate level progress
-  const levelProgress = (user.actionPoints % 100) / 100 * 100;
-  const nextLevel = user.level + 1;
+  // Calculate level progress with safe defaults
+  const currentExp = user.exp || 0;
+  const maxExp = user.maxExp || 100;
+  const levelProgress = (currentExp / maxExp) * 100;
+  const nextLevel = (user.level || 1) + 1;
   
   // Get border color based on user level
   const getBorderColor = () => {
-    if (user.level >= 10) return '#FFD700'; // Gold
-    if (user.level >= 5) return '#C0C0C0'; // Silver
+    const level = user.level || 1;
+    if (level >= 10) return '#FFD700'; // Gold
+    if (level >= 5) return '#C0C0C0'; // Silver
     return '#CD7F32'; // Bronze
   };
   
   // Get title based on level
   const getTitle = () => {
-    if (user.level >= 10) return '마스터 도전자';
-    if (user.level >= 5) return '중급 도전자';
+    const level = user.level || 1;
+    if (level >= 10) return '마스터 도전자';
+    if (level >= 5) return '중급 도전자';
     return '초보 도전자';
   };
 
@@ -37,8 +56,8 @@ const ProfileScreen = () => {
       <ScrollView>
         {/* Profile Header */}
         <View style={styles.header}>
-          <CharacterAvatar size={100} level={user.level} />
-          <Text style={styles.userName}>{user.name}</Text>
+          <CharacterAvatar size={100} level={user.level || 1} />
+          <Text style={styles.userName}>{user.nickname || user.name}</Text>
           <Text style={styles.userTitle}>{getTitle()}</Text>
           
           <View style={styles.statsContainer}>
@@ -62,8 +81,8 @@ const ProfileScreen = () => {
         {/* Level Progress */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>레벨 {user.level}</Text>
-            <Text style={styles.levelText}>Lv. {nextLevel}까지 {100 - user.actionPoints % 100}점 남음</Text>
+            <Text style={styles.cardTitle}>레벨 {user.level || 1}</Text>
+            <Text style={styles.levelText}>Lv. {nextLevel}까지 {maxExp - currentExp}점 남음</Text>
           </View>
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
@@ -74,7 +93,7 @@ const ProfileScreen = () => {
                 ]} 
               />
             </View>
-            <Text style={styles.progressText}>{user.actionPoints} / {user.level * 100}</Text>
+            <Text style={styles.progressText}>{currentExp} / {maxExp}</Text>
           </View>
         </View>
         

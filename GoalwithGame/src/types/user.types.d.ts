@@ -10,8 +10,8 @@ export interface User {
   actionPoints: number;
   avatar?: string | ImageSourcePropType;
   badge?: string;
-  bio?: string;
-  joinedAt?: string;
+  exp:number;
+  maxExp:number;
 }
 
 export interface AuthCredentials {

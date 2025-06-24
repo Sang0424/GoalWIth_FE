@@ -1,71 +1,16 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { User, UserRecord } from '../types';
-
+import { User } from '../types/user.types';
+import { Quest, QuestRecord } from '../types/quest.types';
+import { Team, TeamPost, TeamComment } from '../types/team.types';
 // User type is now imported from shared types
-
-interface Quest {
-  id: string;
-  title: string;
-  isMain: boolean;
-  startDate: string;
-  endDate: string;
-  completed: boolean;
-  verificationRequired: boolean;
-  verificationCount: number;
-  requiredVerifications: number;
-  records: QuestRecord[];
-}
-
-interface QuestVerification {
-  userId: string;
-  verifiedAt: string;
-}
-
-interface BaseQuestRecord {
-  id: string;
-  date: string;
-  text: string;
-  image?: string;
-}
-
-interface QuestRecord extends BaseQuestRecord {
-  verifications: QuestVerification[];
-  isVerified: boolean;
-}
-
-interface Team {
-  id: string;
-  name: string;
-  leaderId: string;
-  members: string[];
-  feed: TeamPost[];
-}
-
-export interface TeamPost {
-  id: string;
-  userId: string;
-  content: string;
-  image?: string;
-  likes: string[];
-  comments: TeamComment[];
-  createdAt: string;
-}
-
-export interface TeamComment {
-  id: string;
-  userId: string;
-  content: string;
-  createdAt: string;
-}
 
 interface AppContextType {
   user: User;
   quests: Quest[];
   teams: Team[];
   addQuest: (quest: Omit<Quest, 'id' | 'records'>) => void;
-  addQuestRecord: (questId: string, record: Omit<QuestRecord, 'id' | 'verifications' | 'isVerified'>) => void;
-  addRecord: (record: UserRecord) => void;
-  createTeam: (name: string) => void;
+  addQuestRecord: (questId: string, record: QuestRecord) => void;
+  createTeam: (name: string, description?: string, isPublic?: boolean) => void;
   addTeamPost: (teamId: string, post: Omit<TeamPost, 'id' | 'likes' | 'comments' | 'createdAt'>) => void;
   likeTeamPost: (teamId: string, postId: string, userId: string) => void;
   addCommentToPost: (teamId: string, postId: string, comment: Omit<TeamComment, 'id' | 'createdAt'>) => void;
@@ -73,7 +18,7 @@ interface AppContextType {
   updateActionPoints: (points: number) => void;
   verifyQuest: (questId: string, recordId: string, userId: string) => Promise<boolean>;
   getVerificationFeed: () => QuestRecord[];
-  submitQuestForVerification: (questId: string, record: Omit<QuestRecord, 'id' | 'verifications' | 'isVerified'>) => void;
+  submitQuestForVerification: (questId: string, record: QuestRecord) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -83,19 +28,13 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     id: '1',
     name: '사용자',
     level: 1,
-    experience: 0,
-    maxExperience: 100,
+    exp: 0,
+    maxExp: 100,
     actionPoints: 50,
-    reputation: 0,
-    character: '👤',
-    stats: {
-      strength: 1,
-      intelligence: 1,
-      agility: 1,
-      vitality: 1
-    },
-    currentExp: 0,
-    maxExp: 100
+    avatar: '',
+    nickname: '사용자',
+    userType: 'student',
+    email: 'user@example.com',
   });
 
   const [quests, setQuests] = useState<Quest[]>([]);
@@ -123,7 +62,7 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     });
   };
 
-  const addQuestRecord = (questId: string, record: Omit<BaseQuestRecord, 'id'>) => {
+  const addQuestRecord = (questId: string, record: QuestRecord) => {
     setQuests(prev => 
       prev.map(quest => 
         quest.id === questId 
@@ -135,7 +74,12 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
                   ...record, 
                   id: Date.now().toString(),
                   verifications: [],
-                  isVerified: false 
+                  isVerified: false,
+                  questId: questId,
+                  tags: record.tags || [],
+                  createdAt: new Date().toISOString(),
+                  userId: user?.id || '',
+                  date: record.date || new Date().toISOString()
                 } as QuestRecord
               ] 
             } 
@@ -144,13 +88,16 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     );
   };
 
-  const createTeam = (name: string) => {
+  const createTeam = (name: string, description?: string, isPublic?: boolean) => {
     const newTeam: Team = {
       id: Date.now().toString(),
       name,
+      description,
+      isPublic: isPublic || false,
       leaderId: user.id,
       members: [user.id],
       feed: [],
+      createdAt: new Date().toISOString(),
     };
     setTeams(prev => [...prev, newTeam]);
   };
@@ -244,7 +191,7 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   };
 
   const updateActionPoints = (points: number) => {
-    setUser(prev => ({
+    setUser((prev:any) => ({
       ...prev,
       actionPoints: Math.max(0, prev.actionPoints + points)
     }));
@@ -255,7 +202,7 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       setQuests(prev => 
         prev.map(quest => {
           if (quest.id === questId) {
-            const updatedRecords = quest.records.map(record => {
+            const updatedRecords = quest.records?.map(record => {
               if (record.id === recordId) {
                 const alreadyVerified = record.verifications.some(v => v.userId === userId);
                 if (alreadyVerified) return record;
@@ -278,7 +225,7 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
             });
             
             // Update verification count
-            const verificationCount = updatedRecords.reduce(
+            const verificationCount = updatedRecords?.reduce(
               (count, record) => count + record.verifications.length, 
               0
             );
@@ -287,7 +234,7 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
               ...quest,
               records: updatedRecords,
               verificationCount,
-              completed: verificationCount >= (quest.requiredVerifications || 5)
+              completed: verificationCount ? verificationCount >= (quest.requiredVerifications || 5) : false
             };
           }
           return quest;
@@ -304,14 +251,23 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     const verificationFeed: QuestRecord[] = [];
     
     quests.forEach(quest => {
-      if (quest.verificationRequired && quest.records.length > 0) {
+      if (quest.verificationRequired && quest.records && quest.records.length > 0) {
         const latestRecord = quest.records[quest.records.length - 1];
         if (!latestRecord.isVerified) {
-          verificationFeed.push({
-            ...latestRecord,
-            questTitle: quest.title,
-            questId: quest.id
-          } as QuestRecord);
+          const record: QuestRecord = {
+            id: latestRecord.id,
+            date: latestRecord.date,
+            text: latestRecord.text || '',
+            verifications: latestRecord.verifications || [],
+            isVerified: false,
+            questId: quest.id,
+            tags: latestRecord.tags || [],
+            createdAt: latestRecord.createdAt,
+            userId: latestRecord.userId,
+            images: latestRecord.images || [],
+            ...(latestRecord.images?.[0] && { image: latestRecord.images[0] })
+          };
+          verificationFeed.push(record);
         }
       }
     });
@@ -319,29 +275,49 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     return verificationFeed;
   };
 
-  const addRecord = (record: UserRecord) => {
+  const addRecord = (record: { id: string; questId: string; createdAt: string | Date; text: string; images?: string[] }) => {
     const questIndex = quests.findIndex(q => q.id === record.questId);
     if (questIndex === -1) return;
 
     const newQuest = {
       ...quests[questIndex],
-      records: [...quests[questIndex].records, {
-        id: record.id,
-        date: record.createdAt.toString(),
-        text: record.text,
-        image: record.images[0], // Only show first image in quest record
-        verifications: [],
-        isVerified: false,
-      }],
+      records: [
+        ...(quests[questIndex].records || []), 
+        {
+          id: record.id,
+          date: typeof record.createdAt === 'string' ? record.createdAt : record.createdAt.toISOString(),
+          text: record.text,
+          images: record.images || [],
+          image: record.images?.[0], // Keep for backward compatibility
+          verifications: [],
+          isVerified: false,
+          questId: record.questId,
+          userId: user.id, // Assuming you have access to the current user
+          tags: [], // Add empty tags array as per the interface
+          createdAt: typeof record.createdAt === 'string' ? record.createdAt : record.createdAt.toISOString() // Add createdAt field
+        }
+      ],
     };
 
-    setQuests([...quests.slice(0, questIndex), newQuest, ...quests.slice(questIndex + 1)]);
+    setQuests(prevQuests => [
+      ...prevQuests.slice(0, questIndex), 
+      newQuest, 
+      ...prevQuests.slice(questIndex + 1)
+    ]);
   };
 
   const submitQuestForVerification = (
     questId: string, 
-    record: Omit<QuestRecord, 'id' | 'verifications' | 'isVerified'>
+    record: QuestRecord
   ) => {
+    if (!record.text) {
+      console.warn('Cannot submit quest for verification: text is required');
+      return;
+    }
+    if (!record.images) {
+      console.warn('Cannot submit quest for verification: images is required');
+      return;
+    }
     setQuests(prev => 
       prev.map(quest => {
         if (quest.id === questId) {
@@ -349,12 +325,17 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
             ...record,
             id: Date.now().toString(),
             verifications: [],
-            isVerified: false
+            isVerified: false,
+            questId: questId,
+            tags: record.tags || [],
+            createdAt: new Date().toISOString(),
+            userId: user?.id || '',
+            date: record.date || new Date().toISOString()
           };
           
           return {
             ...quest,
-            records: [...quest.records, newRecord]
+            records: [...(quest.records), newRecord]
           };
         }
         return quest;
@@ -370,7 +351,6 @@ export const AppProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         teams,
         addQuest,
         addQuestRecord,
-        addRecord,
         createTeam,
         addTeamPost,
         likeTeamPost,

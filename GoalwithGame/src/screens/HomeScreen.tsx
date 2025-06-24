@@ -3,6 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
+  ViewStyle,
   TouchableOpacity,
   TextInput,
   SafeAreaView,
@@ -14,16 +15,32 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Switch,
+  ListRenderItem,
+  FlatList,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetBackdropProps, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useAppContext } from '../contexts/AppContext';
 import CharacterAvatar from '../components/CharacterAvatar';
 import Logo from '../components/Logo';
+
+// Import types from type definition files
+import type { Quest } from '../types/quest.types';
+import type { User } from '../types/user.types';
+
+// Extended types for local use
+interface ExtendedQuest extends Omit<Quest, 'startDate' | 'endDate' | 'verificationRequired'> {
+  startDate: string | Date;
+  endDate: string | Date;
+  status?: 'in_progress' | 'completed' | 'failed';
+  requiredVerifications?: number;
+  verificationCount?: number;
+  verificationRequired: boolean;
+}
 
 interface RootStackParamList {
   Home: undefined;
@@ -34,63 +51,20 @@ interface RootStackParamList {
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
-// Define a base quest type with required properties
-type BaseQuest = {
-  id: string;
-  title: string;
-  isMain: boolean;
-  startDate?: string;
-  endDate?: string;
-  dueDate?: string;
-  completed?: boolean;
-};
-
-// Extend the base quest type with optional properties
-type Quest = BaseQuest & {
-  description?: string;
-  status?: 'in_progress' | 'completed' | 'failed' | string;
-  progress?: number;
-  currentStep?: number;
-  totalSteps?: number;
-  reward?: {
-    experience?: number;
-    gold?: number;
-    [key: string]: any;
-  };
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-  // Allow for additional properties
-  [key: string]: any;
-};
-
-// User type with all possible properties
-type User = {
-  id: string;
-  name: string;
-  level: number;
-  // Make experience and maxExperience required
-  experience: number;
-  maxExperience: number;
-  // Keep other properties as optional with type assertions where needed
-  currentExp?: number;
-  maxExp?: number;
-  character?: string;
-  actionPoints?: number;
-  // Add any additional user properties here
-  [key: string]: any; // Allow for additional properties
-};
 
 // Default user object to ensure required properties exist
+// Default user object with required fields from User type
 const defaultUser: User = {
   id: '',
   name: 'User',
+  email: '',
+  nickname: 'User',
+  userType: 'student',
   level: 1,
-  experience: 0,
-  maxExperience: 100,
-  currentExp: 0, // Initialize required property
-  maxExp: 100, // Initialize required property
-  character: '👤',
-  actionPoints: 0
+  exp: 0,
+  maxExp: 100,
+  actionPoints: 0,
+  // Note: Removed createdAt and updatedAt as they're not in the User type
 };
 
 
@@ -99,7 +73,9 @@ const HomeScreen = (): ReactElement => {
   const { user, quests, addQuest } = useAppContext();
   const bottomSheetRef = useRef<any>(null);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
-  const [snapPoints] = useState(['90%']);
+  const [snapPoints] = useState(['100%']);
+
+
 
   // State for quest form
   const [isMainQuest, setIsMainQuest] = useState(true);
@@ -130,11 +106,10 @@ const HomeScreen = (): ReactElement => {
   const mainQuest = quests.find((quest: Quest) => quest.isMain);
   const subQuests = quests.filter((quest: Quest) => !quest.isMain).slice(0, 5);
 
-
   // Handle submitting a new quest
   const handleSubmitQuest = useCallback(() => {
     if (newQuestTitle.trim() === '') {
-      Alert.alert('오류', '퀘스트 제목을 입력해주세요');
+      Alert.alert('Error', 'Please enter a quest title');
       return;
     }
 
@@ -148,22 +123,17 @@ const HomeScreen = (): ReactElement => {
       return;
     }
 
-    const newQuest = {
+    const newQuest: Omit<Quest, 'id' | 'records'> & { createdAt?: string } = {
       title: newQuestTitle,
       description: newQuestDescription || '',
       isMain: isMainQuest,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
-      difficulty,
-      reward: reward ? parseInt(reward, 10) : 0,
-      category: category || null,
       completed: false,
       verificationRequired,
       verificationCount: 0,
       requiredVerifications: verificationRequired ? requiredVerifications : 0,
-      status: 'in_progress',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      category: category,
     };
 
     addQuest(newQuest);
@@ -194,9 +164,9 @@ const HomeScreen = (): ReactElement => {
     addQuest
   ]);
 
-  // Handle date change for date pickers
-  const onStartDateChange = (event: any, selectedDate?: Date) => {
-    if (selectedDate) {
+  // Handle date change for date pickers with proper typing
+  const onStartDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (event.type === 'set' && selectedDate) {
       setStartDate(selectedDate);
       // If end date is before new start date, update end date
       if (selectedDate > endDate) {
@@ -208,8 +178,8 @@ const HomeScreen = (): ReactElement => {
     }
   };
 
-  const onEndDateChange = (event: any, selectedDate?: Date) => {
-    if (selectedDate) {
+  const onEndDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (event.type === 'set' && selectedDate) {
       setEndDate(selectedDate);
     }
     if (Platform.OS === 'android') {
@@ -234,6 +204,34 @@ const HomeScreen = (): ReactElement => {
     setShowEndDatePicker(false);
   }, []);
 
+  // Handle opening the bottom sheet
+  const handleOpenBottomSheet = useCallback((isMain: boolean) => {
+    // Check if we can add more quests
+    if (isMain && quests.some(q => q.isMain)) {
+      Alert.alert('Error', '메인 퀘스트는 하나씩만 생성 가능합니다');
+      return;
+    } else if (!isMain && quests.filter(q => !q.isMain).length >= 5) {
+      Alert.alert('Error', '서브 퀘스트는 최대 5개까지만 생성 가능합니다');
+      return;
+    }
+    
+    // Reset form state
+    setIsMainQuest(isMain);
+    setNewQuestTitle('');
+    setNewQuestDescription('');
+    setStartDate(new Date());
+    setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    setVerificationRequired(false);
+    setRequiredVerifications(3);
+    setReward('');
+    setCategory('');
+    closeDatePickers();
+    Keyboard.dismiss();
+    
+    // Open the bottom sheet
+    setIsBottomSheetOpen(true);
+  }, [quests, closeDatePickers]);
+
   // Handle closing the bottom sheet
   const handleCloseBottomSheet = useCallback(() => {
     // Dismiss the keyboard
@@ -252,60 +250,36 @@ const HomeScreen = (): ReactElement => {
   }, [closeDatePickers]);
 
   // Track bottom sheet state changes
-  React.useEffect(() => {
-    console.log('BottomSheet mounted');
+  // React.useEffect(() => {
+  //   console.log('BottomSheet mounted');
     
-    const checkState = () => {
-      if (!bottomSheetRef.current) return;
+  //   const checkState = () => {
+  //     if (!bottomSheetRef.current) return;
       
-      // Try to get the current state
-      const currentState = bottomSheetRef.current.state?.index !== -1;
-      if (currentState !== isBottomSheetOpen) {
-        console.log('BottomSheet state changed to:', currentState ? 'OPEN' : 'CLOSED');
-        setIsBottomSheetOpen(currentState);
-      }
-    };
+  //     // Try to get the current state
+  //     const currentState = bottomSheetRef.current.state?.index !== -1;
+  //     if (currentState !== isBottomSheetOpen) {
+  //       console.log('BottomSheet state changed to:', currentState ? 'OPEN' : 'CLOSED');
+  //       setIsBottomSheetOpen(currentState);
+  //     }
+  //   };
     
-    // Initial check after a short delay
-    const timer = setTimeout(checkState, 100);
+  //   // Initial check after a short delay
+  //   const timer = setTimeout(checkState, 100);
     
-    // Check state periodically
-    const interval = setInterval(checkState, 500);
+  //   // Check state periodically
+  //   const interval = setInterval(checkState, 500);
     
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timer);
-    };
-  }, [isBottomSheetOpen]);
+  //   return () => {
+  //     clearInterval(interval);
+  //     clearTimeout(timer);
+  //   };
+  // }, [isBottomSheetOpen]);
 
   // Handle opening the bottom sheet for adding a new quest
   const handleAddQuest = useCallback((isMain: boolean) => {
-    // Check if we can add more quests
-    if (isMain && quests.some(q => q.isMain)) {
-      Alert.alert('Error', '메인 퀘스트는 하나씩만 생성 가능합니다');
-      return;
-    } else if (!isMain && quests.filter(q => !q.isMain).length >= 5) {
-      Alert.alert('Error', '서브 퀘스트는 최대 5개까지만 생성 가능합니다');
-      return;
-    }
-    
-    // Reset form state
-    setIsMainQuest(isMain);
-    setNewQuestTitle('');
-    setNewQuestDescription('');
-    setStartDate(new Date());
-    setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-    setVerificationRequired(false);
-    setRequiredVerifications(3);
-    setCategory('');
-    closeDatePickers();
-    Keyboard.dismiss();
-    
-    // Open the bottom sheet after a small delay
-    setTimeout(() => {
-      setIsBottomSheetOpen(true);
-    }, 50);
-  }, [quests, closeDatePickers]);
+    handleOpenBottomSheet(isMain);
+  }, [handleOpenBottomSheet]);
 
   // Render backdrop for bottom sheet
   const renderBackdrop = useCallback(
@@ -357,31 +331,27 @@ const HomeScreen = (): ReactElement => {
     }
   };
 
-  // Render a single quest item with null checks
-  const renderQuestItem = (quest: Quest | undefined, isMain: boolean = false) => {
+  // Define a separate component for rendering a single quest item
+  const QuestItem = ({ quest, isMain }: { quest: ExtendedQuest; isMain: boolean }) => {
     if (!quest) return null;
     
     const startDate = quest.startDate ? new Date(quest.startDate).toLocaleDateString() : 'No start date';
     const endDate = quest.endDate ? new Date(quest.endDate).toLocaleDateString() : 'No end date';
     
-    const cardStyle = [
+    const cardStyle: ViewStyle[] = [
       styles.questCard,
-      isMain ? styles.mainQuestCard : styles.subQuestCard
+      ...(isMain ? [styles.mainQuestCard] : []),
+      ...((quest.completed || (quest.requiredVerifications && (quest.verificationCount ?? 0) >= (quest.requiredVerifications ?? 0))) ? [styles.completedCard] : []),
     ];
     
     return (
       <TouchableOpacity 
-        key={quest.id}
-        style={styles.questCard}
-        onPress={() => handleQuestDetailPress(quest.id)}
+        style={cardStyle}
+        onPress={() => handleQuestPress(quest.id)}
       >
         <View style={styles.questHeader}>
-          <Text style={styles.questTitle}>{quest.title || 'Untitled Quest'}</Text>
-          {quest.description && <Text style={styles.questDescription}>{quest.description}</Text>}
-        </View>
-        <View style={styles.questFooter}>
-          <Text style={styles.questDate}>
-            {startDate} - {endDate}
+          <Text style={styles.questTitle} numberOfLines={1}>
+            {quest.title}
           </Text>
           {quest.status && (
             <View style={[styles.questStatus, { backgroundColor: getStatusColor(quest.status) }]} />
@@ -390,26 +360,76 @@ const HomeScreen = (): ReactElement => {
         <TouchableOpacity 
           style={[
             styles.completeButton, 
-            (quest.completed || quest.verificationCount >= quest.requiredVerifications) && styles.completedButton
+            (quest.completed || (quest.requiredVerifications && (quest.verificationCount ?? 0) >= (quest.requiredVerifications ?? 0))) ? styles.completedButton : null
           ]} 
           onPress={() => handleCompleteQuest(quest)}
-          disabled={quest.completed || quest.verificationCount >= quest.requiredVerifications}
+          disabled={quest.completed || (quest.requiredVerifications ? (quest.verificationCount ?? 0) >= (quest.requiredVerifications ?? 0) : false)}
         >
           <Text style={styles.completeButtonText}>
-            {quest.completed || quest.verificationCount >= quest.requiredVerifications 
-              ? quest.verificationCount >= quest.requiredVerifications 
+            {quest.completed || (quest.requiredVerifications && (quest.verificationCount ?? 0) >= (quest.requiredVerifications ?? 0))
+              ? (quest.requiredVerifications && (quest.verificationCount ?? 0) >= (quest.requiredVerifications ?? 0)) 
                 ? '인증 완료' 
                 : '완료됨' 
               : '완료하기'}
-            {quest.verificationRequired && !quest.completed && ` (${quest.verificationCount}/${quest.requiredVerifications})`}
+            {quest.verificationRequired && !quest.completed && ` (${quest.verificationCount ?? 0}${quest.requiredVerifications ? `/${quest.requiredVerifications}` : ''})`}
           </Text>
         </TouchableOpacity>
       </TouchableOpacity>
     );
   };
 
+  // Render function for FlatList
+  const renderQuestItem: ListRenderItem<ExtendedQuest> = ({ item }) => {
+    return <QuestItem quest={item} isMain={!!item.isMain} />;
+  };
+
   // Render empty state
   const renderEmptyState = (isMain: boolean) => (
+    <View style={styles.emptyState}>
+      <MaterialIcons 
+        name={isMain ? 'emoji-events' : 'check-circle-outline'}
+        size={48}
+        color="#adb5bd"
+        style={styles.emptyStateIcon}
+      />
+      <Text style={styles.emptyStateText}>
+        {isMain ? '메인 퀘스트를 생성해보세요' : '서브 퀘스트를 생성해보세요'}
+      </Text>
+      <Text style={styles.emptyStateSubtext}>
+        {isMain 
+          ? '단 하나의 메인 퀘스트만 생성할 수 있습니다'
+          : '마음껏 서브 퀘스트를 생성해보세요'}
+      </Text>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => handleAddQuest(isMain)}
+      >
+        <Text style={styles.addButtonText}>
+          {isMain ? '메인 퀘스트 추가' : '서브 퀘스트 추가'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // Render quest list with proper typing
+  const renderQuestList = (quests: Quest[], isMain: boolean) => {
+    if (!quests || quests.length === 0) {
+      return renderEmptyState(isMain);
+    }
+
+    return (
+      <FlatList<ExtendedQuest>
+        data={quests as ExtendedQuest[]}
+        renderItem={renderQuestItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      />
+    );
+  };
+
+  // Render main content with proper typing
+  const renderMainContent = (isMain: boolean) => (
     <View style={styles.emptyState}>
       <MaterialIcons 
         name={isMain ? 'emoji-events' : 'check-circle-outline'}
@@ -713,7 +733,7 @@ const HomeScreen = (): ReactElement => {
             </TouchableOpacity>
           </View>
           {mainQuest ? (
-            renderQuestItem(mainQuest, true)
+            <QuestItem quest={mainQuest} isMain={true} />
           ) : (
             renderEmptyState(true)
           )}
@@ -729,7 +749,9 @@ const HomeScreen = (): ReactElement => {
           </View>
           {subQuests.length > 0 ? (
             <>
-              {subQuests.map(quest => renderQuestItem(quest, false))}
+              {subQuests.map(quest => (
+                <QuestItem key={quest.id} quest={quest} isMain={false} />
+              ))}
               <TouchableOpacity style={styles.addQuestButton}>
                 <Text style={styles.addButtonText}>새로운 퀘스트 추가하기</Text>
               </TouchableOpacity>
@@ -777,6 +799,11 @@ const HomeScreen = (): ReactElement => {
 
 
 const styles = StyleSheet.create({
+  completedCard: {
+    backgroundColor: '#f0f9f0',
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
   flex1: {
     flex: 1,
   },

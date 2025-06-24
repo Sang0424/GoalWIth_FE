@@ -20,7 +20,6 @@ export interface VerificationFeedItem {
     id: string;
     title: string;
     category: string;
-    streak: number;
   };
   records: RecordItem[];
   content: {
@@ -36,7 +35,6 @@ export interface VerificationFeedItem {
     perfect: number;
   };
   comments: any[];
-  quality_score: number;
   timestamp: string;
 }
 

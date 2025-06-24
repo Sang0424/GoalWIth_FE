@@ -9,18 +9,21 @@ export interface Quest {
   verificationRequired: boolean;
   verificationCount?: number;
   requiredVerifications?: number;
-  records?: QuestRecord[];
+  records: QuestRecord[];
   category?: string;
-  streak?: number;
 }
 
 export interface QuestRecord {
   id: string;
-  date: string;
+  date?: string;
   text: string;
-  image?: string;
+  images?: string[];
   verifications: QuestVerification[];
   isVerified: boolean;
+  questId:string;
+  tags:string[];
+  createdAt:date;
+  userId:string;
 }
 
 export interface QuestVerification {

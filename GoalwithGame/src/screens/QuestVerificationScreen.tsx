@@ -1,23 +1,31 @@
 import React, { useState, useEffect } from 'react';
-
-interface VerificationMessage {
-  id: string;
-  user: { id: string; nickname: string; avatar: string };
-  text: string;
-  createdAt: string;
-}
-
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput, Alert, SafeAreaView } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useAppContext } from '../contexts/AppContext';
 import { StackNavigationProp } from '@react-navigation/stack';
 
+// Import types
+import { Quest } from '../types/quest.types';
+import { VerificationMessage } from '../types/feed.types';
+import { useAppContext } from '../contexts/AppContext';
+
+// Navigation types
 type RootStackParamList = {
   QuestVerification: { questId: string };
 };
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<RootStackParamList, 'QuestVerification'>;
+
+// Extended types for the screen
+interface QuestWithVerification extends Omit<Quest, 'records'> {
+  records: Array<{
+    id: string;
+    text: string;
+    image?: string;
+    createdAt: string;
+    verifications: VerificationMessage[];
+  }>;
+}
 
 const QuestVerificationScreen = () => {
   const navigation = useNavigation<QuestVerificationScreenNavigationProp>();
@@ -26,14 +34,26 @@ const QuestVerificationScreen = () => {
   
   const { quests, user } = useAppContext();
   const [verificationText, setVerificationText] = useState('');
-  const [quest, setQuest] = useState<any>(null);
-  const [record, setRecord] = useState<any>(null);
+  const [quest, setQuest] = useState<QuestWithVerification | null>(null);
+  const [record, setRecord] = useState<{
+    id: string;
+    text: string;
+    image?: string;
+    createdAt: string;
+    verifications: VerificationMessage[];
+  } | null>(null);
 
   // Mock data for when real data isn't available
-  const generateMockQuest = () => ({
+  const generateMockQuest = (): QuestWithVerification => ({
     id: questId,
     title: '샘플 퀘스트',
     description: '이것은 샘플 퀘스트입니다.',
+    isMain: false,
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    completed: false,
+    verificationRequired: true,
+    verificationCount: 0,
     requiredVerifications: 3,
     records: [{
       id: 'record-1',
@@ -41,8 +61,18 @@ const QuestVerificationScreen = () => {
       image: 'https://via.placeholder.com/300x200?text=Sample+Image',
       createdAt: new Date().toISOString(),
       verifications: [
-        { id: 'v1', user: { id: 'user2', nickname: '철수', avatar: '' }, text: '잘했어요!', createdAt: '...' },
-        { id: 'v2', user: { id: 'user3', nickname: '영희', avatar: '' }, text: '대단해요!', createdAt: '...' }
+        { 
+          id: 'v1', 
+          user: { id: 'user2', nickname: '철수', avatar: '' }, 
+          text: '잘했어요!', 
+          createdAt: new Date().toISOString() 
+        },
+        { 
+          id: 'v2', 
+          user: { id: 'user3', nickname: '영희', avatar: '' }, 
+          text: '대단해요!', 
+          createdAt: new Date().toISOString() 
+        }
       ]
     }]
   });
@@ -50,10 +80,33 @@ const QuestVerificationScreen = () => {
   useEffect(() => {
     const foundQuest = quests?.find(q => q.id === questId);
     if (foundQuest) {
-      setQuest(foundQuest);
+      // Cast the found quest to QuestWithVerification since we know the structure
+      const questWithVerification: QuestWithVerification = {
+        ...foundQuest,
+        records: foundQuest.records?.map(record => ({
+          id: record.id,
+          text: record.text,
+          image: record.images?.[0], // Take first image if available
+          createdAt: record.createdAt instanceof Date ? record.createdAt.toISOString() : record.createdAt || new Date().toISOString(),
+          verifications: (record.verifications || []).map(verification => ({
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            user: {
+              id: verification.userId,
+              nickname: 'User', // Default nickname
+              avatar: ''
+            },
+            text: 'Verified', // Default text since QuestVerification doesn't have a comment field
+            createdAt: verification.verifiedAt || new Date().toISOString()
+          }))
+        })) || []
+      };
+      setQuest(questWithVerification);
+      
       // Get the latest record for verification
-      const latestRecord = foundQuest.records?.[foundQuest.records.length - 1];
-      setRecord(latestRecord);
+      const latestRecord = questWithVerification.records[questWithVerification.records.length - 1];
+      if (latestRecord) {
+        setRecord(latestRecord);
+      }
     } else {
       // Use mock data if no quest is found
       const mockQuest = generateMockQuest();

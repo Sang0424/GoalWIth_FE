@@ -25,24 +25,6 @@ type ExtendedAppNavigatorParamList = AppNavigatorParamList & {
 // Define the navigation prop type
 type TeamScreenNavigationProp = NativeStackNavigationProp<ExtendedAppNavigatorParamList>;
 
-// Moved to types/team.types.d.ts
-/*
-interface Team {
-  id: string;
-  name: string;
-  members: string[];
-  leaderId: string;
-  feed: Array<{
-    id: string;
-    content: string;
-    image?: string;
-    createdAt: string;
-    userId: string;
-  }>;
-}
-*/
-
-// Define the root stack param list
 interface RootStackParamList {
   TeamScreen: undefined;
   TeamFeed: { teamId: string };

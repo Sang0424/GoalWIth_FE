@@ -6,22 +6,9 @@ import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { TextInput } from 'react-native';
 import type { AppNavigatorParamList } from '../navigation/types';
-import { UserRecord } from '../types';
-import { Quest } from '../types/quest.types';
+import { Quest, QuestRecord } from '../types/quest.types';
 
-interface QuestRecord {
-  id: string;
-  date: string;
-  text: string;
-  image?: string;
-  verifications: QuestVerification[];
-  isVerified: boolean;
-}
 
-interface QuestVerification {
-  userId: string;
-  verifiedAt: string;
-}
 
 const RecordAddScreen: React.FC = () => {
   const navigation = useNavigation<BottomTabNavigationProp<AppNavigatorParamList>>();
@@ -63,7 +50,7 @@ const RecordAddScreen: React.FC = () => {
   const handleSubmit = () => {
     if (!selectedQuest || !text) return;
     
-    const newRecord: Omit<UserRecord, 'id'> & { id: string } = {
+    const newRecord: QuestRecord  = {
       id: Date.now().toString(),
       questId: selectedQuest.id,
       text,
@@ -71,6 +58,8 @@ const RecordAddScreen: React.FC = () => {
       images,
       createdAt: new Date(),  // Changed to Date object
       userId: user.id,
+      verifications: [],
+      isVerified: false,
     };
 
     // Save the record

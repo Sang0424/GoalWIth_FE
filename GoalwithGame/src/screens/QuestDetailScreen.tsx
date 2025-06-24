@@ -111,14 +111,14 @@ const QuestDetailScreen = () => {
                   style={[
                     styles.progressFill, 
                     { 
-                      width: `${Math.min(100, Math.max(0, (quest.records.length / 7) * 100))}%`,
+                      width: `${Math.min(100, Math.max(0, (quest.records ? quest.records.length / 7 : 0) * 100))}%`,
                       backgroundColor: quest.isMain ? '#4a90e2' : '#a0a0a0',
                     }
                   ]} 
                 />
               </View>
               <Text style={styles.progressText}>
-                {quest.records.length}일차
+                {quest.records?.length ?? 0}일차
               </Text>
             </View>
           </View>
@@ -128,21 +128,21 @@ const QuestDetailScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>기록 타임라인</Text>
           
-          {quest.records.length === 0 ? (
+          {quest.records?.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="time-outline" size={50} color="#ccc" />
               <Text style={styles.emptyStateText}>아직 기록이 없습니다.</Text>
               <Text style={styles.emptyStateSubtext}>오늘의 활동을 기록해보세요!</Text>
             </View>
           ) : (
-            quest.records.map((record) => (
+            quest.records?.map((record) => (
               <View key={record.id} style={styles.recordCard}>
                 <View style={styles.recordHeader}>
-                  <Text style={styles.recordDate}>{formatDate(record.date)}</Text>
+                  <Text style={styles.recordDate}>{formatDate(record.date || '')}</Text>
                 </View>
-                {record.image && (
+                {record.images && (
                   <Image 
-                    source={{ uri: record.image }} 
+                    source={{ uri: record.images[0] }} 
                     style={styles.recordImage} 
                     resizeMode="cover"
                   />

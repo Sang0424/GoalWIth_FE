@@ -5,7 +5,7 @@ export interface Team {
   members: string[];
   leaderId: string;
   isPublic?: boolean;
-  feed?: TeamPost[];
+  feed: TeamPost[];
   createdAt?: string;
 }
 
