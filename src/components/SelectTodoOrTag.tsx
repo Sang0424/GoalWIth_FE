@@ -4,7 +4,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AddFeedNavParmList } from '../types/navigation';
-import BottomSheet from './AddTodo_BottomSheet';
+import BottomSheet from './BottomSheet';
 import { useState } from 'react';
 import { Todo, Tag } from '../types/todos';
 

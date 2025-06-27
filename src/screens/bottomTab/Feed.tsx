@@ -119,7 +119,7 @@ export default function Feed({
         )}
         initialScrollIndex={0}
         onScrollToIndexFailed={info => {
-          const wait = new Promise(resolve => setTimeout(resolve, 500));
+          const wait = new Promise<unknown>((resolve) => setTimeout(() => resolve(undefined), 500));
           wait.then(() => {
             flatListRef.current?.scrollToIndex({
               index: info.index,

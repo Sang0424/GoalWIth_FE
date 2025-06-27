@@ -1,6 +1,6 @@
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import PeersNav from './PeersNav';
-import CustomDrawerContent from '../peers/CustomDrawerContent';
+import CustomDrawerContent from '../screens/peers/CustomDrawerContent';
 
 const Drawer = createDrawerNavigator();
 
