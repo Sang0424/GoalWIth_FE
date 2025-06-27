@@ -1356,7 +1356,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-safe-area-context (5.4.0):
+  - react-native-safe-area-context (5.4.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1371,8 +1371,8 @@ PODS:
     - React-hermes
     - React-ImageManager
     - React-jsi
-    - react-native-safe-area-context/common (= 5.4.0)
-    - react-native-safe-area-context/fabric (= 5.4.0)
+    - react-native-safe-area-context/common (= 5.4.1)
+    - react-native-safe-area-context/fabric (= 5.4.1)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -1382,7 +1382,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-safe-area-context/common (5.4.0):
+  - react-native-safe-area-context/common (5.4.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1406,7 +1406,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-safe-area-context/fabric (5.4.0):
+  - react-native-safe-area-context/fabric (5.4.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1779,6 +1779,30 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - RNDateTimePicker (8.4.2):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - RNGestureHandler (2.25.0):
     - DoubleConversion
     - glog
@@ -2081,6 +2105,7 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
+  - "RNDateTimePicker (from `../node_modules/@react-native-community/datetimepicker`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
@@ -2239,6 +2264,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   RNCAsyncStorage:
     :path: "../node_modules/@react-native-async-storage/async-storage"
+  RNDateTimePicker:
+    :path: "../node_modules/@react-native-community/datetimepicker"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
   RNReanimated:
@@ -2290,7 +2317,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 206115a22168bd42d6ef21acfe5eb5b39589ed53
   React-microtasksnativemodule: 32f7f13d65525e981e9a5b28cebad7d10e0ff711
   react-native-image-picker: e68d357de2bb65f72b0542357ad9e981fe87fed3
-  react-native-safe-area-context: 00d03dc688ba86664be66f9e3f203fc7d747d899
+  react-native-safe-area-context: dc279397abf103b0577f48c548630b7e639646a7
   react-native-splash-screen: 4312f786b13a81b5169ef346d76d33bc0c6dc457
   React-NativeModulesApple: 6d750bb9829fdf0f02c56e9a68cbb390e1f5de25
   React-oscompat: 74eb4badd12e93899f37a5dbb03d8a638011a292
@@ -2324,6 +2351,7 @@ SPEC CHECKSUMS:
   ReactCodegen: 3288d61658273d72fbd348a74b59710b9790615f
   ReactCommon: 9f975582dc535de1de110bdb46d4553140a77541
   RNCAsyncStorage: c1bbcf629d7206d1e19310827848b98d68a4cbaf
+  RNDateTimePicker: dd783850814745855f5b37b4cbaf5a3de771ee70
   RNGestureHandler: 5d8431415d4b8518e86e289e9ad5bb9be78f6dba
   RNReanimated: 545804773901a0ccb384b8700e6d66efa0bffaa3
   RNScreens: c5c07a86e4088ce92f0d3854082250dfa9c61f75

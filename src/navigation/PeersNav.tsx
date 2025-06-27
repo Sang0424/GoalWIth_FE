@@ -1,7 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { PeersNavParamList } from '../types/navigation';
 import Peers from '../screens/bottomTab/Peers';
-import PeerRequest from '../peers/PeerRequest';
+import PeerRequest from '../screens/peers/PeerRequest';
 
 const Stack = createNativeStackNavigator<PeersNavParamList>();
 

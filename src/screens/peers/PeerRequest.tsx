@@ -2,12 +2,12 @@ import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useState } from 'react';
-import UserCard from '../components/UserCard';
+import UserCard from '../../components/UserCard';
 import { useQuery } from '@tanstack/react-query';
-import instance from '../utils/axiosInterceptor';
+import instance from '../../utils/axiosInterceptor';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { PeersNavParamList } from '../types/navigation';
-import BackArrow from '../components/BackArrow';
+import { PeersNavParamList } from '../../types/navigation';
+import BackArrow from '../../components/BackArrow';
 
 type Props = NativeStackScreenProps<PeersNavParamList, 'PeerRequest'>;
 

@@ -5,8 +5,8 @@ import {
 } from '@react-navigation/drawer';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import instance from '../utils/axiosInterceptor';
-import { userStore } from '../store/userStore';
+import instance from '../../utils/axiosInterceptor';
+import { userStore } from '../../store/userStore';
 import {
   SafeAreaView,
   useSafeAreaInsets,
