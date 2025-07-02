@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -12,38 +12,44 @@ import {
   Platform,
 } from 'react-native';
 import BigLogo from '../../components/Logo';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import type {
   OnBoardingStackParamList,
   OnBoarding3Props,
 } from '../../types/navigation';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useRef, useState } from 'react';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {useRef, useState} from 'react';
 import React from 'react';
-import { isFormFilled } from '../../utils/isFormFilled';
+import {isFormFilled} from '../../utils/isFormFilled';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import instance from '../../utils/axiosInterceptor';
+import {useMutation} from '@tanstack/react-query';
+import {tokenStore} from '../../store/tokenStore';
+import {userStore} from '../../store/userStore';
 
-export default function OnBoarding3({ route }: OnBoarding3Props) {
-  const { registerForm } = route.params;
-  const { width } = useWindowDimensions();
+export default function OnBoarding3({route}: OnBoarding3Props) {
+  const {registerForm} = route.params;
+  const {width} = useWindowDimensions();
   const navigation =
     useNavigation<NativeStackNavigationProp<OnBoardingStackParamList>>();
   const roleRef = useRef<TextInput>(null);
+  const {setAccessToken} = tokenStore(state => state.actions);
+  const loadUser = userStore(state => state.loadUser);
   const [userInfo, setUserInfo] = useState({
     nick: '',
-    role: '',
+    userType: '',
   });
   const [error, setError] = useState<
     Partial<{
       nick: string;
-      role: string;
+      userType: string;
     }>
   >({});
   const validateUserInfo = () => {
     let isValid = true;
     const errorMsg: Partial<{
       nick: string;
-      role: string;
+      userType: string;
     }> = {};
     if (userInfo.nick.length < 2) {
       errorMsg.nick = '닉네임은 2글자 이상이어야 합니다.';
@@ -52,83 +58,89 @@ export default function OnBoarding3({ route }: OnBoarding3Props) {
       errorMsg.nick = '닉네임을 입력해주세요.';
       isValid = false;
     }
-    if (userInfo.role.length < 2) {
-      errorMsg.role = '직업을 입력해주세요.';
+    if (userInfo.userType.length < 2) {
+      errorMsg.userType = '직업을 입력해주세요.';
       isValid = false;
-    } else if (!userInfo.role) {
-      errorMsg.role = '직업을 입력해주세요.';
+    } else if (!userInfo.userType) {
+      errorMsg.userType = '직업을 입력해주세요.';
       isValid = false;
     }
     setError(errorMsg);
     return isValid;
   };
-  // const storeData = async (value: {
-  //   nick: string;
-  //   role: string;
-  //   goal?: string;
-  // }) => {
-  //   try {
-  //     const jsonValue = JSON.stringify(value);
-  //     await AsyncStorage.setItem('userInfo', jsonValue);
-  //   } catch (e) {
-  //     console.log(e);
-  //   }
-  // };
+  const register = async () => {
+    const userData = {
+      ...userInfo,
+      ...registerForm,
+    };
+    const response = await instance.post(`/users/signup`, userData);
+    const {access_token, refresh_token} = response.data;
+    setAccessToken(access_token);
+    await AsyncStorage.setItem('refresh_token', refresh_token);
+    await loadUser();
+  };
+  const {mutate} = useMutation({
+    mutationFn: register,
+    onSuccess: () => {
+      navigation.navigate('BottomNav');
+    },
+    onError: error => {
+      console.error(error);
+    },
+  });
+  const submitRegister = () => {
+    mutate();
+  };
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <SafeAreaView style={styles.container}>
-        <View style={{ flex: 1, justifyContent: 'center' }}>
+        <View style={{flex: 1, justifyContent: 'center'}}>
           <BigLogo />
         </View>
         <KeyboardAvoidingView
-          style={{ flex: 3, justifyContent: 'flex-start' }}
+          style={{flex: 3, justifyContent: 'flex-start'}}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-        >
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
           <TextInput
             value={userInfo.nick}
             placeholder="닉네임"
             enterKeyHint="next"
             autoCapitalize="none"
             autoCorrect={false}
-            style={[styles.input, { width: width - 70, height: 40 }]}
+            style={[styles.input, {width: width - 70, height: 40}]}
             onSubmitEditing={() => roleRef.current?.focus()}
-            onChangeText={text => setUserInfo({ ...userInfo, nick: text })}
+            onChangeText={text => setUserInfo({...userInfo, nick: text})}
           />
           {error.nick && <Text style={styles.errorMsg}>{error.nick}</Text>}
           <TextInput
-            value={userInfo.role}
-            placeholder="사용자 역할 ex)학생, 대학생, 직장인 ..."
+            value={userInfo.userType}
+            placeholder="사용자 유형 ex)학생, 대학생, 직장인 ..."
             enterKeyHint="done"
             autoCapitalize="none"
             autoCorrect={false}
-            style={[styles.input, { width: width - 70, height: 40 }]}
-            onChangeText={text => setUserInfo({ ...userInfo, role: text })}
+            style={[styles.input, {width: width - 70, height: 40}]}
+            onChangeText={text => setUserInfo({...userInfo, userType: text})}
           />
-          {error.role && <Text style={styles.errorMsg}>{error.role}</Text>}
+          {error.userType && (
+            <Text style={styles.errorMsg}>{error.userType}</Text>
+          )}
           <Pressable
             style={[
               isFormFilled(userInfo)
                 ? styles.registerBtn
                 : styles.registerBtnDisabled,
-              { width: width - 54, height: 64 },
+              {width: width - 54, height: 64},
             ]}
             onPress={() => {
               validateUserInfo();
-              validateUserInfo() &&
-                navigation.navigate(
-                  'LastOnBoarding',
-                  Object.assign({}, registerForm, userInfo),
-                );
-            }}
-          >
+              validateUserInfo() && submitRegister();
+            }}>
             <Text
               style={{
                 textAlign: 'center',
                 fontSize: 24,
                 fontWeight: 'bold',
-              }}
-            >
+              }}>
               가입하기
             </Text>
           </Pressable>

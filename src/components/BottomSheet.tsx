@@ -34,12 +34,15 @@ import Animated, {
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
+import type {Quest} from '../types/quest.types';
+import {useQuestStore} from '../store/mockData';
 
 interface BottomSheetProps {
   todoModalVisible: boolean;
   settodoModalVisible: (visible: boolean) => void;
   whatTodo?: string;
   isMainQuest?: boolean;
+  quests?: Quest[];
 }
 
 const BottomSheet = ({
@@ -57,21 +60,18 @@ const BottomSheet = ({
   const translateY = useSharedValue(screenHeight);
   const context = useSharedValue({y: 0});
 
-  const handleSubmit = async (event: GestureResponderEvent) => {
-    if (newQuestTitle == '') {
-      Alert.alert('할 일을 입력해주세요.');
-    } else {
-      event.preventDefault();
-      const formData = new FormData();
-      formData.append('title', newQuestTitle);
-      formData.append('isMain', String(isMainQuest));
-      if (whatTodo) {
-        formData.append('whatTodo', whatTodo);
-      }
-      console.log('Creating quest with isMain:', isMainQuest);
-      // mutate(formData);
-    }
-  };
+  const {quests, addQuest} = useQuestStore();
+  const [newQuestTitle, setNewQuestTitle] = useState('');
+  const [newQuestDescription, setNewQuestDescription] = useState('');
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(
+    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  ); // Default to 1 week from now
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [verificationRequired, setVerificationRequired] = useState(false);
+  const [requiredVerifications, setRequiredVerifications] = useState(3);
+
   // Handle date change for date pickers with proper typing
   const onStartDateChange = (
     event: DateTimePickerEvent,
@@ -166,59 +166,6 @@ const BottomSheet = ({
     closeDatePickers();
     settodoModalVisible(false);
   }, []);
-  // const resetBottomSheet = Animated.timing(panY, {
-  //   toValue: 0,
-  //   duration: 300,
-  //   useNativeDriver: true,
-  // });
-
-  // const closeBottomSheet = Animated.timing(panY, {
-  //   toValue: screenHeight,
-  //   duration: 100,
-  //   useNativeDriver: true,
-  // });
-
-  // const panResponders = useRef(
-  //   PanResponder.create({
-  //     onStartShouldSetPanResponder: () => true,
-  //     onMoveShouldSetPanResponder: () => false,
-  //     onPanResponderMove: (event, gestureState) => {
-  //       panY.setValue(gestureState.dy);
-  //     },
-  //     onPanResponderRelease: (event, gestureState) => {
-  //       if (gestureState.dy > 0 && gestureState.vy > 1.5) {
-  //         closeModal();
-  //       } else {
-  //         resetBottomSheet.start();
-  //       }
-  //     },
-  //   }),
-  // ).current;
-
-  // useEffect(() => {
-  //   if (props.todoModalVisible) {
-  //     resetBottomSheet.start();
-  //     closeDatePickers();
-  //   }
-  // }, [props.todoModalVisible]);
-
-  // const closeModal = () => {
-  //   closeBottomSheet.start(() => {
-  //     closeDatePickers();
-  //     settodoModalVisible(false);
-  //   });
-  // };
-
-  const [newQuestTitle, setNewQuestTitle] = useState('');
-  const [newQuestDescription, setNewQuestDescription] = useState('');
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(
-    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-  ); // Default to 1 week from now
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  const [verificationRequired, setVerificationRequired] = useState(false);
-  const [requiredVerifications, setRequiredVerifications] = useState(3);
 
   // ********* Backend랑 연결 부분 *********
   // const fetchData = async (formData: FormData) => {
@@ -241,7 +188,53 @@ const BottomSheet = ({
   //     setTitle('');
   //   },
   // });
+  // const handleSubmit = async (event: GestureResponderEvent) => {
+  //   if (newQuestTitle == '') {
+  //     Alert.alert('할 일을 입력해주세요.');
+  //   } else {
+  //     event.preventDefault();
+  //     const formData = new FormData();
+  //     formData.append('title', newQuestTitle);
+  //     formData.append('isMain', String(isMainQuest));
+  //     formData.append('startDate', startDate.toISOString());
+  //     formData.append('endDate', endDate.toISOString());
+  //     formData.append('verificationRequired', String(verificationRequired));
+  //     formData.append('requiredVerifications', String(requiredVerifications));
+  //     if (whatTodo) {
+  //       formData.append('whatTodo', whatTodo);
+  //     }
+  //     console.log('Creating quest with isMain:', isMainQuest);
+  //     // mutate(formData);
+  //   }
+  // };
   // ********* Backend랑 연결 부분 *********
+
+  // ********* Frontend test *********
+  const handleSubmit = () => {
+    addQuest({
+      title: newQuestTitle,
+      description: newQuestDescription,
+      isMain: isMainQuest,
+      startDate: startDate,
+      endDate: endDate,
+      completed: false,
+      verificationRequired: verificationRequired,
+      verificationCount: 0,
+      requiredVerifications: requiredVerifications,
+      category: 'category1',
+    });
+    setNewQuestTitle('');
+    setNewQuestDescription('');
+    setStartDate(new Date());
+    setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    setVerificationRequired(false);
+    setRequiredVerifications(3);
+    setShowStartDatePicker(false);
+    setShowEndDatePicker(false);
+    closeModalImmediately();
+    Keyboard.dismiss();
+  };
+  // ********* Frontend test *********
 
   return (
     <SafeAreaView>

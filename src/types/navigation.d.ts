@@ -1,5 +1,5 @@
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { Todo } from './todos';
+import {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
+import {Todo} from './todos';
 
 export type OnBoardingStackParamList = {
   OnBoarding1: any;
@@ -11,10 +11,6 @@ export type OnBoardingStackParamList = {
       password: string;
     };
   };
-  LastOnBoarding: {
-    nick: string;
-    role: string;
-  };
   Login: undefined;
   BottomNav: undefined;
 };
@@ -23,12 +19,6 @@ export type OnBoarding3Props = NativeStackScreenProps<
   OnBoardingStackParamList,
   'OnBoarding3'
 >;
-
-export type LastOnBoardingProps = NativeStackScreenProps<
-  OnBoardingStackParamList,
-  'LastOnBoarding'
->;
-
 export type BottomTabParamList = {
   HomeNav: undefined;
   FeedNav: undefined;
@@ -48,8 +38,8 @@ export type MyPageProps = BottomTabNavigationProp<
 
 export type HomeNavParamList = {
   Home: undefined;
-  MyFeed: { todo: Todo };
-  PostDetail: { feed_id: number | undefined };
+  QuestFeed: {questId: string};
+  PostDetail: {feed_id: number | undefined};
   AddFeedNav: {
     screen: string;
     params: {
@@ -64,11 +54,14 @@ export type HomeNavParamList = {
   };
 };
 
-export type MyFeedProps = NativeStackNavigationProp<HomeNavParamList, 'MyFeed'>;
+export type QuestFeedProps = NativeStackNavigationProp<
+  HomeNavParamList,
+  'QuestFeed'
+>;
 
 export type FeedNavParamList = {
   Feed: undefined;
-  PostDetail: { feed_id: number; index?: number };
+  PostDetail: {feed_id: number; index?: number};
 };
 
 export type AddFeedNavParmList = {
@@ -82,7 +75,7 @@ export type AddFeedNavParmList = {
     };
   };
   SelectTodo: {
-    feed: { todo?: string; tag?: string; content?: stirng };
+    feed: {todo?: string; tag?: string; content?: stirng};
     setFeed: React.Dispatch<
       React.SetStateAction<{
         todo: string;
@@ -109,7 +102,7 @@ export type AddFeedNavParmList = {
   };
   BottomNav: {
     screen: string;
-    params: { screen: string; params: { feed_id: number } };
+    params: {screen: string; params: {feed_id: number}};
   };
 };
 export type AddFeedProps = NativeStackNavigationProp<

@@ -16,12 +16,12 @@ import {
   ListRenderItem,
   FlatList,
   useWindowDimensions,
+  Image,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Logo from '../../components/Logo';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useEffect, useState} from 'react';
-import type {Todo} from '../../types/todos';
 import BottomSheet from '../../components/BottomSheet';
 import {useNavigation} from '@react-navigation/native';
 import {HomeNavParamList} from '../../types/navigation';
@@ -32,6 +32,7 @@ import {userStore} from '../../store/userStore';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import type {Quest} from '../../types/quest.types';
 import type {User} from '../../types/user.types';
+import {useQuestStore} from '../../store/mockData';
 
 const defaultUser: User = {
   id: '',
@@ -46,39 +47,8 @@ const defaultUser: User = {
   // Note: Removed createdAt and updatedAt as they're not in the User type
 };
 
-const quests: Quest[] = [
-  // {
-  //   id: '1',
-  //   title: 'Quest 1',
-  //   description: 'Description 1',
-  //   isMain: true,
-  //   startDate: new Date(),
-  //   endDate: new Date(),
-  //   completed: false,
-  //   verificationRequired: true,
-  //   verificationCount: 0,
-  //   requiredVerifications: 5,
-  //   records: [],
-  //   category: 'category1',
-  // },
-  // {
-  //   id: '2',
-  //   title: 'Quest 2',
-  //   description: 'Description 2',
-  //   isMain: false,
-  //   startDate: new Date(),
-  //   endDate: new Date(),
-  //   completed: false,
-  //   verificationRequired: true,
-  //   verificationCount: 0,
-  //   requiredVerifications: 5,
-  //   records: [],
-  //   category: 'category2',
-  // },
-];
-
 export default function Home() {
-  const {width} = useWindowDimensions();
+  const {quests} = useQuestStore();
   const [modalVisible, setModalVisible] = useState(false);
   const [isAddingMainQuest, setIsAddingMainQuest] = useState(false);
   const navigation =
@@ -140,12 +110,76 @@ export default function Home() {
   const QuestItem = ({quest}: {quest: Quest}) => {
     if (!quest) return null;
 
+    // Original date calculations
     const startDate = quest.startDate
       ? new Date(quest.startDate).toLocaleDateString()
       : 'No start date';
     const endDate = quest.endDate
       ? new Date(quest.endDate).toLocaleDateString()
       : 'No end date';
+
+    // New date calculations
+    const now = new Date();
+    const endDateObj = quest.endDate ? new Date(quest.endDate) : null;
+    const timeDiff = endDateObj ? endDateObj.getTime() - now.getTime() : 0;
+    const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+    const isDeadlineClose = daysRemaining <= 3 && daysRemaining >= 0;
+
+    // Progress calculation functions
+    const calculateProgressPercentage = () => {
+      if (!quest.startDate || !quest.endDate) return 0;
+
+      const start = new Date(quest.startDate).getTime();
+      const end = new Date(quest.endDate).getTime();
+      const now = new Date().getTime();
+
+      const totalDuration = end - start;
+      const elapsed = now - start;
+
+      return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+    };
+
+    const calculateProgressText = () => {
+      if (quest.completed) return '완료됨';
+
+      const percentage = calculateProgressPercentage();
+      if (quest.verificationRequired) {
+        return `인증 ${quest.verificationCount || 0} / ${
+          quest.requiredVerifications || 0
+        }`;
+      }
+      return `${Math.round(percentage)}% 완료`;
+    };
+
+    // Reward calculation
+    const calculateReward = () => {
+      const baseExp = 50;
+      const timelineBonus = (quest.records?.length || 0) * 10;
+      const verificationBonus = quest.verificationRequired
+        ? (quest.verificationCount || 0) * 10
+        : 0;
+
+      return baseExp + timelineBonus + verificationBonus;
+    };
+
+    // Format date range
+    const formatDateRange = (startDate: string, endDate: string) => {
+      if (!startDate || !endDate) return '기간 미정';
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      const formatDay = (date: Date) => {
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][
+          date.getDay()
+        ];
+        return `${month}.${day}(${dayOfWeek})`;
+      };
+
+      return `${formatDay(start)} ~ ${formatDay(end)}`;
+    };
 
     const cardStyle: ViewStyle[] = [
       styles.questCard,
@@ -156,67 +190,64 @@ export default function Home() {
         ? [styles.completedCard]
         : []),
     ];
+
     const handleCompleteQuest = (quest: Quest) => {
-      // If verification is required, navigate to verification screen
       if (quest.verificationRequired) {
-        // navigation.navigate('QuestVerification', { questId: quest.id } as any);
         Alert.alert('인증 필요!', '인증을 완료해주세요!');
       } else {
-        // Otherwise, complete the quest directly
-        // @ts-ignore - completeQuest will be available from AppContext
-        //completeQuest(quest.id);
         Alert.alert('퀘스트 완료!', '퀘스트를 완료했습니다!');
       }
     };
 
     return (
       <TouchableOpacity
-        style={cardStyle}
-        // onPress={() => navigation.navigate('QuestDetail', { questId: quest.id })}
-      >
-        <View style={styles.questHeader}>
-          <Text style={styles.questTitle} numberOfLines={1}>
-            {quest.title}
-          </Text>
+        onPress={() => navigation.navigate('QuestFeed', {questId: quest.id})}>
+        <View style={cardStyle}>
+          {/* New UI Implementation */}
+          <View style={styles.cardHeader}>
+            <View style={styles.titleRow}>
+              <Text style={styles.questTitle} numberOfLines={1}>
+                {quest.title}
+              </Text>
+              <View style={styles.statusBadge}>
+                {quest.isMain && <Text style={styles.mainBadge}>MAIN</Text>}
+                <Text style={styles.verificationBadge}>
+                  {quest.verificationRequired ? '인증필요' : '자유퀘스트'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Progress Bar */}
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {width: `${calculateProgressPercentage()}%`},
+                  ]}
+                />
+              </View>
+              <Text style={styles.progressText}>{calculateProgressText()}</Text>
+            </View>
+          </View>
+
+          {/* Date Info */}
+          <View style={styles.dateInfo}>
+            <Text style={styles.dateText}>
+              {formatDateRange(String(quest.startDate), String(quest.endDate))}
+              {isDeadlineClose && (
+                <Text style={styles.deadlineText}>
+                  · {daysRemaining === 0 ? '오늘 마감!' : `D-${daysRemaining}`}
+                </Text>
+              )}
+            </Text>
+          </View>
+
+          {/* Reward Info */}
+          <View style={styles.rewardInfo}>
+            <Text style={styles.rewardText}>보상: {calculateReward()} EXP</Text>
+          </View>
         </View>
-        <TouchableOpacity
-          style={[
-            styles.completeButton,
-            quest.completed ||
-            (quest.requiredVerifications &&
-              (quest.verificationCount ?? 0) >=
-                (quest.requiredVerifications ?? 0))
-              ? styles.completedButton
-              : null,
-          ]}
-          onPress={() => handleCompleteQuest(quest)}
-          disabled={
-            quest.completed ||
-            (quest.requiredVerifications
-              ? (quest.verificationCount ?? 0) >=
-                (quest.requiredVerifications ?? 0)
-              : false)
-          }>
-          <Text style={styles.completeButtonText}>
-            {quest.completed ||
-            (quest.requiredVerifications &&
-              (quest.verificationCount ?? 0) >=
-                (quest.requiredVerifications ?? 0))
-              ? quest.requiredVerifications &&
-                (quest.verificationCount ?? 0) >=
-                  (quest.requiredVerifications ?? 0)
-                ? '인증 완료'
-                : '완료됨'
-              : '완료하기'}
-            {quest.verificationRequired &&
-              !quest.completed &&
-              ` (${quest.verificationCount ?? 0}${
-                quest.requiredVerifications
-                  ? `/${quest.requiredVerifications}`
-                  : ''
-              })`}
-          </Text>
-        </TouchableOpacity>
       </TouchableOpacity>
     );
   };
@@ -278,12 +309,14 @@ export default function Home() {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>메인 퀘스트</Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    setModalVisible(true);
-                  }}>
-                  <Text style={styles.sectionLink}>+ 추가</Text>
-                </TouchableOpacity>
+                {!mainQuest && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setModalVisible(true);
+                    }}>
+                    <Text style={styles.sectionLink}>+ 추가</Text>
+                  </TouchableOpacity>
+                )}
               </View>
               {mainQuest ? (
                 <QuestItem quest={mainQuest} />
@@ -308,20 +341,24 @@ export default function Home() {
                   {subQuests.map(quest => (
                     <QuestItem key={quest.id} quest={quest} />
                   ))}
-                  <TouchableOpacity style={styles.addQuestButton}>
-                    <Text style={styles.addButtonText}>
-                      새로운 퀘스트 추가하기
-                    </Text>
-                  </TouchableOpacity>
                 </>
               ) : (
                 renderEmptyState(false)
               )}
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => {
+                  setIsAddingMainQuest(false);
+                  setModalVisible(true);
+                }}>
+                <Text style={styles.addButtonText}>{'서브 퀘스트 추가'}</Text>
+              </TouchableOpacity>
             </View>
             <BottomSheet
               todoModalVisible={modalVisible}
               settodoModalVisible={setModalVisible}
               isMainQuest={isAddingMainQuest}
+              quests={quests}
             />
           </ScrollView>
         </TouchableWithoutFeedback>
@@ -330,6 +367,42 @@ export default function Home() {
   );
 }
 const styles = StyleSheet.create({
+  cardHeader: {
+    marginBottom: 12,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  mainBadge: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#fff',
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  verificationBadge: {
+    fontSize: 10,
+    color: '#4A90E2',
+    backgroundColor: '#E8F2FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  dateInfo: {
+    marginBottom: 8,
+  },
+  rewardInfo: {
+    marginTop: 4,
+  },
   completedCard: {
     backgroundColor: '#f0f9f0',
     borderLeftWidth: 4,
@@ -403,34 +476,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FF9800',
-  },
-
-  categoryContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 10,
-  },
-  categoryButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    backgroundColor: '#f0f0f0',
-    marginRight: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  categoryButtonActive: {
-    backgroundColor: '#E3F2FD',
-    borderColor: '#2196F3',
-  },
-  categoryText: {
-    fontSize: 14,
-    color: '#555',
-  },
-  categoryTextActive: {
-    color: '#1565C0',
-    fontWeight: '600',
   },
   completeButton: {
     backgroundColor: '#4CAF50',
@@ -560,6 +605,7 @@ const styles = StyleSheet.create({
   },
   questHeader: {
     marginBottom: 8,
+    gap: 8,
   },
   questTitle: {
     fontSize: 16,
@@ -575,9 +621,75 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  questDate: {
+  verificationStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  verificationText: {
+    fontSize: 12,
+    color: '#666',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginRight: 8,
+  },
+  deadlineText: {
+    fontSize: 12,
+    color: '#ff4d4f',
+    fontWeight: 'bold',
+  },
+  timelinePreview: {
+    marginTop: 12,
+  },
+  timelineCount: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  timelineImages: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
+  timelineThumbnail: {
+    width: 40,
+    height: 40,
+    borderRadius: 4,
+    marginRight: 4,
+    backgroundColor: '#f0f0f0',
+  },
+  rewardSection: {
+    marginTop: 12,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  rewardText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1890ff',
+  },
+  rewardDetail: {
+    fontSize: 10,
+    color: '#999',
+    marginTop: 2,
+  },
+  dateRangeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  dateText: {
     fontSize: 12,
     color: '#6c757d',
+    marginRight: 8,
+  },
+  dateRangeText: {
+    fontSize: 11,
+    color: '#adb5bd',
+    fontStyle: 'italic',
   },
   questStatus: {
     width: 12,
@@ -609,6 +721,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
+    alignItems: 'center',
   },
   addButtonText: {
     color: '#fff',
