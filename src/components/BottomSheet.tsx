@@ -217,11 +217,10 @@ const BottomSheet = ({
       isMain: isMainQuest,
       startDate: startDate,
       endDate: endDate,
-      completed: false,
+      procedure: 'progress',
       verificationRequired: verificationRequired,
       verificationCount: 0,
       requiredVerifications: requiredVerifications,
-      category: 'category1',
     });
     setNewQuestTitle('');
     setNewQuestDescription('');

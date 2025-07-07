@@ -6,15 +6,15 @@ import {
   Animated,
   useWindowDimensions,
 } from 'react-native';
-import type { ImageType } from '../types/todos';
-import { API_URL } from '@env';
-import { FlatList } from 'react-native-gesture-handler';
+import type {ImageType} from '../types/todos';
+// import {API_URL} from '@env';
+import {FlatList} from 'react-native-gesture-handler';
 
-const ImageCarousel = ({ images }: { images: ImageType[] }) => {
+const ImageCarousel = ({images}: {images: any[]}) => {
   const scrollX = new Animated.Value(0);
   const [activeIndex, setActiveIndex] = React.useState(0);
-  const { width } = useWindowDimensions();
-  const ITEM_WIDTH = width - 32;
+  const {width} = useWindowDimensions();
+  const ITEM_WIDTH = width - 70;
 
   //   const onScroll = (event: any) => {
   //     const slideSize = event.nativeEvent.layoutMeasurement.width;
@@ -29,7 +29,7 @@ const ImageCarousel = ({ images }: { images: ImageType[] }) => {
     setActiveIndex(currentIndex);
   };
   return (
-    <View style={{ width: ITEM_WIDTH, height: ITEM_WIDTH }}>
+    <View style={{width: ITEM_WIDTH, height: ITEM_WIDTH}}>
       <FlatList
         data={images}
         horizontal
@@ -38,16 +38,16 @@ const ImageCarousel = ({ images }: { images: ImageType[] }) => {
         snapToAlignment="center"
         snapToInterval={ITEM_WIDTH}
         onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false, listener: onScroll },
+          [{nativeEvent: {contentOffset: {x: scrollX}}}],
+          {useNativeDriver: false, listener: onScroll},
         )}
         nestedScrollEnabled={true}
         decelerationRate="fast"
         bounces={false}
-        ItemSeparatorComponent={() => <View style={{ width: 8 }} />}
-        renderItem={({ item }) => (
+        ItemSeparatorComponent={() => <View style={{width: 8}} />}
+        renderItem={({item}) => (
           <Image
-            source={{ uri: API_URL + item.url }}
+            source={{uri: item}}
             style={{
               width: ITEM_WIDTH,
               height: 300,
@@ -71,8 +71,7 @@ const ImageCarousel = ({ images }: { images: ImageType[] }) => {
             position: 'absolute',
             bottom: 0,
             alignSelf: 'center',
-          }}
-        >
+          }}>
           {images.map((_, index) => {
             const opacity = scrollX.interpolate({
               inputRange: [

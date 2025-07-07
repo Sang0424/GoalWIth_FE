@@ -1,10 +1,6 @@
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import QuestFeed from '../screens/home/QuestFeed';
 import Home from '../screens/bottomTab/Home';
-// import FeedNav from './FeedNav';
-import PostDetail from '../screens/feed/PostDetail';
-import AddFeedNav from './AddFeedNav';
-import AddFeed from '../screens/bottomTab/AddFeed';
 import type {HomeNavParamList} from '../types/navigation';
 
 const Stack = createNativeStackNavigator<HomeNavParamList>();
@@ -18,8 +14,6 @@ export default function HomeNav() {
       }}>
       <Stack.Screen name={'Home'} component={Home} />
       <Stack.Screen name={'QuestFeed'} component={QuestFeed} />
-      <Stack.Screen name={'PostDetail'} component={PostDetail} />
-      <Stack.Screen name={'AddFeedNav'} component={AddFeedNav} />
     </Stack.Navigator>
   );
 }

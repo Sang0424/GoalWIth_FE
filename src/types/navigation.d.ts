@@ -21,9 +21,9 @@ export type OnBoarding3Props = NativeStackScreenProps<
 >;
 export type BottomTabParamList = {
   HomeNav: undefined;
-  FeedNav: undefined;
+  VerificationNav: undefined;
   MyPage: undefined;
-  AddFeedNav: undefined;
+  TeamNav: undefined;
   Peers: undefined;
 };
 export type HomeProps = BottomTabNavigationProp<
@@ -57,6 +57,16 @@ export type HomeNavParamList = {
 export type QuestFeedProps = NativeStackNavigationProp<
   HomeNavParamList,
   'QuestFeed'
+>;
+
+export type VerificationNavParamList = {
+  Verification: undefined;
+  QuestVerification: {questId: string};
+};
+
+export type QuestVerificationProps = NativeStackNavigationProp<
+  VerificationNavParamList,
+  'QuestVerification'
 >;
 
 export type FeedNavParamList = {
@@ -121,3 +131,12 @@ export type PeersNavParamList = {
 
 type NavigationProp = DrawerNavigationProp<any> &
   NativeStackNavigationProp<PeersNavParamList>;
+
+export type TeamNavParamList = {
+  TeamScreen: undefined;
+  TeamCreate: undefined;
+};
+export type TeamProps = NativeStackNavigationProp<
+  TeamNavParamList,
+  'TeamScreen'
+>;

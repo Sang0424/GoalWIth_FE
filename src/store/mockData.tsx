@@ -11,12 +11,11 @@ const initialQuests: Quest[] = [
     isMain: true,
     startDate: new Date('2025-06-01'),
     endDate: new Date('2025-12-31'),
-    completed: false,
     verificationRequired: true,
     verificationCount: 5,
     requiredVerifications: 30,
     records: [],
-    category: 'self_improvement',
+    procedure: 'progress',
   },
   {
     id: '2',
@@ -25,12 +24,24 @@ const initialQuests: Quest[] = [
     isMain: false,
     startDate: new Date('2025-06-28'),
     endDate: new Date('2025-07-28'),
-    completed: false,
     verificationRequired: true,
     verificationCount: 1,
     requiredVerifications: 12,
     records: [],
-    category: 'health',
+    procedure: 'progress',
+  },
+  {
+    id: '3',
+    title: '일주일 5회 운동하기',
+    description: '주 5회 이상 헬스장 가기',
+    isMain: false,
+    startDate: new Date('2025-06-28'),
+    endDate: new Date('2025-07-28'),
+    verificationRequired: true,
+    verificationCount: 1,
+    requiredVerifications: 12,
+    records: [],
+    procedure: 'verify',
   },
 ];
 
@@ -42,11 +53,23 @@ interface QuestStore {
   deleteQuest: (id: string) => void;
   completeQuest: (id: string) => void;
   addQuestRecord: (questId: string, record: any) => void;
-  addVerification: (questId: string, record: any) => void; // record 타입은 실제 구현에 맞게 수정
+  addVerification: (questId: string) => void;
   getQuestById: (id: string) => Quest | undefined;
   getMainQuest: () => Quest | undefined;
   getSubQuests: () => Quest[];
+  getVerificationFeed: () => Quest[];
 }
+
+// 랜덤 아이디 값
+const randomId = () => {
+  const characters =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 16; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+};
 
 // Zustand 스토어 생성
 export const useQuestStore = create<QuestStore>((set, get) => ({
@@ -55,7 +78,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   // 퀘스트 추가
   addQuest: quest =>
     set(state => ({
-      quests: [...state.quests, {...quest, id: '3', records: []}],
+      quests: [...state.quests, {...quest, id: randomId(), records: []}],
     })),
 
   // 퀘스트 업데이트
@@ -76,7 +99,11 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   completeQuest: id =>
     set(state => ({
       quests: state.quests.map(quest =>
-        quest.id === id ? {...quest, completed: true} : quest,
+        quest.id === id
+          ? quest.verificationRequired
+            ? {...quest, procedure: 'verify'}
+            : {...quest, procedure: 'complete'}
+          : quest,
       ),
     })),
 
@@ -86,8 +113,8 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   ) => {
     const newRecord: QuestRecord = {
       ...record,
-      id: '3', // or your preferred ID generation method
-      createdAt: new Date().toISOString(),
+      id: randomId(), // or your preferred ID generation method
+      createdAt: new Date(),
     };
 
     // Update the quest's records array
@@ -109,7 +136,7 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     return newRecord;
   },
   // 인증 추가
-  addVerification: (questId, record) =>
+  addVerification: questId =>
     set(state => ({
       quests: state.quests.map(quest =>
         quest.id === questId
@@ -117,7 +144,6 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
               ...quest,
               verificationCount:
                 quest.verificationCount && quest.verificationCount + 1,
-              records: [...(quest.records || []), record],
             }
           : quest,
       ),
@@ -139,6 +165,11 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   getSubQuests: () => {
     const {quests} = get();
     return quests.filter(quest => !quest.isMain);
+  },
+  getVerificationFeed: () => {
+    return get().quests.filter(
+      quest => quest.verificationRequired && quest.procedure === 'verify',
+    );
   },
 }));
 
