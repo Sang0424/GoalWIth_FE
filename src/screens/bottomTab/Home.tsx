@@ -140,7 +140,7 @@ export default function Home() {
     };
 
     const calculateProgressText = () => {
-      if (quest.completed) return '완료됨';
+      if (quest.procedure === 'complete') return '완료됨';
 
       const percentage = calculateProgressPercentage();
       if (quest.verificationRequired) {
@@ -184,7 +184,7 @@ export default function Home() {
     const cardStyle: ViewStyle[] = [
       styles.questCard,
       ...(quest.isMain ? [styles.mainQuestCard] : []),
-      ...(quest.completed ||
+      ...(quest.procedure === 'complete' ||
       (quest.requiredVerifications &&
         (quest.verificationCount ?? 0) >= (quest.requiredVerifications ?? 0))
         ? [styles.completedCard]
@@ -216,7 +216,11 @@ export default function Home() {
                 </Text>
               </View>
             </View>
-
+            <View>
+              <Text style={{fontSize: 12, color: '#888'}}>
+                {quest.description}
+              </Text>
+            </View>
             {/* Progress Bar */}
             <View style={styles.progressContainer}>
               <View style={styles.progressBar}>
@@ -384,7 +388,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     color: '#fff',
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#806a5b',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -417,60 +421,10 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     paddingBottom: 100,
   },
-
   difficultyContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 16,
-  },
-  difficultyButton: {
-    flex: 1,
-    padding: 12,
-    marginHorizontal: 4,
-    borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-  },
-  easyButtonActive: {
-    backgroundColor: '#E8F5E9',
-    borderWidth: 1,
-    borderColor: '#4CAF50',
-  },
-  normalButtonActive: {
-    backgroundColor: '#E3F2FD',
-    borderWidth: 1,
-    borderColor: '#2196F3',
-  },
-  hardButtonActive: {
-    backgroundColor: '#FFEBEE',
-    borderWidth: 1,
-    borderColor: '#F44336',
-  },
-  difficultyText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  easyText: {
-    color: '#2E7D32',
-    fontWeight: '600',
-  },
-  normalText: {
-    color: '#1565C0',
-    fontWeight: '600',
-  },
-  hardText: {
-    color: '#C62828',
-    fontWeight: '600',
-  },
-  rewardContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  rewardInput: {
-    flex: 1,
-    marginBottom: 0,
-    marginRight: 10,
   },
   xpText: {
     fontSize: 16,
@@ -597,7 +551,7 @@ const styles = StyleSheet.create({
   },
   mainQuestCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#2196F3', // Blue border for main quest
+    borderLeftColor: '#B9B69B', // Blue border for main quest
   },
   subQuestCard: {
     borderLeftWidth: 4,

@@ -1,47 +1,54 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
-  ScrollView,
+  FlatList,
   Image,
+  TouchableOpacity,
   TextInput,
   Alert,
-  KeyboardAvoidingView,
-  Keyboard,
+  SafeAreaView,
+  ScrollView,
   Animated,
   Pressable,
   Platform,
+  Keyboard,
 } from 'react-native';
-import {useRef, useEffect} from 'react';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation} from '@react-navigation/native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {launchImageLibrary} from 'react-native-image-picker';
-import {QuestFeedProps} from '../../types/navigation';
+import {useNavigation, useRoute} from '@react-navigation/native';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {
+  Quest,
+  QuestRecord,
+  QuestVerification as Verification,
+} from '../../types/quest.types';
 import {useQuestStore} from '../../store/mockData';
-import BackArrow from '../../components/BackArrow';
+import type {QuestVerificationProps} from '../../types/navigation';
 import useKeyboardHeight from '../../utils/hooks/useKeyboardHeight';
 import ImageCarousel from '../../components/Carousel';
 
-const QuestFeed = ({route}: QuestFeedProps) => {
-  const navigation = useNavigation();
-  const {questId} = route.params;
-  const [newRecordText, setNewRecordText] = useState('');
-  const [images, setImages] = useState<string[]>([]);
-  const quest = useQuestStore(state => state.getQuestById(questId));
-  const {keyboardHeight} = useKeyboardHeight();
-  const scrollViewRef = useRef<ScrollView>(null);
+type QuestVerificationScreenNavigationProp = StackNavigationProp<
+  QuestVerificationProps,
+  'QuestVerification'
+>;
 
-  useEffect(() => {
-    if (quest?.records?.length) {
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({animated: true});
-      }, 100);
-    }
-  }, [quest?.records]);
+const QuestVerification = () => {
+  const navigation = useNavigation<QuestVerificationScreenNavigationProp>();
+  const route = useRoute();
+  const {questId} = route.params as {questId: string};
+
+  const quest = useQuestStore(state => state.getQuestById(questId));
+  const {addVerification} = useQuestStore();
+  const [verificationText, setVerificationText] = useState('');
+  const [record, setRecord] = useState<QuestRecord | null>(null);
+  const {keyboardHeight} = useKeyboardHeight();
+
+  // 1. State for tracking scroll position and verification status
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const contentHeight = useRef(0);
+  const scrollViewHeight = useRef(0);
 
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
@@ -80,80 +87,38 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     };
   }, []);
 
-  if (!quest) {
+  useEffect(() => {
+    if (quest) {
+      setRecord(quest.records[quest.records.length - 1]);
+    }
+  }, [quest]);
+
+  const handleVerify = () => {
+    if (!verificationText.trim()) {
+      Alert.alert('오류', '인증 메시지를 입력해주세요.');
+      return;
+    }
+
+    // In a real app, you would call a function to add verification
+    // For example: addVerification(questId, record.id, verificationText);
+    addVerification(questId);
+    Alert.alert('성공', '퀘스트 인증이 완료되었습니다!');
+    setVerificationText('');
+    navigation.goBack();
+  };
+
+  if (!quest || !record) {
     return (
-      <View style={styles.centerContainer}>
-        <Text>퀘스트를 찾을 수 없습니다.</Text>
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text>로딩 중...</Text>
       </View>
     );
   }
 
-  const handleAddRecord = async () => {
-    if (!newRecordText.trim() && images.length === 0) {
-      Alert.alert('오류', '기록할 내용을 입력해주세요.');
-      return;
-    }
-
-    if (images.length > 3) {
-      Alert.alert('오류', '이미지는 최대 3장까지만 선택할 수 있습니다.');
-      return;
-    }
-
-    // Fix: Call the store function correctly
-    useQuestStore.getState().addQuestRecord(questId, {
-      date: new Date().toISOString(),
-      text: newRecordText.trim(),
-      images: images.length > 0 ? images : undefined,
-    });
-
-    // Reset form
-    setNewRecordText('');
-    setImages([]);
-
-    // Show success message
-    Alert.alert('성공', '기록이 추가되었습니다!');
-  };
-
-  const handleCompleteQuest = () => {
-    Alert.alert('퀘스트 완료', '이 퀘스트를 완료하시겠습니까?', [
-      {text: '취소', style: 'cancel'},
-      {
-        text: '완료',
-        onPress: () => {
-          useQuestStore.getState().completeQuest(questId);
-          navigation.goBack();
-        },
-      },
-    ]);
-  };
-
-  const pickImage = () => {
-    const options: any = {
-      mediaType: 'photo',
-      selectionLimit: 3 - images.length,
-      maxWidth: 1000,
-      maxHeight: 1000,
-      quality: 1, // 0-1 where 1 is best quality
-      includeBase64: false,
-    };
-
-    launchImageLibrary(options, (response: any) => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (response.errorCode) {
-        console.log('ImagePicker Error: ', response.errorMessage);
-        Alert.alert('오류', '이미지 선택 중 오류가 발생했습니다.');
-      } else if (response.assets?.length) {
-        const newImages = response.assets
-          .map((asset: any) => asset.uri)
-          .filter((uri: string) => uri);
-        setImages(prev => [...prev, ...newImages].slice(0, 3));
-      }
-    });
-  };
-  const removeImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
-  };
+  // 모든 인증 메시지(댓글) 리스트 추출
+  const allVerifications = quest.verifications?.flatMap(
+    (r: Verification) => r.comment || [],
+  );
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -168,17 +133,31 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
-        stickyHeaderIndices={[0]}
         ref={scrollViewRef}
-        contentContainerStyle={
-          !!keyboardHeight ? undefined : {paddingBottom: 80}
-        }
+        onContentSizeChange={(_, height) => {
+          contentHeight.current = height;
+        }}
+        onLayout={event => {
+          scrollViewHeight.current = event.nativeEvent.layout.height;
+        }}
+        onScroll={({nativeEvent}) => {
+          const {contentOffset, contentSize, layoutMeasurement} = nativeEvent;
+          const isAtBottom =
+            contentOffset.y >=
+            contentSize.height - layoutMeasurement.height - 20;
+
+          if (isAtBottom && !hasScrolledToBottom) {
+            setHasScrolledToBottom(true);
+          }
+        }}
+        keyboardShouldPersistTaps="handled"
+        stickyHeaderIndices={[0]}
+        scrollEventThrottle={400}
         style={[
           styles.scrollView,
           !!keyboardHeight && {marginBottom: keyboardHeight + 20},
-        ]}
-        keyboardShouldPersistTaps="handled">
-        {/* Quest Header */}
+        ]}>
+        {/* Section 1: Timeline Records */}
         <View
           style={[
             styles.header,
@@ -236,99 +215,93 @@ const QuestFeed = ({route}: QuestFeedProps) => {
             </View>
           </View>
         </View>
-
-        {/* Records List */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>기록 타임라인</Text>
-
-          {quest.records?.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="time-outline" size={50} color="#ccc" />
-              <Text style={styles.emptyStateText}>아직 기록이 없습니다.</Text>
-              <Text style={styles.emptyStateSubtext}>
-                오늘의 활동을 기록해보세요!
-              </Text>
-            </View>
-          ) : (
-            quest.records?.map(record => (
-              <View key={record.id} style={styles.recordCard}>
-                <View style={styles.recordHeader}>
-                  <Text style={styles.recordDate}>
-                    {formatDate(record.date || '')}
-                  </Text>
-                </View>
-                {record.images && (
-                  <ImageCarousel images={record.images} />
-                  // <Image
-                  //   source={{uri: record.images[0]}}
-                  //   style={styles.recordImage}
-                  //   resizeMode="cover"
-                  // />
-                )}
-                <Text style={styles.recordText}>{record.text}</Text>
+        <View style={styles.timelineSection}>
+          <Text style={styles.sectionTitle}>퀘스트 타임라인</Text>
+          {quest.records.map(record => (
+            <View key={record.id} style={styles.recordCard}>
+              <View style={styles.recordHeader}>
+                <Text style={styles.recordDate}>
+                  {formatDate(record.date || '')}
+                </Text>
               </View>
+              {record.images && (
+                <ImageCarousel images={record.images} />
+                // <Image
+                //   source={{uri: record.images[0]}}
+                //   style={styles.recordImage}
+                //   resizeMode="cover"
+                // />
+              )}
+              <Text style={styles.recordText}>{record.text}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Section 2: Verification Comments */}
+        <View style={styles.commentsSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>인증 댓글</Text>
+            {!hasScrolledToBottom && (
+              <View style={styles.scrollPrompt}>
+                <Text style={styles.scrollPromptText}>
+                  아래로 스크롤하여 인증하기
+                </Text>
+                <Icon name="arrow-downward" size={16} color="#666" />
+              </View>
+            )}
+          </View>
+
+          {allVerifications && allVerifications.length > 0 ? (
+            allVerifications.map(comment => (
+              <Text key={comment}>{comment}</Text>
             ))
+          ) : (
+            <Text style={styles.noCommentsText}>
+              아직 인증된 댓글이 없습니다.
+            </Text>
           )}
         </View>
       </ScrollView>
 
-      {/* Add Record Form */}
+      {/* Fixed verification form at bottom */}
       <Animated.View
         style={[
-          styles.inputContainer,
-          {transform: [{translateY: keyboardOffset}]},
+          styles.verificationForm,
+          {
+            transform: [{translateY: keyboardOffset}],
+            opacity: hasScrolledToBottom ? 1 : 0.5,
+          },
         ]}>
-        {images.length > 0 && (
-          <View style={styles.imagePreviewContainer}>
-            {images.map((image, index) => (
-              <TouchableOpacity
-                key={`image-${index}-${image}`}
-                onPress={() => removeImage(index)}
-                style={styles.imageWrapper}>
-                <Image source={{uri: image}} style={styles.imagePreview} />
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={styles.removeImageButton}
-              onPress={() => setImages([])}>
-              <Ionicons name="close" size={16} color="white" />
-            </TouchableOpacity>
-          </View>
-        )}
-        <View style={[styles.inputRow]}>
-          <TextInput
-            style={styles.input}
-            placeholder="오늘의 활동을 기록하세요..."
-            value={newRecordText}
-            onChangeText={setNewRecordText}
-            multiline
-          />
-          <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
-            <Ionicons name="camera" size={24} color="#806a5b" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.completeButton]}
-            onPress={handleCompleteQuest}>
-            <Ionicons name="checkmark-circle" size={18} color="white" />
-            <Text style={styles.completeButtonText}>완료하기</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.addButton]}
-            onPress={handleAddRecord}
-            disabled={!newRecordText.trim() && images.length === 0}>
-            <Ionicons name="add" size={18} color="white" />
-            <Text style={styles.addButtonText}>기록 추가</Text>
-          </TouchableOpacity>
-        </View>
+        <TextInput
+          style={styles.commentInput}
+          placeholder={
+            hasScrolledToBottom
+              ? '인증 댓글을 남겨주세요'
+              : '타임라인을 확인한 후 인증이 가능합니다'
+          }
+          editable={hasScrolledToBottom}
+          value={verificationText}
+          onChangeText={setVerificationText}
+        />
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            !hasScrolledToBottom && styles.disabledButton,
+          ]}
+          disabled={!hasScrolledToBottom}
+          onPress={handleVerify}>
+          <Text style={styles.submitButtonText}>인증하기</Text>
+        </TouchableOpacity>
       </Animated.View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -473,33 +446,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  imagePreviewContainer: {
-    flexDirection: 'row',
-    position: 'relative',
-    marginBottom: 10,
-    gap: 10,
-  },
-  imagePreview: {
-    width: '100%',
-    height: 100,
-    borderRadius: 8,
-  },
-  imageWrapper: {
-    position: 'relative',
-    width: '30%',
-    marginBottom: 10,
-  },
-  removeImageButton: {
-    position: 'absolute',
-    top: 5,
-    right: 5,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -537,19 +483,76 @@ const styles = StyleSheet.create({
   completeButton: {
     backgroundColor: '#4caf50',
   },
-  addButton: {
-    backgroundColor: '#806a5b',
+  timelineSection: {
+    padding: 16,
+    borderBottomWidth: 8,
+    borderBottomColor: '#f5f5f5',
   },
-  completeButtonText: {
-    color: 'white',
-    fontWeight: '600',
-    marginLeft: 5,
+  commentsSection: {
+    padding: 16,
   },
-  addButtonText: {
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  scrollPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  scrollPromptText: {
+    marginRight: 4,
+    fontSize: 12,
+    color: '#666',
+  },
+  verificationForm: {
+    flexDirection: 'row',
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: 'white',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1,
+  },
+  commentInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    paddingRight: 45,
+    minHeight: 44,
+    maxHeight: 120,
+    backgroundColor: '#f9f9f9',
+  },
+  submitButton: {
+    backgroundColor: '#806A5B',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  submitButtonText: {
     color: 'white',
-    fontWeight: '600',
-    marginLeft: 5,
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    backgroundColor: '#cccccc',
+  },
+  noCommentsText: {
+    textAlign: 'center',
+    color: '#999',
+    marginVertical: 20,
   },
 });
 
-export default QuestFeed;
+export default QuestVerification;

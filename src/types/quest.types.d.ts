@@ -5,12 +5,12 @@ export interface Quest {
   isMain: boolean;
   startDate: string | Date;
   endDate: string | Date;
-  completed: boolean;
+  procedure: 'progress' | 'complete' | 'failed' | 'verify';
   verificationRequired: boolean;
   verificationCount?: number;
   requiredVerifications?: number;
   records: QuestRecord[];
-  category?: string;
+  verifications?: QuestVerification[];
 }
 
 export interface QuestRecord {
@@ -18,20 +18,28 @@ export interface QuestRecord {
   date?: string;
   text: string;
   images?: string[];
-  verifications: QuestVerification[];
   isVerified: boolean;
-  questId:string;
-  tags:string[];
-  createdAt:date;
-  userId:string;
+  questId: string;
+  createdAt: Date;
+  userId: string;
 }
 
 export interface QuestVerification {
   userId: string;
-  verifiedAt: string;
+  comment: string;
 }
 
 export interface RouteParams {
   questId: string;
   isMain?: boolean;
+}
+
+export type ReactionType = 'support' | 'amazing' | 'together' | 'perfect';
+
+export interface Reaction {
+  id: string;
+  questId: string;
+  userId: string;
+  reactionType: ReactionType;
+  createdAt: Date;
 }
