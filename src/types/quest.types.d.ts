@@ -11,14 +11,14 @@ export interface Quest {
   requiredVerifications?: number;
   records: QuestRecord[];
   verifications?: QuestVerification[];
+  reactions?: Reaction[];
 }
 
 export interface QuestRecord {
   id: string;
   date?: string;
-  text: string;
+  text?: string;
   images?: string[];
-  isVerified: boolean;
   questId: string;
   createdAt: Date;
   userId: string;

@@ -22,9 +22,9 @@ export type OnBoarding3Props = NativeStackScreenProps<
 export type BottomTabParamList = {
   HomeNav: undefined;
   VerificationNav: undefined;
-  MyPage: undefined;
+  MyPageNav: undefined;
   TeamNav: undefined;
-  Peers: undefined;
+  PeersDrawer: undefined;
 };
 export type HomeProps = BottomTabNavigationProp<
   BottomTabParamList,
@@ -38,20 +38,7 @@ export type MyPageProps = BottomTabNavigationProp<
 
 export type HomeNavParamList = {
   Home: undefined;
-  QuestFeed: {questId: string};
-  PostDetail: {feed_id: number | undefined};
-  AddFeedNav: {
-    screen: string;
-    params: {
-      feed: {
-        id?: number;
-        todo?: string;
-        tag?: string;
-        content?: stirng;
-        images?: Image[];
-      };
-    };
-  };
+  QuestFeed: {quest: Quest};
 };
 
 export type QuestFeedProps = NativeStackNavigationProp<
@@ -61,7 +48,7 @@ export type QuestFeedProps = NativeStackNavigationProp<
 
 export type VerificationNavParamList = {
   Verification: undefined;
-  QuestVerification: {questId: string};
+  QuestVerification: {quest: Quest};
 };
 
 export type QuestVerificationProps = NativeStackNavigationProp<
@@ -69,58 +56,12 @@ export type QuestVerificationProps = NativeStackNavigationProp<
   'QuestVerification'
 >;
 
-export type FeedNavParamList = {
-  Feed: undefined;
-  PostDetail: {feed_id: number; index?: number};
-};
-
-export type AddFeedNavParmList = {
-  AddFeed: {
-    feed: {
-      id?: number;
-      todo?: string;
-      tag?: string;
-      content?: stirng;
-      images?: Image[];
-    };
-  };
-  SelectTodo: {
-    feed: {todo?: string; tag?: string; content?: stirng};
-    setFeed: React.Dispatch<
-      React.SetStateAction<{
-        todo: string;
-        tag: string;
-        content: string;
-      }>
-    >;
-  };
-  SelectTag: {
-    feed: {
-      feed_id?: number;
-      todo?: string;
-      tag?: string;
-      content?: stirng;
-      images?: string[];
-    };
-    setFeed: React.Dispatch<
-      React.SetStateAction<{
-        todo: string;
-        tag: string;
-        content: string;
-      }>
-    >;
-  };
+export type BottomNavParamList = {
   BottomNav: {
     screen: string;
     params: {screen: string; params: {feed_id: number}};
   };
 };
-export type AddFeedProps = NativeStackNavigationProp<
-  AddFeedNavParmList,
-  'AddFeedNav'
->;
-
-export type PostDetailProps = RouteProp<BottomTabNavigationProp, 'PostDetail'>;
 
 export type PeersNavParamList = {
   Peers: undefined;
@@ -135,8 +76,22 @@ type NavigationProp = DrawerNavigationProp<any> &
 export type TeamNavParamList = {
   TeamScreen: undefined;
   TeamCreate: undefined;
+  TeamFeedScreen: {teamId: string};
+  TeamQuestCreateScreen: {teamName: string};
 };
 export type TeamProps = NativeStackNavigationProp<
   TeamNavParamList,
   'TeamScreen'
 >;
+export type TeamFeedProps = NativeStackNavigationProp<
+  TeamNavParamList,
+  'TeamFeedScreen'
+>;
+
+export type MyPageNavParamList = {
+  MyPage: undefined;
+  EditProfile: undefined;
+  AppInfoPage: undefined;
+  HelpPage: undefined;
+  MarketScreen: undefined;
+};

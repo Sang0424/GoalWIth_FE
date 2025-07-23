@@ -13,145 +13,175 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {useQuestStore} from '@/store/mockData';
+import {useTeamStore} from '../../store/mockData';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {TeamNavParamList} from '../../types/navigation';
 
 const TeamCreateScreen = () => {
-  const navigation = useNavigation();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<TeamNavParamList>>();
 
   const [teamName, setTeamName] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(true);
+
+  // ****** Backend랑 연결 부분 *********
+  // const queryClient = useQueryClient();
+  // const {mutate, error} = useMutation({
+  //   mutationFn: (team: Team) => instance.post(`/team`, {
+  //     name: teamName.trim(),
+  //     description: description.trim(),
+  //     isPublic: isPublic,
+  //   }),
+  //   onSuccess: () => {
+  //     Alert.alert('성공', '팀이 추가되었습니다!');
+  //     setTeamName('');
+  //     setDescription('');
+  //     setIsPublic(true);
+  //   },
+  //   onError: (error) => {
+  //     Alert.alert('오류', '팀 추가 중 오류가 발생했습니다.');
+  //   },
+  //   onSettled: () => {
+  //     queryClient.invalidateQueries({queryKey: ['Team']});
+  //   },
+  // });
 
   const handleCreateTeam = () => {
     if (!teamName.trim()) {
       Alert.alert('오류', '팀 이름을 입력해주세요.');
       return;
     }
-
-    // createTeam(teamName.trim());
-
-    Alert.alert('팀 생성 완료', `${teamName} 팀이 성공적으로 생성되었습니다!`, [
-      {
-        text: '확인',
-        onPress: () => navigation.goBack(),
-      },
-    ]);
+    //mutate()
+    navigation.navigate('TeamQuestCreateScreen', {teamName});
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled">
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>팀 정보</Text>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>팀 이름</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="팀 이름을 입력하세요"
-              value={teamName}
-              onChangeText={setTeamName}
-              maxLength={20}
-              autoFocus
-            />
-            <Text style={styles.charCount}>{teamName.length}/20</Text>
-          </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled">
+          <View style={styles.section}>
+            <View style={styles.header}>
+              <Text style={styles.sectionTitle}>팀 정보</Text>
+              <Ionicons
+                name="close"
+                size={32}
+                color="#333"
+                onPress={() => navigation.goBack()}
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>팀 이름</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="팀 이름을 입력하세요"
+                value={teamName}
+                onChangeText={setTeamName}
+                maxLength={20}
+                autoFocus
+              />
+              <Text style={styles.charCount}>{teamName.length}/20</Text>
+            </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>팀 설명 (선택)</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="팀에 대한 간단한 설명을 입력하세요"
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              numberOfLines={4}
-              maxLength={200}
-            />
-            <Text style={styles.charCount}>{description.length}/200</Text>
-          </View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>팀 설명 (선택)</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="팀에 대한 간단한 설명을 입력하세요"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                numberOfLines={4}
+                maxLength={200}
+              />
+              <Text style={styles.charCount}>{description.length}/200</Text>
+            </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>공개 설정</Text>
-            <View style={styles.radioGroup}>
-              <TouchableOpacity
-                style={[
-                  styles.radioButton,
-                  isPublic && styles.radioButtonActive,
-                ]}
-                onPress={() => setIsPublic(true)}>
-                <View
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>공개 설정</Text>
+              <View style={styles.radioGroup}>
+                <TouchableOpacity
                   style={[
-                    styles.radioOuter,
-                    isPublic && styles.radioOuterActive,
-                  ]}>
-                  {isPublic && <View style={styles.radioInner} />}
-                </View>
-                <Text style={styles.radioLabel}>공개 팀</Text>
-                <Text style={styles.radioDescription}>
-                  누구나 팀을 찾아 가입할 수 있어요
-                </Text>
-              </TouchableOpacity>
+                    styles.radioButton,
+                    isPublic && styles.radioButtonActive,
+                  ]}
+                  onPress={() => setIsPublic(true)}>
+                  <View
+                    style={[
+                      styles.radioOuter,
+                      isPublic && styles.radioOuterActive,
+                    ]}>
+                    {isPublic && <View style={styles.radioInner} />}
+                  </View>
+                  <Text style={styles.radioLabel}>공개 팀</Text>
+                  <Text style={styles.radioDescription}>
+                    누구나 팀을 찾아 가입할 수 있어요
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.radioButton,
-                  !isPublic && styles.radioButtonActive,
-                ]}
-                onPress={() => setIsPublic(false)}>
-                <View
+                <TouchableOpacity
                   style={[
-                    styles.radioOuter,
-                    !isPublic && styles.radioOuterActive,
-                  ]}>
-                  {!isPublic && <View style={styles.radioInner} />}
-                </View>
-                <Text style={styles.radioLabel}>비공개 팀</Text>
-                <Text style={styles.radioDescription}>
-                  초대를 통해서만 가입할 수 있어요
-                </Text>
-              </TouchableOpacity>
+                    styles.radioButton,
+                    !isPublic && styles.radioButtonActive,
+                  ]}
+                  onPress={() => setIsPublic(false)}>
+                  <View
+                    style={[
+                      styles.radioOuter,
+                      !isPublic && styles.radioOuterActive,
+                    ]}>
+                    {!isPublic && <View style={styles.radioInner} />}
+                  </View>
+                  <Text style={styles.radioLabel}>비공개 팀</Text>
+                  <Text style={styles.radioDescription}>
+                    초대를 통해서만 가입할 수 있어요
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
 
-        <View style={styles.tipBox}>
-          <Ionicons
-            name="bulb-outline"
-            size={20}
-            color="#FFA000"
-            style={styles.tipIcon}
-          />
-          <View>
-            <Text style={styles.tipTitle}>팀 생성 팁</Text>
-            <Text style={styles.tipText}>
-              • 구체적인 목표를 가진 팀을 만들어보세요
-              {'\n'}• 팀 이름은 간결하고 명확하게 지어주세요
-              {'\n'}• 팀 설명을 상세히 작성하면 더 많은 사람들이 참여할 수
-              있어요
-            </Text>
+          <View style={styles.tipBox}>
+            <Ionicons
+              name="bulb-outline"
+              size={20}
+              color="#FFA000"
+              style={styles.tipIcon}
+            />
+            <View>
+              <Text style={styles.tipTitle}>팀 생성 팁</Text>
+              <Text style={styles.tipText}>
+                • 구체적인 목표를 가진 팀을 만들어보세요
+                {'\n'}• 팀 이름은 간결하고 명확하게 지어주세요
+                {'\n'}• 팀 설명을 상세히 작성하면 더 많은 사람들이 참여할 수
+                있어요
+              </Text>
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.button, styles.cancelButton]}
-          onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelButtonText}>취소</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.button,
-            styles.createButton,
-            !teamName && styles.disabledButton,
-          ]}
-          onPress={handleCreateTeam}
-          disabled={!teamName}>
-          <Text style={styles.createButtonText}>팀 생성하기</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.button, styles.cancelButton]}
+            onPress={() => navigation.goBack()}>
+            <Text style={styles.cancelButtonText}>취소</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.createButton,
+              !teamName && styles.disabledButton,
+            ]}
+            onPress={() => handleCreateTeam()}
+            disabled={!teamName}>
+            <Text style={styles.createButtonText}>다음으로</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -160,11 +190,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingBottom: 24,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   scrollContent: {
     padding: 20,
     paddingBottom: 100, // Space for the footer
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    paddingBottom: 10,
   },
   section: {
     backgroundColor: 'white',
@@ -181,10 +220,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 20,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   inputContainer: {
     marginBottom: 25,
@@ -290,10 +325,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopWidth: 1,
     borderTopColor: '#eee',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
   button: {
     flex: 1,

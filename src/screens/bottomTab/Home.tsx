@@ -9,14 +9,8 @@ import {
   KeyboardAvoidingView,
   Alert,
   Platform,
-  ActivityIndicator,
   TouchableWithoutFeedback,
   Keyboard,
-  Switch,
-  ListRenderItem,
-  FlatList,
-  useWindowDimensions,
-  Image,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Logo from '../../components/Logo';
@@ -33,6 +27,8 @@ import CharacterAvatar from '../../components/CharacterAvatar';
 import type {Quest} from '../../types/quest.types';
 import type {User} from '../../types/user.types';
 import {useQuestStore} from '../../store/mockData';
+import {useQueryClient} from '@tanstack/react-query';
+import {useMutation} from '@tanstack/react-query';
 
 const defaultUser: User = {
   id: '',
@@ -40,31 +36,20 @@ const defaultUser: User = {
   email: '',
   nickname: 'User',
   userType: 'student',
-  level: 1,
+  level: 10,
   exp: 0,
   maxExp: 100,
-  actionPoints: 0,
+  actionPoints: 100,
+  avatar: require('../../assets/character/pico_base.png'),
   // Note: Removed createdAt and updatedAt as they're not in the User type
 };
 
 export default function Home() {
-  const {quests} = useQuestStore();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [isAddingMainQuest, setIsAddingMainQuest] = useState(false);
-  const navigation =
-    useNavigation<NativeStackNavigationProp<HomeNavParamList>>();
-  const user = defaultUser;
-  const currentExp = (user as User).exp;
-  const maxExp = (user as User).maxExp;
-  const progress = Math.min((currentExp / Math.max(maxExp, 1)) * 100, 100);
-
-  const mainQuest = quests.find((quest: Quest) => quest.isMain);
-  const subQuests = quests.filter((quest: Quest) => !quest.isMain).slice(0, 5);
   // ********* Backend랑 연결 부분 *********
+  // const queryClient = useQueryClient();
   // const user = userStore(state => state.user);
-  // console.log(user);
-  // const { data, error, isLoading } = useQuery<Todo[]>({
-  //   queryKey: ['homeTodos'],
+  // const { data, error, isLoading } = useQuery<Quest[]>({
+  //   queryKey: ['homeQuests'],
   //   queryFn: async () => {
   //     const response = await instance.get(`/quest/`);
   //     const quests = response.data;
@@ -77,7 +62,21 @@ export default function Home() {
   // if (error) {
   //   return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
   // }
+  // const quests = data;
   // ********* Backend랑 연결 부분 *********
+  const {quests} = useQuestStore();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [isAddingMainQuest, setIsAddingMainQuest] = useState(false);
+  const navigation =
+    useNavigation<NativeStackNavigationProp<HomeNavParamList>>();
+  const user = defaultUser;
+  const currentExp = (user as User).exp;
+  const maxExp = (user as User).maxExp;
+  const progress = Math.min((currentExp / Math.max(maxExp, 1)) * 100, 100);
+
+  const mainQuest = quests.find((quest: Quest) => quest.isMain);
+  const subQuests = quests.filter((quest: Quest) => !quest.isMain).slice(0, 5);
+
   // Render empty state
   const renderEmptyState = (isMain: boolean) => (
     <View style={styles.emptyState}>
@@ -201,7 +200,7 @@ export default function Home() {
 
     return (
       <TouchableOpacity
-        onPress={() => navigation.navigate('QuestFeed', {questId: quest.id})}>
+        onPress={() => navigation.navigate('QuestFeed', {quest: quest})}>
         <View style={cardStyle}>
           {/* New UI Implementation */}
           <View style={styles.cardHeader}>
@@ -271,7 +270,14 @@ export default function Home() {
               style={{width: 150, height: 45, marginBottom: 16}}
             />
             <View style={styles.characterContainer}>
-              <CharacterAvatar size={150} level={user?.level} />
+              <CharacterAvatar
+                size={150}
+                level={user?.level}
+                avatar={
+                  user?.avatar ||
+                  require('../../assets/character/pico_base.png')
+                }
+              />
               <View style={styles.statsContainer}>
                 <Text style={styles.welcomeText}>
                   안녕하세요, {user?.name}님!
@@ -289,7 +295,7 @@ export default function Home() {
                   <View style={styles.statItem}>
                     <Text style={styles.statLabel}>실행력</Text>
                     <Text style={styles.statValue}>
-                      {(user?.level || 1) * 10} 점
+                      {user?.actionPoints || 0} 점
                     </Text>
                   </View>
                 </View>

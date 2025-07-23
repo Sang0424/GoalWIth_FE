@@ -10,21 +10,25 @@ import {
   RefreshControl,
   ActivityIndicator,
   SafeAreaView,
+  TextInput,
 } from 'react-native';
 import CharacterAvatar from '../../components/CharacterAvatar';
+import Logo from '../../components/Logo';
 import type {Quest} from '../../types/quest.types';
 import type {User} from '../../types/user.types';
 import {useQuestStore} from '../../store/mockData';
 import {useNavigation} from '@react-navigation/native';
 import {VerificationNavParamList} from '../../types/navigation';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import instance from '../../utils/axiosInterceptor';
+import {useQuery} from '@tanstack/react-query';
 
 const VerificationFeedCard = ({item}: {item: {quest: Quest; user: User}}) => {
   const navigation =
     useNavigation<NativeStackNavigationProp<VerificationNavParamList>>();
-
   const handleGoQuest = () => {
-    navigation.navigate('QuestVerification', {questId: item.quest.id});
+    navigation.navigate('QuestVerification', {quest: item.quest});
   };
   return (
     <TouchableOpacity
@@ -32,7 +36,11 @@ const VerificationFeedCard = ({item}: {item: {quest: Quest; user: User}}) => {
       activeOpacity={0.88}
       onPress={handleGoQuest}>
       <View style={styles.cardHeader}>
-        <CharacterAvatar size={40} level={item.user.level} />
+        <CharacterAvatar
+          size={40}
+          level={item.user.level}
+          avatar={require('../../assets/character/pico_base.png')}
+        />
         <View style={{flex: 1, marginLeft: 10}}>
           <Text style={styles.nickname}>
             {item.user.nickname} (Lv.{item.user.level})
@@ -60,13 +68,6 @@ const VerificationFeedCard = ({item}: {item: {quest: Quest; user: User}}) => {
         </View>
       )}
       <Text style={styles.contentText}>{item.quest.description}</Text>
-      {/* <View style={styles.tagsRow}>
-        {item.quest.records[0]?.tags.map(tag => (
-          <Text key={tag} style={styles.tag}>
-            {tag}
-          </Text>
-        ))}
-      </View> */}
       <View style={styles.reactionsRow}>
         <ReactionButton type="support" count={11} />
         <ReactionButton type="amazing" count={2} />
@@ -112,24 +113,41 @@ const ReactionButton = ({type, count}: {type: string; count: number}) => {
 
 const TAB_LIST = [
   {key: 'realtime', label: '실시간'},
-  {key: 'following', label: '팔로잉'},
+  {key: 'peers', label: '피어즈'},
 ];
 
 const VerificationFeedScreen = () => {
   const verificationQuests = useQuestStore(state => state.getVerificationFeed);
-  const [feed, setFeed] = useState<Quest[]>([]);
+  const [feed, setFeed] = useState<Quest[] | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'realtime' | 'following'>(
-    'realtime',
-  );
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<'realtime' | 'peers'>('realtime');
+
+  // ********* Backend랑 연결 부분 *********
+  // const {data, error, isLoading} = useQuery<Quest[]>({
+  //   queryKey: ['Verification'],
+  //   queryFn: async () => {
+  //     const response = await instance.get(`/quest/verification`);
+  //     const quests = response.data;
+  //     return quests;
+  //   },
+  // });
+  // if (isLoading) {
+  //   return <Text>로딩중</Text>;
+  // }
+  // if (error) {
+  //   return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
+  // }
+  // ********* Backend랑 연결 부분 *********
 
   const fetchFeed = useCallback(async () => {
     setLoading(true);
     setTimeout(() => {
+      //setFeed(data);
       setFeed(verificationQuests);
       setLoading(false);
-    }, 1000);
+    }, 0);
   }, []);
 
   useEffect(() => {
@@ -143,14 +161,44 @@ const VerificationFeedScreen = () => {
 
   // 팔로잉 피드는 userId가 'user1'인 것만 노출 (예시)
   const filteredFeed =
-    activeTab === 'following' ? feed.filter(item => item.id === 'user1') : feed;
+    activeTab === 'peers' ? feed?.filter(item => item.id === 'user1') : feed;
+  //activeTab === 'peers' ? feed?.filter(item => item.userId.includes('user1')) : feed;
 
   if (loading) {
     return <ActivityIndicator style={{flex: 1, marginTop: 100}} size="large" />;
   }
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: '#f1f1f1'}}>
+    <SafeAreaView style={{flex: 1, backgroundColor: '#ffffff'}}>
+      <View style={{paddingHorizontal: 16}}>
+        <Logo
+          resizeMode="contain"
+          style={{width: 150, height: 45, marginBottom: 16}}
+        />
+        <View style={styles.searchContainer}>
+          <Icon
+            name="search"
+            size={32}
+            color={'#000000'}
+            style={styles.searchIcon}
+          />
+          <TextInput
+            placeholder="검색어를 입력해주세요"
+            style={[styles.searchInput]}
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search.length > 0 && (
+            <Icon
+              style={styles.searchIcon}
+              name="cancel"
+              size={24}
+              color="#a1a1a1"
+              onPress={() => setSearch('')}
+            />
+          )}
+        </View>
+      </View>
       <View style={styles.tabRow}>
         {TAB_LIST.map(tab => (
           <TouchableOpacity
@@ -159,7 +207,7 @@ const VerificationFeedScreen = () => {
               styles.tabBtn,
               activeTab === tab.key && styles.activeTabBtn,
             ]}
-            onPress={() => setActiveTab(tab.key as 'realtime' | 'following')}>
+            onPress={() => setActiveTab(tab.key as 'realtime' | 'peers')}>
             <Text
               style={[
                 styles.tabLabel,
@@ -191,6 +239,12 @@ const VerificationFeedScreen = () => {
               },
             }}
           />
+          //   <VerificationFeedCard
+          //   item={{
+          //     quest: item,
+          //     user: item.user,
+          //   }}
+          // />
         )}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -231,6 +285,24 @@ const styles = StyleSheet.create({
     gap: 8,
     width: '100%',
   },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    backgroundColor: '#f8f8f8',
+    paddingVertical: 12,
+  },
   tabRow: {
     flexDirection: 'row',
     backgroundColor: '#fff',
@@ -245,7 +317,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   activeTabBtn: {
-    borderBottomColor: '#4CAF50',
+    borderBottomColor: '#5b807d',
     backgroundColor: '#f8f8f8',
   },
   tabLabel: {
@@ -254,17 +326,20 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   activeTabLabel: {
-    color: '#4CAF50',
+    color: '#5b807d',
     fontWeight: 'bold',
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f1f1f1',
     marginBottom: 18,
     padding: 16,
     shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 2,
   },
   cardHeader: {
@@ -344,14 +419,8 @@ const styles = StyleSheet.create({
     color: '#888',
     fontWeight: 'bold',
   },
-  qualityScore: {
-    fontSize: 12,
-    color: '#4CAF50',
-    fontWeight: '500',
-    textAlign: 'right',
-  },
   verifyBtn: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#5b807d',
     borderRadius: 10,
     paddingVertical: 10,
     alignItems: 'center',

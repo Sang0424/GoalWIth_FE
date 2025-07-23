@@ -14,6 +14,7 @@ import {
   Pressable,
   Platform,
   Keyboard,
+  KeyboardAvoidingView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useNavigation, useRoute} from '@react-navigation/native';
@@ -27,6 +28,10 @@ import {useQuestStore} from '../../store/mockData';
 import type {QuestVerificationProps} from '../../types/navigation';
 import useKeyboardHeight from '../../utils/hooks/useKeyboardHeight';
 import ImageCarousel from '../../components/Carousel';
+import {useQueryClient} from '@tanstack/react-query';
+//import {instance} from '../../utils/axiosInterceptor';
+import {useMutation} from '@tanstack/react-query';
+// import {instance} from '../../utils/axiosInterceptor';
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<
   QuestVerificationProps,
@@ -36,9 +41,8 @@ type QuestVerificationScreenNavigationProp = StackNavigationProp<
 const QuestVerification = () => {
   const navigation = useNavigation<QuestVerificationScreenNavigationProp>();
   const route = useRoute();
-  const {questId} = route.params as {questId: string};
+  const {quest} = route.params as {quest: Quest};
 
-  const quest = useQuestStore(state => state.getQuestById(questId));
   const {addVerification} = useQuestStore();
   const [verificationText, setVerificationText] = useState('');
   const [record, setRecord] = useState<QuestRecord | null>(null);
@@ -93,6 +97,34 @@ const QuestVerification = () => {
     }
   }, [quest]);
 
+  useEffect(() => {
+    if (keyboardHeight > 0) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({animated: true});
+      }, 100);
+    }
+  }, [keyboardHeight]);
+
+  // ********* Backend랑 연결 부분 *********
+
+  // const queryClient = useQueryClient();
+  // const {mutate, isLoading, error} = useMutation({
+  //   mutationFn: async () => {
+  //     const response = await instance.post(`/quest/verification/${quest.id}`, {
+  //       comment: verificationText,
+  //     });
+  //     return response.data;
+  //   },
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({
+  //       queryKey: ['Verification'],
+  //     });
+  //   },
+  //   onError: (error) => {
+  //     Alert.alert('오류', '인증 메시지 추가에 실패했습니다.');
+  //   },
+  // });
+
   const handleVerify = () => {
     if (!verificationText.trim()) {
       Alert.alert('오류', '인증 메시지를 입력해주세요.');
@@ -101,10 +133,9 @@ const QuestVerification = () => {
 
     // In a real app, you would call a function to add verification
     // For example: addVerification(questId, record.id, verificationText);
-    addVerification(questId);
+    addVerification(quest.id);
     Alert.alert('성공', '퀘스트 인증이 완료되었습니다!');
     setVerificationText('');
-    navigation.goBack();
   };
 
   if (!quest || !record) {
@@ -140,6 +171,9 @@ const QuestVerification = () => {
         onLayout={event => {
           scrollViewHeight.current = event.nativeEvent.layout.height;
         }}
+        contentContainerStyle={
+          !!keyboardHeight ? undefined : {paddingBottom: 80}
+        }
         onScroll={({nativeEvent}) => {
           const {contentOffset, contentSize, layoutMeasurement} = nativeEvent;
           const isAtBottom =
@@ -269,7 +303,6 @@ const QuestVerification = () => {
           styles.verificationForm,
           {
             transform: [{translateY: keyboardOffset}],
-            opacity: hasScrolledToBottom ? 1 : 0.5,
           },
         ]}>
         <TextInput
@@ -431,58 +464,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#333',
   },
-  inputContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    padding: 15,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: -2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    paddingRight: 45,
-    minHeight: 44,
-    maxHeight: 120,
-    backgroundColor: '#f9f9f9',
-  },
-  cameraButton: {
-    position: 'absolute',
-    right: 10,
-    padding: 8,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    marginTop: 10,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    borderRadius: 8,
-    marginHorizontal: 5,
-  },
-  completeButton: {
-    backgroundColor: '#4caf50',
-  },
   timelineSection: {
     padding: 16,
     borderBottomWidth: 8,
@@ -511,15 +492,20 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   verificationForm: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: -2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
     flexDirection: 'row',
     padding: 12,
     borderTopWidth: 1,
     borderTopColor: '#eee',
     backgroundColor: 'white',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     zIndex: 1,
   },
   commentInput: {
@@ -533,6 +519,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     maxHeight: 120,
     backgroundColor: '#f9f9f9',
+    zIndex: 1,
   },
   submitButton: {
     backgroundColor: '#806A5B',

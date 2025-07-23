@@ -1,4 +1,4 @@
-import { createDrawerNavigator } from '@react-navigation/drawer';
+import {createDrawerNavigator} from '@react-navigation/drawer';
 import PeersNav from './PeersNav';
 import CustomDrawerContent from '../screens/peers/CustomDrawerContent';
 
@@ -10,9 +10,8 @@ export default function PeersDrawer() {
       screenOptions={{
         headerShown: false,
       }}
-      drawerContent={props => <CustomDrawerContent props={props} />}
-    >
-      <Drawer.Screen name="Peers" component={PeersNav} />
+      drawerContent={props => <CustomDrawerContent props={props} />}>
+      <Drawer.Screen name="PeersNav" component={PeersNav} />
     </Drawer.Navigator>
   );
 }

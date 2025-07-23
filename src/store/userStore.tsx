@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { decodeJwt } from '../utils/jwtUtils';
-import { tokenStore } from './tokenStore';
+import {create} from 'zustand';
+import {decodeJwt} from '../utils/jwtUtils';
+import {tokenStore} from './tokenStore';
 
 interface UserStore {
   user: any;
@@ -14,7 +14,7 @@ export const userStore = create<UserStore>(set => ({
     const token = tokenStore.getState().accessToken;
     if (token) {
       const decodedUser = decodeJwt(token);
-      set(() => ({ user: decodedUser }));
+      set(() => ({user: decodedUser}));
     }
   },
 }));
