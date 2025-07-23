@@ -9,10 +9,13 @@ import {
   Image,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import {StackNavigationProp} from '@react-navigation/stack';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CharacterAvatar from '../../components/CharacterAvatar';
-
+import Logo from '../../components/Logo';
+import {useTeamStore} from '../../store/mockData';
+import {MyPageNavParamList} from '../../types/navigation';
+import {useState, useEffect} from 'react';
 // Import types
 import {Quest} from '../../types/quest.types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -31,48 +34,33 @@ const defaultUser: User = {
   exp: 0,
   maxExp: 100,
   actionPoints: 0,
+  avatar: require('../../assets/character/pico_base.png'),
   // Note: Removed createdAt and updatedAt as they're not in the User type
 };
 
-const defaultTeam: Team[] = [
-  {
-    id: '',
-    name: 'User',
-    description: '',
-    members: [],
-    leaderId: '',
-    isPublic: false,
-    feed: [],
-    createdAt: '',
-  },
-];
-
 export default function MyPage() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<MyPageNavParamList>>();
   const setAccessToken = tokenStore(state => state.actions.setAccessToken);
-  const onClick = async () => {
-    await AsyncStorage.removeItem('refresh_token');
-    setAccessToken(null);
+  const defaultTeam: Team[] = useTeamStore(state => state.teams);
+  const logout = async () => {
+    try {
+      await AsyncStorage.clear();
+      setAccessToken(null);
+    } catch (e) {
+      console.log(e);
+    }
   };
   // Navigation types
-  type RootStackParamList = {
-    Profile: undefined;
-    // Add other screens as needed
-  };
-
-  type ProfileScreenNavigationProp = StackNavigationProp<
-    RootStackParamList,
-    'Profile'
-  >;
-  const navigation = useNavigation<ProfileScreenNavigationProp>();
   const {quests} = useQuestStore();
   const user = defaultUser;
   const team = defaultTeam;
   // Type-safe filtering
   const completedQuests = quests.filter(
-    (quest: Quest) => quest.completed,
+    (quest: Quest) => quest.procedure === 'complete',
   ).length;
   const inProgressQuests = quests.filter(
-    (quest: Quest) => !quest.completed,
+    (quest: Quest) => quest.procedure === 'progress',
   ).length;
 
   // Calculate level progress with safe defaults
@@ -101,8 +89,20 @@ export default function MyPage() {
     <SafeAreaView style={styles.container}>
       <ScrollView>
         {/* Profile Header */}
+        <View style={{marginLeft: 16}}>
+          <Logo
+            resizeMode="contain"
+            style={{width: 150, height: 45, marginBottom: 16}}
+          />
+        </View>
         <View style={styles.header}>
-          <CharacterAvatar size={100} level={user.level || 1} />
+          <CharacterAvatar
+            size={100}
+            level={user.level || 1}
+            avatar={
+              user.avatar || require('../../assets/character/pico_base.png')
+            }
+          />
           <Text style={styles.userName}>{user.nickname || user.name}</Text>
           <Text style={styles.userTitle}>{getTitle()}</Text>
 
@@ -123,7 +123,6 @@ export default function MyPage() {
             </View>
           </View>
         </View>
-
         {/* Level Progress */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -143,7 +142,6 @@ export default function MyPage() {
             </Text>
           </View>
         </View>
-
         {/* Badges */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -177,10 +175,11 @@ export default function MyPage() {
             )}
           </View>
         </View>
-
         {/* Settings */}
         <View style={styles.card}>
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => navigation.navigate('EditProfile')}>
             <View style={styles.settingLeft}>
               <Ionicons name="person-outline" size={22} color="#666" />
               <Text style={styles.settingText}>프로필 수정</Text>
@@ -188,15 +187,27 @@ export default function MyPage() {
             <Ionicons name="chevron-forward" size={18} color="#999" />
           </TouchableOpacity>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.settingItem}>
+          {/* <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('HelpPage')}>
             <View style={styles.settingLeft}>
               <Ionicons name="notifications-outline" size={22} color="#666" />
               <Text style={styles.settingText}>알림 설정</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#999" />
+          </TouchableOpacity> */}
+          {/* <View style={styles.divider} /> */}
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => navigation.navigate('MarketScreen')}>
+            <View style={styles.settingLeft}>
+              <Ionicons name="cart-outline" size={22} color="#666" />
+              <Text style={styles.settingText}>상점</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#999" />
           </TouchableOpacity>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => navigation.navigate('HelpPage')}>
             <View style={styles.settingLeft}>
               <Ionicons name="help-circle-outline" size={22} color="#666" />
               <Text style={styles.settingText}>도움말</Text>
@@ -204,7 +215,9 @@ export default function MyPage() {
             <Ionicons name="chevron-forward" size={18} color="#999" />
           </TouchableOpacity>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => navigation.navigate('AppInfoPage')}>
             <View style={styles.settingLeft}>
               <Ionicons
                 name="information-circle-outline"
@@ -216,11 +229,9 @@ export default function MyPage() {
             <Ionicons name="chevron-forward" size={18} color="#999" />
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
           <Text style={styles.logoutText}>로그아웃</Text>
         </TouchableOpacity>
-
         <Text style={styles.versionText}>버전 1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
@@ -230,7 +241,7 @@ export default function MyPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   header: {
     backgroundColor: 'white',

@@ -1,71 +1,66 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { User } from '../types/users';
-import { useNavigation } from '@react-navigation/native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {Pressable, StyleSheet, Text, View} from 'react-native';
+import type {User} from '../types/user.types';
+import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useWindowDimensions } from 'react-native';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {useWindowDimensions} from 'react-native';
+import {useMutation, useQueryClient} from '@tanstack/react-query';
 import instance from '../utils/axiosInterceptor';
+import CharacterAvatar from './CharacterAvatar';
 
-export default function UserCard({
-  user,
-  from,
-}: {
-  user?: User;
-  from: string;
-}) {
+export default function UserCard({user, from}: {user?: User; from: string}) {
   const navigation = useNavigation();
-  const { width } = useWindowDimensions();
+  const {width} = useWindowDimensions();
   const queryClient = useQueryClient();
 
-  const { mutate: acceptPeer } = useMutation({
-    mutationFn: async () => {
-      const response = await instance.post(
-        `/users/acceptPeerRequest/${user?.id}`,
-      );
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['peers'] });
-      queryClient.invalidateQueries({ queryKey: ['requestedPeers'] });
-    },
-  });
+  // const {mutate: acceptPeer} = useMutation({
+  //   mutationFn: async () => {
+  //     const response = await instance.post(
+  //       `/users/acceptPeerRequest/${user?.id}`,
+  //     );
+  //     return response.data;
+  //   },
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({queryKey: ['peers']});
+  //     queryClient.invalidateQueries({queryKey: ['requestedPeers']});
+  //   },
+  // });
 
-  const { mutate: rejectPeer } = useMutation({
-    mutationFn: async () => {
-      const response = await instance.post(
-        `/users/rejectPeerRequest/${user?.id}`,
-      );
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['peers'] });
-      queryClient.invalidateQueries({ queryKey: ['requestedPeers'] });
-    },
-  });
+  // const {mutate: rejectPeer} = useMutation({
+  //   mutationFn: async () => {
+  //     const response = await instance.post(
+  //       `/users/rejectPeerRequest/${user?.id}`,
+  //     );
+  //     return response.data;
+  //   },
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({queryKey: ['peers']});
+  //     queryClient.invalidateQueries({queryKey: ['requestedPeers']});
+  //   },
+  // });
   return (
-    <View style={[styles.cardContainer, { width: (width - 48 - 8) / 2 }]}>
+    <View style={[styles.cardContainer, {width: (width - 48 - 8) / 2}]}>
       <View style={styles.cardTop}></View>
+      <View style={styles.avatarContainer}>
+        <CharacterAvatar
+          size={80}
+          level={user?.level || 1}
+          avatar={user?.avatar || require('../assets/character/pico_base.png')}
+        />
+      </View>
       <View style={styles.cardMain}>
         <View>
-          <Text style={{ fontSize: 16, textAlign: 'center' }}>
-            {user?.nick || 'UserNickname'}
+          <Text style={{fontSize: 16, textAlign: 'center'}}>
+            {user?.nickname || 'UserNickname'}
           </Text>
         </View>
         <View>
-          <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
-            {user?.goal || 'UserGoal'}
-          </Text>
-        </View>
-        <View>
-          <Text style={{ fontSize: 12 }}>{user?.role || 'UserRole'}</Text>
+          <Text style={{fontSize: 12}}>{user?.userType || 'UserType'}</Text>
         </View>
         {from == 'peers' ? (
-          <Pressable style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Pressable style={{flexDirection: 'row', alignItems: 'center'}}>
             <Icon name="add" size={24} color="#806a5b" />
-            <Text
-              style={{ color: '#806a5b', fontSize: 16, fontWeight: 'bold' }}
-            >
+            <Text style={{color: '#806a5b', fontSize: 16, fontWeight: 'bold'}}>
               피어링
             </Text>
           </Pressable>
@@ -76,8 +71,7 @@ export default function UserCard({
               alignItems: 'center',
               justifyContent: 'space-around',
               width: '100%',
-            }}
-          >
+            }}>
             {/* <Text
               style={{ color: '#EF4444', fontSize: 16, fontWeight: 'bold' }}
             >
@@ -87,13 +81,13 @@ export default function UserCard({
               name="close"
               size={32}
               color="#EF4444"
-              onPress={() => rejectPeer()}
+              //onPress={() => rejectPeer()}
             />
             <Icon
               name="check"
               size={32}
               color="#3B82F6"
-              onPress={() => acceptPeer()}
+              //onPress={() => acceptPeer()}
             />
             {/* <Text
               style={{ color: '#3B82F6', fontSize: 16, fontWeight: 'bold' }}
@@ -109,7 +103,7 @@ export default function UserCard({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    height: 220,
+    height: 250,
     borderRadius: 10,
     borderColor: '#000000',
     borderWidth: 1,
@@ -118,12 +112,20 @@ const styles = StyleSheet.create({
     flex: 0.3,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
-    backgroundColor: '#B9B69B',
+    backgroundColor: '#806a5b',
+  },
+  avatarContainer: {
+    position: 'absolute',
+    top: 12, // Half of cardTop height (60/2 = 30) to center the avatar
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 1,
   },
   cardMain: {
     flex: 1,
     paddingHorizontal: 8,
-    paddingTop: 12,
+    paddingTop: 16,
     justifyContent: 'space-evenly',
     alignItems: 'center',
   },

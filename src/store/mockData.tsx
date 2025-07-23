@@ -1,7 +1,59 @@
 // src/store/mockData.ts
 import {create} from 'zustand';
-import {Quest, QuestRecord} from '../types/quest.types';
+import {Quest, QuestRecord, ReactionType} from '../types/quest.types';
+import {Team, TeamPost, TeamComment, TeamReaction} from '../types/team.types';
+import {User} from '../types/user.types';
 
+export const initialUser: User[] = [
+  {
+    id: 'user1',
+    name: 'User 1',
+    email: 'user1@example.com',
+    nickname: 'User 1',
+    userType: 'student',
+    level: 1,
+    exp: 0,
+    maxExp: 100,
+    actionPoints: 0,
+    avatar: require('../assets/character/pico_complete.png'),
+  },
+  {
+    id: 'user2',
+    name: 'User 2',
+    email: 'user2@example.com',
+    nickname: 'User 2',
+    userType: 'student',
+    level: 1,
+    exp: 0,
+    maxExp: 100,
+    actionPoints: 0,
+    avatar: require('../assets/character/pico_rest.png'),
+  },
+  {
+    id: 'user3',
+    name: 'User 3',
+    email: 'user3@example.com',
+    nickname: 'User 3',
+    userType: 'student',
+    level: 1,
+    exp: 0,
+    maxExp: 100,
+    actionPoints: 0,
+    avatar: require('../assets/character/pico_start.png'),
+  },
+  {
+    id: 'user4',
+    name: 'User 4',
+    email: 'user4@example.com',
+    nickname: 'User 4',
+    userType: 'student',
+    level: 1,
+    exp: 0,
+    maxExp: 100,
+    actionPoints: 0,
+    avatar: require('../assets/character/pico_question.png'),
+  },
+];
 // 초기 mock 데이터
 const initialQuests: Quest[] = [
   {
@@ -16,6 +68,7 @@ const initialQuests: Quest[] = [
     requiredVerifications: 30,
     records: [],
     procedure: 'progress',
+    reactions: [],
   },
   {
     id: '2',
@@ -40,7 +93,17 @@ const initialQuests: Quest[] = [
     verificationRequired: true,
     verificationCount: 1,
     requiredVerifications: 12,
-    records: [],
+    records: [
+      {
+        id: '1',
+        questId: '3',
+        date: '2025-06-28',
+        text: 'dkfjdakfjad',
+        createdAt: new Date('2025-06-28'),
+        userId: 'user1',
+        images: ['https://via.placeholder.com/150'],
+      },
+    ],
     procedure: 'verify',
   },
 ];
@@ -234,3 +297,428 @@ export const useQuestQueries = () => {
     }),
   };
 };
+
+// Mock data for teams
+export const mockTeams: Team[] = [
+  {
+    id: 'team1',
+    name: '피트니스 마스터',
+    description:
+      '함께 운동 목표를 달성하는 팀입니다. 주 3회 이상 운동 인증을 목표로 합니다!',
+    members: ['user1', 'user2', 'user3'],
+    leaderId: 'user1',
+    isPublic: true,
+    quest: {
+      // Required TeamQuest properties
+      title: '피트니스 마스터 도전',
+      procedure: 'progress',
+      startDate: '2025-07-01',
+      endDate: '2025-12-31',
+    },
+    feed: [
+      {
+        id: 'post1',
+        userId: 'user1',
+        content: '오늘도 열심히 운동했어요! 다들 화이팅입니다 💪',
+        reactions: [
+          {
+            userId: 'user2',
+            reactionType: 'amazing',
+            createdAt: new Date('2025-07-09T10:20:00Z'),
+          },
+          {
+            userId: 'user3',
+            reactionType: 'support',
+            createdAt: new Date('2025-07-09T10:21:00Z'),
+          },
+        ],
+        comments: [
+          {
+            id: 'comment1',
+            userId: 'user2',
+            content: '대단하세요!',
+            reactions: [],
+            createdAt: '2025-07-09T10:30:00Z',
+          },
+        ],
+        createdAt: '2025-07-09T10:15:00Z',
+      },
+    ],
+    createdAt: '2025-06-01T00:00:00Z',
+  },
+  {
+    id: 'team2',
+    name: '독서 모임',
+    description: '매주 한 권씩 책을 읽고 서로 의견을 나누는 모임입니다.',
+    members: ['user4', 'user5', 'user6'],
+    leaderId: 'user4',
+    isPublic: true,
+    quest: {
+      // Required TeamQuest properties
+      title: '독서 모임 도전',
+      procedure: 'progress',
+      startDate: '2025-07-01',
+      endDate: '2025-12-31',
+    },
+    feed: [],
+    createdAt: '2025-06-15T00:00:00Z',
+  },
+  {
+    id: 'team3',
+    name: '코딩 스터디',
+    description: '주 3일 알고리즘 문제 풀이 및 코드 리뷰를 진행합니다.',
+    members: ['user7', 'user8'],
+    leaderId: 'user7',
+    isPublic: false,
+    quest: {
+      // Required TeamQuest properties
+      title: '코딩 스터디 도전',
+      procedure: 'progress',
+      startDate: '2025-07-01',
+      endDate: '2025-12-31',
+    },
+    feed: [],
+    createdAt: '2025-07-01T00:00:00Z',
+  },
+];
+
+// Team Store Type
+interface TeamStore {
+  teams: Team[];
+  createTeam: (
+    team: Omit<Team, 'id' | 'createdAt' | 'updatedAt' | 'feed' | 'members'>,
+  ) => Team;
+  getTeamById: (id: string) => Team | undefined;
+  addTeamMember: (teamId: string, userId: string) => void;
+  removeTeamMember: (teamId: string, userId: string) => void;
+  createTeamPost: (
+    teamId: string,
+    post: Omit<
+      TeamPost,
+      'id' | 'createdAt' | 'updatedAt' | 'reactions' | 'comments'
+    >,
+  ) => TeamPost;
+  updateTeamPost: (
+    teamId: string,
+    postId: string,
+    updates: Partial<Omit<TeamPost, 'id' | 'userId' | 'createdAt'>>,
+  ) => void;
+  deleteTeamPost: (teamId: string, postId: string) => void;
+  // addReaction: (
+  //   teamId: string,
+  //   postId: string,
+  //   commentId: string | null,
+  //   userId: string,
+  //   reactionType: TeamReaction,
+  // ) => void;
+  // removeReaction: (
+  //   teamId: string,
+  //   postId: string,
+  //   commentId: string | null,
+  //   userId: string,
+  // ) => void;
+  addComment: (
+    teamId: string,
+    postId: string,
+    comment: Omit<TeamComment, 'id' | 'createdAt' | 'updatedAt' | 'reactions'>,
+  ) => TeamComment;
+  updateComment: (
+    teamId: string,
+    postId: string,
+    commentId: string,
+    updates: Partial<Omit<TeamComment, 'id' | 'userId' | 'createdAt'>>,
+  ) => void;
+  deleteComment: (teamId: string, postId: string, commentId: string) => void;
+}
+
+// Zustand store for teams
+export const useTeamStore = create<TeamStore>((set, get) => ({
+  teams: mockTeams,
+
+  createTeam: team => {
+    const newTeam: Team = {
+      ...team,
+      id: `team${Date.now()}`,
+      members: [team.leaderId],
+      feed: [],
+      createdAt: new Date().toISOString(),
+    };
+    set(state => ({
+      teams: [...state.teams, newTeam],
+    }));
+    return newTeam;
+  },
+
+  getTeamById: id => {
+    return get().teams.find(team => team.id === id);
+  },
+
+  addTeamMember: (teamId, userId) => {
+    set(state => ({
+      teams: state.teams.map(team =>
+        team.id === teamId && !team.members.includes(userId)
+          ? {
+              ...team,
+              members: [...team.members, userId],
+              updatedAt: new Date().toISOString(),
+            }
+          : team,
+      ),
+    }));
+  },
+
+  removeTeamMember: (teamId, userId) => {
+    set(state => ({
+      teams: state.teams.map(team =>
+        team.id === teamId
+          ? {
+              ...team,
+              members: team.members.filter(id => id !== userId),
+              updatedAt: new Date().toISOString(),
+            }
+          : team,
+      ),
+    }));
+  },
+
+  createTeamPost: (teamId, post) => {
+    const newPost: TeamPost = {
+      ...post,
+      id: `post${Date.now()}`,
+      reactions: [],
+      comments: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    set(state => ({
+      teams: state.teams.map(team =>
+        team.id === teamId
+          ? {
+              ...team,
+              feed: [newPost, ...team.feed],
+              updatedAt: new Date().toISOString(),
+            }
+          : team,
+      ),
+    }));
+
+    return newPost;
+  },
+
+  updateTeamPost: (teamId, postId, updates) => {
+    set(state => ({
+      teams: state.teams.map(team => {
+        if (team.id !== teamId) return team;
+
+        return {
+          ...team,
+          feed: team.feed.map(post =>
+            post.id === postId
+              ? {
+                  ...post,
+                  ...updates,
+                  updatedAt: new Date().toISOString(),
+                }
+              : post,
+          ),
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+  },
+
+  deleteTeamPost: (teamId, postId) => {
+    set(state => ({
+      teams: state.teams.map(team =>
+        team.id === teamId
+          ? {
+              ...team,
+              feed: team.feed.filter(post => post.id !== postId),
+              updatedAt: new Date().toISOString(),
+            }
+          : team,
+      ),
+    }));
+  },
+
+  // addReaction: (teamId, postId, commentId, userId, reactionType) => {
+  //   set(state => ({
+  //     teams: state.teams.map(team => {
+  //       if (team.id !== teamId) return team;
+
+  //       const newReaction = {
+  //         userId,
+  //         type: reactionType,
+  //         createdAt: new Date().toISOString(),
+  //       };
+
+  //       return {
+  //         ...team,
+  //         feed: team.feed.map(post => {
+  //           if (post.id !== postId) return post;
+
+  //           // If it's a comment reaction
+  //           if (commentId) {
+  //             return {
+  //               ...post,
+  //               comments: post.comments.map(comment => {
+  //                 if (comment.id !== commentId) return comment;
+
+  //                 // Remove existing reaction from this user if exists
+  //                 const filteredReactions = comment.reactions.filter(
+  //                   r => r.userId !== userId,
+  //                 );
+  //                 return {
+  //                   ...comment,
+  //                   reactions: [...filteredReactions, newReaction],
+  //                   updatedAt: new Date().toISOString(),
+  //                 };
+  //               }),
+  //               updatedAt: new Date().toISOString(),
+  //             };
+  //           }
+
+  //           // It's a post reaction
+  //           // Remove existing reaction from this user if exists
+  //           const filteredReactions = post.reactions.filter(
+  //             r => r.userId !== userId,
+  //           );
+  //           return {
+  //             ...post,
+  //             reactions: [...filteredReactions, newReaction],
+  //             updatedAt: new Date().toISOString(),
+  //           };
+  //         }),
+  //         updatedAt: new Date().toISOString(),
+  //       };
+  //     }),
+  //   }));
+  // },
+
+  // removeReaction: (teamId, postId, commentId, userId) => {
+  //   set(state => ({
+  //     teams: state.teams.map(team => {
+  //       if (team.id !== teamId) return team;
+
+  //       return {
+  //         ...team,
+  //         feed: team.feed.map(post => {
+  //           if (post.id !== postId) return post;
+
+  //           // If it's a comment reaction
+  //           if (commentId) {
+  //             return {
+  //               ...post,
+  //               comments: post.comments.map(comment => {
+  //                 if (comment.id !== commentId) return comment;
+
+  //                 return {
+  //                   ...comment,
+  //                   reactions: comment.reactions.filter(
+  //                     r => r.userId !== userId,
+  //                   ),
+  //                   updatedAt: new Date().toISOString(),
+  //                 };
+  //               }),
+  //               updatedAt: new Date().toISOString(),
+  //             };
+  //           }
+
+  //           // It's a post reaction
+  //           return {
+  //             ...post,
+  //             reactions: post.reactions.filter(r => r.userId !== userId),
+  //             updatedAt: new Date().toISOString(),
+  //           };
+  //         }),
+  //         updatedAt: new Date().toISOString(),
+  //       };
+  //     }),
+  //   }));
+  // },
+
+  addComment: (teamId, postId, comment) => {
+    const newComment: TeamComment = {
+      ...comment,
+      id: `comment${Date.now()}`,
+      reactions: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    set(state => ({
+      teams: state.teams.map(team => {
+        if (team.id !== teamId) return team;
+
+        return {
+          ...team,
+          feed: team.feed.map(post => {
+            if (post.id !== postId) return post;
+
+            return {
+              ...post,
+              comments: [...post.comments, newComment],
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+
+    return newComment;
+  },
+
+  updateComment: (teamId, postId, commentId, updates) => {
+    set(state => ({
+      teams: state.teams.map(team => {
+        if (team.id !== teamId) return team;
+
+        return {
+          ...team,
+          feed: team.feed.map(post => {
+            if (post.id !== postId) return post;
+
+            return {
+              ...post,
+              comments: post.comments.map(comment =>
+                comment.id === commentId
+                  ? {
+                      ...comment,
+                      ...updates,
+                      updatedAt: new Date().toISOString(),
+                    }
+                  : comment,
+              ),
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+  },
+
+  deleteComment: (teamId, postId, commentId) => {
+    set(state => ({
+      teams: state.teams.map(team => {
+        if (team.id !== teamId) return team;
+
+        return {
+          ...team,
+          feed: team.feed.map(post => {
+            if (post.id !== postId) return post;
+
+            return {
+              ...post,
+              comments: post.comments.filter(
+                comment => comment.id !== commentId,
+              ),
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+  },
+}));

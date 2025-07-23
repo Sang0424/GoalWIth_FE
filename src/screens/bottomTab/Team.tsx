@@ -12,17 +12,20 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {useQuestStore} from '@/store/mockData';
+import {useTeamStore} from '../../store/mockData';
 import {Team} from '../../types/team.types';
 import {TeamNavParamList} from '@/types/navigation';
+import instance from '../../utils/axiosInterceptor';
+import {useQuery} from '@tanstack/react-query';
 
 const TeamScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<TeamNavParamList>>();
+  const {teams} = useTeamStore();
 
   // Handle team press to navigate to TeamFeed
   const handleTeamPress = (teamId: string) => {
-    navigation.navigate('TeamScreen');
+    navigation.navigate('TeamFeedScreen', {teamId});
   };
 
   // Handle create team button press
@@ -30,54 +33,91 @@ const TeamScreen = () => {
     navigation.navigate('TeamCreate');
   };
 
-  //   const myTeams = useQuestStore((state) => state.teams.filter(team => team.members.includes(user.id)));
-  //   const otherTeams = useQuestStore((state) => state.teams.filter(team => !team.members.includes(user.id)));
+  // ********* Backend랑 연결 부분 *********
+  // const { data, error, isLoading } = useQuery<Team[]>({
+  //   queryKey: ['Team'],
+  //   queryFn: async () => {
+  //     const response = await instance.get(`/team/`);
+  //     const teams = response.data;
+  //     return teams;
+  //   },
+  // });
+  // if (isLoading) {
+  //   return <Text>로딩중</Text>;
+  // }
+  // if (error) {
+  //   return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
+  // }
+  // ********* Backend랑 연결 부분 *********
 
-  const renderTeamItem: ListRenderItem<Team> = ({item}) => (
-    <TouchableOpacity
-      style={styles.teamCard}
-      onPress={() => handleTeamPress(item.id)}>
-      <View style={styles.teamHeader}>
-        <View style={styles.teamAvatar}>
-          <Text style={styles.teamAvatarText}>{item.name.charAt(0)}</Text>
-        </View>
-        <View style={styles.teamInfo}>
-          <Text style={styles.teamName}>{item.name}</Text>
-          <Text style={styles.teamMembers}>
-            {item.members.length}명의 팀원 •{' '}
-            {item.leaderId === '1' ? '리더' : '멤버'}
-          </Text>
-        </View>
-        <Icon name="chevron-right" size={24} color="#999" />
-      </View>
-      {item.feed && item.feed.length > 0 && item.feed[0] && (
-        <View style={styles.recentActivity}>
-          <Text style={styles.recentActivityTitle}>최근 활동</Text>
-          <View style={styles.recentPost}>
-            <Text
-              style={styles.recentPostText}
-              numberOfLines={2}
-              ellipsizeMode="tail">
-              {item.feed[0].content || '내용 없음'}
+  const renderTeamItem: ListRenderItem<Team> = ({item}) => {
+    // Format member count and role
+    const memberCount = item.members.length;
+    const isLeader = item.leaderId === '1';
+    const hasRecentActivity = item.feed && item.feed.length > 0 && item.feed[0];
+
+    // Calculate progress (example: based on team activity or completion)
+    const progress = Math.min((memberCount / 10) * 100, 100); // Example progress calculation
+
+    return (
+      <TouchableOpacity
+        style={[styles.questCard, isLeader && styles.mainQuestCard]}
+        onPress={() => handleTeamPress(item.id)}>
+        <View style={styles.cardHeader}>
+          <View style={styles.titleRow}>
+            <Text style={styles.questTitle} numberOfLines={1}>
+              {item.name}
             </Text>
-            {item.feed[0].image && (
-              <Image
-                source={{uri: item.feed[0].image}}
-                style={styles.recentPostImage}
-                resizeMode="cover"
-              />
-            )}
+            <View style={styles.statusBadge}>
+              {isLeader && <Text style={styles.mainBadge}>LEADER</Text>}
+              <Text style={styles.verificationBadge}>
+                {memberCount}명의 팀원
+              </Text>
+            </View>
+          </View>
+          <Text style={{fontSize: 12, color: '#666'}} numberOfLines={1}>
+            {item.quest.title}
+          </Text>
+          {/* Progress Bar */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, {width: `${progress}%`}]} />
+            </View>
+            <Text style={styles.progressText}>
+              {Math.round(progress)}% 완료
+            </Text>
           </View>
         </View>
-      )}
-    </TouchableOpacity>
-  );
+
+        {/* Recent Activity */}
+        {hasRecentActivity && (
+          <View style={styles.recentActivity}>
+            <Text style={styles.recentActivityTitle}>최근 활동</Text>
+            <View style={styles.recentPost}>
+              <Text style={styles.recentPostText} numberOfLines={2}>
+                {item.feed[0].content.length > 20
+                  ? item.feed[0].content.slice(0, 20) + '...'
+                  : item.feed[0].content || '내용 없음'}
+              </Text>
+              {item.feed[0].images?.[0] && (
+                <Image
+                  source={{uri: item.feed[0].images[0]}}
+                  style={styles.recentPostImage}
+                  resizeMode="cover"
+                />
+              )}
+            </View>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <FlatList
-          data={undefined}
+          data={teams}
           renderItem={renderTeamItem}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.teamList}
@@ -101,21 +141,22 @@ const TeamScreen = () => {
               </Text>
             </View>
           }
+          ListFooterComponent={
+            teams.length > 0 ? (
+              <View style={styles.otherTeamsSection}>
+                <Text style={styles.sectionTitle}>추천 팀</Text>
+                <FlatList
+                  data={teams}
+                  renderItem={renderTeamItem}
+                  keyExtractor={item => item.id}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.otherTeamsList}
+                />
+              </View>
+            ) : null
+          }
         />
-
-        {/* {otherTeams.length > 0 && (
-          <View style={styles.otherTeamsSection}>
-            <Text style={styles.sectionTitle}>추천 팀</Text>
-            <FlatList
-              data={otherTeams}
-              renderItem={renderTeamItem}
-              keyExtractor={item => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.otherTeamsList}
-            />
-          </View>
-        )} */}
       </View>
     </SafeAreaView>
   );
@@ -124,11 +165,11 @@ const TeamScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
   },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -159,73 +200,105 @@ const styles = StyleSheet.create({
   teamList: {
     padding: 15,
   },
-  teamCard: {
-    backgroundColor: 'white',
+  questCard: {
+    backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 15,
+    padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 4,
     elevation: 2,
   },
-  teamHeader: {
+  mainQuestCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#806a5b',
+  },
+  cardHeader: {
+    marginBottom: 12,
+  },
+  titleRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  teamAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#e0e0e0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  teamAvatarText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#666',
-  },
-  teamInfo: {
+  questTitle: {
     flex: 1,
-  },
-  teamName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 3,
   },
-  teamMembers: {
-    fontSize: 12,
-    color: '#888',
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mainBadge: {
+    backgroundColor: '#f0e6dd',
+    color: '#806a5b',
+    fontSize: 10,
+    fontWeight: 'bold',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 6,
+    overflow: 'hidden',
+  },
+  verificationBadge: {
+    backgroundColor: '#f0f0f0',
+    color: '#666',
+    fontSize: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 6,
+    overflow: 'hidden',
+  },
+  progressContainer: {
+    marginTop: 12,
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: 4,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 10,
+    color: '#666',
+    textAlign: 'right',
   },
   recentActivity: {
-    marginTop: 10,
-    paddingTop: 10,
+    marginTop: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
   },
   recentActivityTitle: {
     fontSize: 12,
-    color: '#888',
-    marginBottom: 5,
+    color: '#666',
+    marginBottom: 6,
   },
   recentPost: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 10,
   },
   recentPostText: {
-    flex: 1,
     fontSize: 13,
-    color: '#555',
-    marginRight: 10,
+    color: '#333',
+    marginBottom: 8,
   },
   recentPostImage: {
-    width: 50,
-    height: 50,
+    width: '100%',
+    height: 100,
     borderRadius: 6,
   },
   emptyState: {

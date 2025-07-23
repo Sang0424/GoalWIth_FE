@@ -168,21 +168,24 @@ const BottomSheet = ({
   }, []);
 
   // ********* Backend랑 연결 부분 *********
-  // const fetchData = async (formData: FormData) => {
-  //   await instance.post(`/quest/addQuest`, formData)
+  // const fetchData = async () => {
+  //   await instance.post(`/quest/addQuest`, {
+  //     title: newQuestTitle,
+  //     description: newQuestDescription,
+  //     isMain: isMainQuest,
+  //     startDate: startDate,
+  //     endDate: endDate,
+  //     procedure: 'progress',
+  //     verificationRequired: verificationRequired,
+  //     requiredVerifications: requiredVerifications,
+  //   })
   // };
   // const queryClient = useQueryClient();
   // const { mutate, error } = useMutation({
   //   mutationFn: fetchData,
   //   onSuccess: () => {
   //     queryClient.invalidateQueries({
-  //       queryKey: ['homeTodos'],
-  //     });
-  //     queryClient.invalidateQueries({
-  //       queryKey: ['addFeedTodos'],
-  //     });
-  //     queryClient.invalidateQueries({
-  //       queryKey: ['addFeedTags'],
+  //       queryKey: ['homeQuests'],
   //     });
   //     settodoModalVisible(false);
   //     setTitle('');
@@ -191,21 +194,9 @@ const BottomSheet = ({
   // const handleSubmit = async (event: GestureResponderEvent) => {
   //   if (newQuestTitle == '') {
   //     Alert.alert('할 일을 입력해주세요.');
-  //   } else {
-  //     event.preventDefault();
-  //     const formData = new FormData();
-  //     formData.append('title', newQuestTitle);
-  //     formData.append('isMain', String(isMainQuest));
-  //     formData.append('startDate', startDate.toISOString());
-  //     formData.append('endDate', endDate.toISOString());
-  //     formData.append('verificationRequired', String(verificationRequired));
-  //     formData.append('requiredVerifications', String(requiredVerifications));
-  //     if (whatTodo) {
-  //       formData.append('whatTodo', whatTodo);
-  //     }
-  //     console.log('Creating quest with isMain:', isMainQuest);
-  //     // mutate(formData);
   //   }
+  //   console.log('Creating quest with isMain:', isMainQuest);
+  //   mutate();
   // };
   // ********* Backend랑 연결 부분 *********
 
@@ -219,7 +210,6 @@ const BottomSheet = ({
       endDate: endDate,
       procedure: 'progress',
       verificationRequired: verificationRequired,
-      verificationCount: 0,
       requiredVerifications: requiredVerifications,
     });
     setNewQuestTitle('');

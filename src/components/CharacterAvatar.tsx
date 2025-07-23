@@ -1,16 +1,19 @@
 import React from 'react';
-import { View, StyleSheet, Image, ViewStyle, Platform } from 'react-native';
+import {View, StyleSheet, Image, ViewStyle, Platform} from 'react-native';
+import {ImageSourcePropType} from 'react-native';
 
 interface CharacterAvatarProps {
   size?: number;
   level?: number;
+  avatar: ImageSourcePropType | {uri: string};
   style?: ViewStyle;
 }
 
-const CharacterAvatar: React.FC<CharacterAvatarProps> = ({ 
-  size = 80, 
+const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
+  size = 80,
   level = 1,
-  style 
+  avatar,
+  style,
 }) => {
   // Get border color based on level
   const getBorderColor = () => {
@@ -24,25 +27,30 @@ const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
   const colors = getBorderColor();
 
   return (
-    <View style={[styles.container, { width: size, height: size }, style]}>
-      <View style={[
-        styles.gradientContainer, 
-        { 
-          borderRadius: size / 2,
-          borderWidth: 2,
-          borderColor: colors[0] // Use the first color as border color as fallback
-        }
-      ]}>
-        <View style={[styles.characterContainer, { 
-          width: size * 0.9, 
-          height: size * 0.9,
-          borderRadius: (size * 0.9) / 2,
-          backgroundColor: 'white',
-          borderWidth: 2,
-          borderColor: colors[1] || colors[0] // Use the second color or first as border color
-        }]}>
-          <Image 
-            source={require('../assets/character/pico_base.png')} 
+    <View style={[styles.container, {width: size, height: size}, style]}>
+      <View
+        style={[
+          styles.gradientContainer,
+          {
+            borderRadius: size / 2,
+            borderWidth: 2,
+            borderColor: colors[0], // Use the first color as border color as fallback
+          },
+        ]}>
+        <View
+          style={[
+            styles.characterContainer,
+            {
+              width: size * 0.9,
+              height: size * 0.9,
+              borderRadius: (size * 0.9) / 2,
+              backgroundColor: 'white',
+              borderWidth: 2,
+              borderColor: colors[1] || colors[0], // Use the second color or first as border color
+            },
+          ]}>
+          <Image
+            source={avatar}
             style={styles.characterImage}
             resizeMode="contain"
           />

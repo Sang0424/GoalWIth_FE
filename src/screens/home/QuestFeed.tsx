@@ -22,18 +22,56 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {QuestFeedProps} from '../../types/navigation';
 import {useQuestStore} from '../../store/mockData';
-import BackArrow from '../../components/BackArrow';
 import useKeyboardHeight from '../../utils/hooks/useKeyboardHeight';
 import ImageCarousel from '../../components/Carousel';
+import {useQuery, useMutation} from '@tanstack/react-query';
+import instance from '../../utils/axiosInterceptor';
+import {useQueryClient} from '@tanstack/react-query';
+import type {QuestRecord} from '../../types/quest.types';
 
 const QuestFeed = ({route}: QuestFeedProps) => {
   const navigation = useNavigation();
-  const {questId} = route.params;
+  const {quest} = route.params;
   const [newRecordText, setNewRecordText] = useState('');
   const [images, setImages] = useState<string[]>([]);
-  const quest = useQuestStore(state => state.getQuestById(questId));
   const {keyboardHeight} = useKeyboardHeight();
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // ********* Backend랑 연결 부분 *********
+  // const queryClient = useQueryClient()
+  // const { data, error, isLoading } = useQuery<Quest>({
+  //   queryKey: ['QuestRecord', questId],
+  //   queryFn: async () => {
+  //     const response = await instance.get(`/record/${questId}`);
+  //     const record = response.data;
+  //     return record;
+  //   },
+  // });
+  // if (isLoading) {
+  //   return <Text>로딩중</Text>;
+  // }
+  // if (error) {
+  //   return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
+  // }
+  // const quest = data;
+  // const {mutate, error} = useMutation({
+  //   mutationFn: (quest: Quest) => instance.post(`/quest/${questId}`, {
+  //     text: newRecordText.trim(),
+  //     images: images.length > 0 ? images : undefined,
+  //   }),
+  //   onSuccess: () => {
+  //     Alert.alert('성공', '기록이 추가되었습니다!');
+  //     setNewRecordText('');
+  //     setImages([]);
+  //   },
+  //   onError: (error) => {
+  //     Alert.alert('오류', '기록 추가 중 오류가 발생했습니다.');
+  //   },
+  //   onSettled: () => {
+  //     queryClient.invalidateQueries({queryKey: ['QuestRecord', questId]});
+  //   },
+  // });
+  // ********* Backend랑 연결 부분 *********
 
   useEffect(() => {
     if (quest?.records?.length) {
@@ -100,7 +138,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     }
 
     // Fix: Call the store function correctly
-    useQuestStore.getState().addQuestRecord(questId, {
+    useQuestStore.getState().addQuestRecord(quest.id, {
       date: new Date().toISOString(),
       text: newRecordText.trim(),
       images: images.length > 0 ? images : undefined,
@@ -120,7 +158,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       {
         text: '완료',
         onPress: () => {
-          useQuestStore.getState().completeQuest(questId);
+          useQuestStore.getState().completeQuest(quest.id);
           navigation.goBack();
         },
       },
@@ -250,7 +288,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               </Text>
             </View>
           ) : (
-            quest.records?.map(record => (
+            quest.records?.map((record: QuestRecord) => (
               <View key={record.id} style={styles.recordCard}>
                 <View style={styles.recordHeader}>
                   <Text style={styles.recordDate}>
@@ -316,11 +354,25 @@ const QuestFeed = ({route}: QuestFeedProps) => {
             <Text style={styles.completeButtonText}>완료하기</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButton, styles.addButton]}
+            style={[
+              styles.actionButton,
+              styles.addButton,
+              !newRecordText.trim() &&
+                images.length === 0 && {
+                  backgroundColor: '#ccc',
+                },
+            ]}
             onPress={handleAddRecord}
             disabled={!newRecordText.trim() && images.length === 0}>
             <Ionicons name="add" size={18} color="white" />
-            <Text style={styles.addButtonText}>기록 추가</Text>
+            <Text
+              style={
+                !newRecordText.trim() && images.length === 0
+                  ? styles.addButtonText
+                  : styles.addButtonText
+              }>
+              기록 추가
+            </Text>
           </TouchableOpacity>
         </View>
       </Animated.View>

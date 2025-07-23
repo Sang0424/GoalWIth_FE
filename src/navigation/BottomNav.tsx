@@ -2,7 +2,7 @@ import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
 import HomeNav from './HomeNav';
 import PeersDrawer from './PeersDrawer';
-import MyPage from '../screens/bottomTab/MyPage';
+import MyPageNav from './MyPageNav';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import type {BottomTabParamList} from '../types/navigation';
 import VerificationNav from '../navigation/VerificationNav';
@@ -42,7 +42,7 @@ export default function BottomNav() {
         }}
       />
       <Tab.Screen
-        name={'Peers'}
+        name={'PeersDrawer'}
         component={PeersDrawer}
         options={{
           tabBarIcon: ({color, size}) => (
@@ -62,12 +62,12 @@ export default function BottomNav() {
         }}
       />
       <Tab.Screen
-        name={'MyPage'}
-        component={MyPage}
+        name={'MyPageNav'}
+        component={MyPageNav}
         options={{
           tabBarIcon: ({color, size}) => (
             // <Icon name="account-circle" color={color} size={size} />
-            <Icon name="menu" color={color} size={size} />
+            <Icon name="more-horiz" color={color} size={size} />
           ),
           tabBarLabel: '더보기',
         }}

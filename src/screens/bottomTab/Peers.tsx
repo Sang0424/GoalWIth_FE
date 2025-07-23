@@ -1,19 +1,28 @@
-import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  Pressable,
+  ScrollView,
+} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useState } from 'react';
+import {useState} from 'react';
 import UserCard from '../../components/UserCard';
-import { useQuery } from '@tanstack/react-query';
+import {useQuery} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
-import { useNavigation, DrawerActions } from '@react-navigation/native';
-import { PeersNavParamList } from '../../types/navigation';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { NavigationProp } from '../../types/navigation';
+import {useNavigation, DrawerActions} from '@react-navigation/native';
+import {PeersNavParamList} from '../../types/navigation';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {DrawerNavigationProp} from '@react-navigation/drawer';
+import {NavigationProp} from '../../types/navigation';
+import {initialUser} from '../../store/mockData';
 
 export default function Peers() {
   const [search, setSearch] = useState('');
-  const { data, error, isLoading } = useQuery({
+  const users = initialUser;
+  const {data, error, isLoading} = useQuery({
     queryKey: ['requestedPeers'],
     queryFn: async () => {
       const response = await instance.get(`/users/requestedPeers`);
@@ -25,17 +34,17 @@ export default function Peers() {
   const navigation = useNavigation<NavigationProp>();
 
   return (
-    <SafeAreaView style={{ flex: 1, paddingHorizontal: 12 }}>
+    <SafeAreaView
+      style={{flex: 1, paddingHorizontal: 12, backgroundColor: '#FFFFFF'}}>
       <View style={styles.header}>
         <Pressable
-          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-        >
+          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
           <Icon name="menu" size={24} />
         </Pressable>
-        <Text style={{ fontSize: 24 }}>동료 맺기</Text>
-        <View style={{ width: 20 }} />
+        <Text style={{fontSize: 24}}>동료 맺기</Text>
+        <View style={{width: 20}} />
       </View>
-      <View style={{ marginHorizontal: 4 }}>
+      <View style={{marginHorizontal: 4}}>
         <View style={styles.searchContainer}>
           <Icon
             name="search"
@@ -60,53 +69,52 @@ export default function Peers() {
           )}
         </View>
       </View>
-      <Pressable
-        style={styles.request}
-        onPress={() =>
-          navigation.navigate('PeerRequest', {
-            peers: requestedPeers,
-          })
-        }
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16 }}>받은 요청</Text>
-          {requestedPeers.length > 0 && (
-            <View
-              style={{
-                backgroundColor: '#806a5b',
-                width: 24,
-                height: 24,
-                borderRadius: 20,
-                marginLeft: 12,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ color: '#FFFFFF', fontSize: 12 }}>
-                {requestedPeers.length}
-              </Text>
-            </View>
-          )}
+      <ScrollView>
+        <Pressable
+          style={styles.request}
+          onPress={() =>
+            navigation.navigate('PeerRequest', {
+              peers: requestedPeers,
+            })
+          }>
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <Text style={{fontSize: 16}}>받은 요청</Text>
+            {requestedPeers.length > 0 && (
+              <View
+                style={{
+                  backgroundColor: '#806a5b',
+                  width: 24,
+                  height: 24,
+                  borderRadius: 20,
+                  marginLeft: 12,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                <Text style={{color: '#FFFFFF', fontSize: 12}}>
+                  {requestedPeers.length}
+                </Text>
+              </View>
+            )}
+          </View>
+          <Icon name="chevron-right" size={24} />
+        </Pressable>
+        <View style={styles.main}>
+          <View>
+            <Text style={{fontSize: 16}}>비슷한 목표를 가진 사용자</Text>
+          </View>
+          <View
+            style={{
+              marginTop: 16,
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 8,
+            }}>
+            {users.map(user => (
+              <UserCard key={user.id} user={user} from="peers" />
+            ))}
+          </View>
         </View>
-        <Icon name="chevron-right" size={24} />
-      </Pressable>
-      <View style={styles.main}>
-        <View>
-          <Text style={{ fontSize: 16 }}>비슷한 목표를 가진 사용자</Text>
-        </View>
-        <View
-          style={{
-            marginTop: 16,
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 8,
-          }}
-        >
-          <UserCard from="peers" />
-          <UserCard from="peers" />
-          <UserCard from="peers" />
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -137,12 +145,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'gray',
-    backgroundColor: '#f1f1f1',
+    backgroundColor: '#f8f8f8',
     borderRadius: 10,
     padding: 8,
     marginTop: 16,
     height: 48,
   },
-  searchIcon: { backgroundColor: 'transparent' },
-  searchInput: { flex: 1, paddingLeft: 8 },
+  searchIcon: {backgroundColor: 'transparent'},
+  searchInput: {flex: 1, paddingLeft: 8},
 });
