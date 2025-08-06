@@ -1,4 +1,3 @@
-// ================= 새로운 인증 피드 구현 (Mock UI) =================
 import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
@@ -23,6 +22,7 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import instance from '../../utils/axiosInterceptor';
 import {useQuery} from '@tanstack/react-query';
+import {API_URL} from '@env';
 
 const VerificationFeedCard = ({item}: {item: {quest: Quest; user: User}}) => {
   const navigation =
@@ -45,7 +45,7 @@ const VerificationFeedCard = ({item}: {item: {quest: Quest; user: User}}) => {
           <Text style={styles.nickname}>
             {item.user.nickname} (Lv.{item.user.level})
           </Text>
-          <Text style={styles.badge}>{item.user.badge}</Text>
+          {/* <Text style={styles.badge}>{item.user.badge}</Text> */}
         </View>
         <Text style={styles.timestamp}>
           {new Date(item.quest.startDate).toLocaleString('ko-KR')}
@@ -117,34 +117,37 @@ const TAB_LIST = [
 ];
 
 const VerificationFeedScreen = () => {
-  const verificationQuests = useQuestStore(state => state.getVerificationFeed);
   const [feed, setFeed] = useState<Quest[] | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'realtime' | 'peers'>('realtime');
 
-  // ********* Backend랑 연결 부분 *********
-  // const {data, error, isLoading} = useQuery<Quest[]>({
-  //   queryKey: ['Verification'],
-  //   queryFn: async () => {
-  //     const response = await instance.get(`/quest/verification`);
-  //     const quests = response.data;
-  //     return quests;
-  //   },
-  // });
-  // if (isLoading) {
-  //   return <Text>로딩중</Text>;
-  // }
-  // if (error) {
-  //   return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
-  // }
-  // ********* Backend랑 연결 부분 *********
+  let verificationQuests: Quest[] | undefined;
+  if (API_URL == '') {
+    verificationQuests = useQuestStore(state => state.getVerificationFeed());
+  } else {
+    const {data, error, isLoading} = useQuery({
+      queryKey: ['Verification'],
+      queryFn: async () => {
+        const response = await instance.get(`/quest/verification`);
+        const quests = response.data;
+        return quests;
+      },
+    });
+    if (isLoading) {
+      return <Text>로딩중</Text>;
+    }
+    if (error) {
+      return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
+    }
+    verificationQuests = data;
+    setLoading(false);
+  }
 
   const fetchFeed = useCallback(async () => {
     setLoading(true);
     setTimeout(() => {
-      //setFeed(data);
       setFeed(verificationQuests);
       setLoading(false);
     }, 0);
@@ -229,7 +232,7 @@ const VerificationFeedScreen = () => {
                 id: 'user1',
                 nickname: 'user1',
                 level: 1,
-                badge: 'user1',
+
                 name: 'user1',
                 email: 'user1',
                 userType: 'user1',

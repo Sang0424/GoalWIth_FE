@@ -22,12 +22,15 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {TeamNavParamList} from '@/types/navigation';
 import {useRoute} from '@react-navigation/native';
+import {useMutation, useQueryClient} from '@tanstack/react-query';
+import instance from '../../utils/axiosInterceptor';
+import {GestureResponderEvent} from 'react-native';
 
 const TeamQuestCreateScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<TeamNavParamList>>();
   const route = useRoute();
-  const {teamName} = route.params as {teamName: string};
+  const {teamName, data} = route.params as {teamName: string; data: string};
 
   const {quests, addQuest} = useQuestStore();
   const [newQuestTitle, setNewQuestTitle] = useState('');
@@ -40,37 +43,38 @@ const TeamQuestCreateScreen = () => {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   // ********* Backend랑 연결 부분 *********
-  // const fetchData = async () => {
-  //   await instance.post(`/quest/addQuest`, {
-  //     title: newQuestTitle,
-  //     description: newQuestDescription,
-  //     isMain: isMainQuest,
-  //     startDate: startDate,
-  //     endDate: endDate,
-  //     procedure: 'progress',
-  //   })
-  // };
-  // const queryClient = useQueryClient();
-  // const { mutate, error } = useMutation({
-  //   mutationFn: fetchData,
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({
-  //       queryKey: ['teamQuests'],
-  //     });
-  //     setNewQuestTitle('');
-  //     setNewQuestDescription('');
-  //     setStartDate(new Date());
-  //     setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-  //     setShowStartDatePicker(false);
-  //     setShowEndDatePicker(false);
-  //   },
-  // });
-  // const handleSubmit = async (event: GestureResponderEvent) => {
-  //   if (newQuestTitle == '') {
-  //     Alert.alert('할 일을 입력해주세요.');
-  //   }
-  //   mutate();
-  // };
+  const fetchData = async () => {
+    await instance.post(`/quest/create`, {
+      title: newQuestTitle,
+      description: newQuestDescription,
+      isMain: false,
+      startDate: startDate,
+      endDate: endDate,
+      procedure: 'progress',
+      team_id: data,
+    });
+  };
+  const queryClient = useQueryClient();
+  const {mutate, error} = useMutation({
+    mutationFn: fetchData,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teamQuests'],
+      });
+      setNewQuestTitle('');
+      setNewQuestDescription('');
+      setStartDate(new Date());
+      setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+      setShowStartDatePicker(false);
+      setShowEndDatePicker(false);
+    },
+  });
+  const handleSubmit = async (event: GestureResponderEvent) => {
+    if (newQuestTitle == '') {
+      Alert.alert('할 일을 입력해주세요.');
+    }
+    mutate();
+  };
   // ********* Backend랑 연결 부분 *********
 
   const onStartDateChange = (
@@ -233,7 +237,7 @@ const TeamQuestCreateScreen = () => {
               styles.createButton,
               !teamName && styles.disabledButton,
             ]}
-            onPress={handleCreateTeam}
+            onPress={handleSubmit}
             disabled={!teamName}>
             <Text style={styles.createButtonText}>팀 생성하기</Text>
           </TouchableOpacity>

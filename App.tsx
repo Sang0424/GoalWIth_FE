@@ -1,6 +1,6 @@
-// if (__DEV__) {
-//   require('./ReactotronConfig');
-// }
+if (__DEV__) {
+  require('./ReactotronConfig');
+}
 
 import React from 'react';
 import OnBoardingNav from './src/navigation/OnBoardingNav';
@@ -16,67 +16,82 @@ import {userStore} from './src/store/userStore';
 import instance from './src/utils/axiosInterceptor';
 import SplashScreen from 'react-native-splash-screen';
 import {decodeJwt} from './src/utils/jwtUtils';
+import {API_URL} from '@env';
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const accessToken = tokenStore(state => state.accessToken);
+  console.log(API_URL);
+  if (API_URL == '') {
+    const accessToken = 'abc';
+    return (
+      <QueryClientProvider client={queryClient}>
+        <NavigationContainer>
+          <SafeAreaProvider>
+            <GestureHandlerRootView>
+              {accessToken !== null ? <BottomNav /> : <OnBoardingNav />}
+            </GestureHandlerRootView>
+          </SafeAreaProvider>
+        </NavigationContainer>
+      </QueryClientProvider>
+    );
+  } else {
+    const accessToken = tokenStore(state => state.accessToken);
+    // useEffect(() => {
+    //   const initializeApp = async () => {
+    //     try {
+    //       const refreshToken = await AsyncStorage.getItem('refreshToken');
+    //       console.log('refreshToken: ', refreshToken);
+    //       //AsyncStorage.clear();
+    //       //console.log(refreshToken);
+    //       if (refreshToken) {
+    //         const decoded = decodeJwt(refreshToken);
+    //         console.log(decoded);
+    //         if (decoded && decoded.exp && decoded.exp < Date.now() / 1000) {
+    //           await AsyncStorage.removeItem('refreshToken');
+    //           tokenStore.getState().actions.setAccessToken(null);
+    //         }
+    //         if (
+    //           decoded &&
+    //           decoded.exp &&
+    //           decoded.exp - Date.now() / 1000 < 7 * 24 * 60 * 60 &&
+    //           decoded.exp > Date.now() / 1000
+    //         ) {
+    //           const {data} = await instance.post('/user/refresh/refresh', {
+    //             refreshToken: refreshToken,
+    //           });
+    //           await AsyncStorage.setItem('refreshToken', data.refreshToken);
+    //         }
+    //         if (accessToken == null) {
+    //           const {data} = await instance.post('/user/refresh/access', {
+    //             refreshToken: refreshToken,
+    //           });
+    //           tokenStore.getState().actions.setAccessToken(data.accessToken);
+    //           await userStore.getState().loadUser();
+    //         }
+    //         await userStore.getState().loadUser();
+    //       }
+    //     } catch (error) {
+    //       console.error('Failed to initialize app:', error);
+    //     } finally {
+    //       // SplashScreen.hide();
+    //     }
+    //   };
 
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        const refreshToken = await AsyncStorage.getItem('refresh_token');
-
-        // AsyncStorage.clear();
-        // console.log(refreshToken);
-        if (refreshToken) {
-          const decoded = decodeJwt(refreshToken);
-          console.log(decoded);
-          if (decoded && decoded.exp && decoded.exp < Date.now() / 1000) {
-            await AsyncStorage.removeItem('refresh_token');
-            tokenStore.getState().actions.setAccessToken(null);
-          }
-          if (
-            decoded &&
-            decoded.exp &&
-            decoded.exp - Date.now() / 1000 < 7 * 24 * 60 * 60 &&
-            decoded.exp > Date.now() / 1000
-          ) {
-            const {data} = await instance.post('/users/refresh/refresh', {
-              refreshToken: refreshToken,
-            });
-            await AsyncStorage.setItem('refresh_token', data.refresh_token);
-          }
-          if (accessToken == null) {
-            const {data} = await instance.post('/users/refresh/access', {
-              refreshToken: refreshToken,
-            });
-            tokenStore.getState().actions.setAccessToken(data.access_token);
-            await userStore.getState().loadUser();
-          }
-          await userStore.getState().loadUser();
-        }
-      } catch (error) {
-        console.error('Failed to initialize app:', error);
-      } finally {
-        // SplashScreen.hide();
-      }
-    };
-
-    initializeApp();
-  }, [accessToken]);
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <NavigationContainer>
-        <SafeAreaProvider>
-          <GestureHandlerRootView>
-            {accessToken !== null ? <BottomNav /> : <OnBoardingNav />}
-          </GestureHandlerRootView>
-        </SafeAreaProvider>
-      </NavigationContainer>
-    </QueryClientProvider>
-  );
+    //   initializeApp();
+    // }, [accessToken]);
+    return (
+      <QueryClientProvider client={queryClient}>
+        <NavigationContainer>
+          <SafeAreaProvider>
+            <GestureHandlerRootView>
+              {accessToken !== null ? <BottomNav /> : <OnBoardingNav />}
+            </GestureHandlerRootView>
+          </SafeAreaProvider>
+        </NavigationContainer>
+      </QueryClientProvider>
+    );
+  }
 };
 
 export default App;

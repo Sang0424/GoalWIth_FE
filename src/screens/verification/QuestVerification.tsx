@@ -29,9 +29,8 @@ import type {QuestVerificationProps} from '../../types/navigation';
 import useKeyboardHeight from '../../utils/hooks/useKeyboardHeight';
 import ImageCarousel from '../../components/Carousel';
 import {useQueryClient} from '@tanstack/react-query';
-//import {instance} from '../../utils/axiosInterceptor';
+import instance from '../../utils/axiosInterceptor';
 import {useMutation} from '@tanstack/react-query';
-// import {instance} from '../../utils/axiosInterceptor';
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<
   QuestVerificationProps,
@@ -107,33 +106,31 @@ const QuestVerification = () => {
 
   // ********* Backend랑 연결 부분 *********
 
-  // const queryClient = useQueryClient();
-  // const {mutate, isLoading, error} = useMutation({
-  //   mutationFn: async () => {
-  //     const response = await instance.post(`/quest/verification/${quest.id}`, {
-  //       comment: verificationText,
-  //     });
-  //     return response.data;
-  //   },
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({
-  //       queryKey: ['Verification'],
-  //     });
-  //   },
-  //   onError: (error) => {
-  //     Alert.alert('오류', '인증 메시지 추가에 실패했습니다.');
-  //   },
-  // });
+  const queryClient = useQueryClient();
+  const {mutate, error} = useMutation({
+    mutationFn: async () => {
+      const response = await instance.post(`/quest/verification/${quest.id}`, {
+        comment: verificationText,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['Verification'],
+      });
+    },
+    onError: error => {
+      Alert.alert('오류', '인증 메시지 추가에 실패했습니다.');
+    },
+  });
 
   const handleVerify = () => {
     if (!verificationText.trim()) {
       Alert.alert('오류', '인증 메시지를 입력해주세요.');
       return;
     }
-
-    // In a real app, you would call a function to add verification
-    // For example: addVerification(questId, record.id, verificationText);
-    addVerification(quest.id);
+    mutate();
+    //addVerification(quest.id);
     Alert.alert('성공', '퀘스트 인증이 완료되었습니다!');
     setVerificationText('');
   };

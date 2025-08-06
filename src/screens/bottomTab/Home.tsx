@@ -11,11 +11,12 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  PanResponder,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Logo from '../../components/Logo';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useRef} from 'react';
 import BottomSheet from '../../components/BottomSheet';
 import {useNavigation} from '@react-navigation/native';
 import {HomeNavParamList} from '../../types/navigation';
@@ -29,53 +30,71 @@ import type {User} from '../../types/user.types';
 import {useQuestStore} from '../../store/mockData';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMutation} from '@tanstack/react-query';
-
-const defaultUser: User = {
-  id: '',
-  name: 'User',
-  email: '',
-  nickname: 'User',
-  userType: 'student',
-  level: 10,
-  exp: 0,
-  maxExp: 100,
-  actionPoints: 100,
-  avatar: require('../../assets/character/pico_base.png'),
-  // Note: Removed createdAt and updatedAt as they're not in the User type
-};
-
+import {API_URL} from '@env';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Reanimated, {
+  SharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 export default function Home() {
-  // ********* Backend랑 연결 부분 *********
-  // const queryClient = useQueryClient();
-  // const user = userStore(state => state.user);
-  // const { data, error, isLoading } = useQuery<Quest[]>({
-  //   queryKey: ['homeQuests'],
-  //   queryFn: async () => {
-  //     const response = await instance.get(`/quest/`);
-  //     const quests = response.data;
-  //     return quests;
-  //   },
-  // });
-  // if (isLoading) {
-  //   return <Text>로딩중</Text>;
-  // }
-  // if (error) {
-  //   return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
-  // }
-  // const quests = data;
-  // ********* Backend랑 연결 부분 *********
-  const {quests} = useQuestStore();
   const [modalVisible, setModalVisible] = useState(false);
+  const [questToEdit, setQuestToEdit] = useState<Quest | null>(null);
   const [isAddingMainQuest, setIsAddingMainQuest] = useState(false);
   const navigation =
     useNavigation<NativeStackNavigationProp<HomeNavParamList>>();
-  const user = defaultUser;
+  const isMockData = API_URL == '';
+  const storeUser = userStore(state => state.user);
+  const mockQuests = useQuestStore(state => state.quests);
+
+  let quests;
+  const queryClient = useQueryClient();
+
+  const {data, error, isLoading} = useQuery({
+    queryKey: ['homeQuests'],
+    queryFn: async () => {
+      const response = await instance.get(`/quest`);
+      const quests = response.data;
+      return quests;
+    },
+  });
+  if (isLoading) {
+    return <Text>로딩중</Text>;
+  }
+  if (error) {
+    return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
+  }
+  quests = data.quests;
+
+  const user = isMockData
+    ? {
+        id: '',
+        name: 'User',
+        email: '',
+        nickname: 'User',
+        userType: 'student',
+        level: 10,
+        exp: 0,
+        maxExp: 100,
+        actionPoints: 100,
+        avatar: require('../../assets/character/pico_base.png'),
+        // Note: Removed createdAt and updatedAt as they're not in the User type
+      }
+    : storeUser;
+  // ********* Backend랑 연결 부분 *********
   const currentExp = (user as User).exp;
   const maxExp = (user as User).maxExp;
   const progress = Math.min((currentExp / Math.max(maxExp, 1)) * 100, 100);
 
-  const mainQuest = quests.find((quest: Quest) => quest.isMain);
-  const subQuests = quests.filter((quest: Quest) => !quest.isMain).slice(0, 5);
+  const mainQuest =
+    quests && quests?.length > 0
+      ? quests?.find((quest: Quest) => quest.isMain)
+      : null;
+  const subQuests =
+    quests && quests?.length > 0
+      ? quests?.filter((quest: Quest) => !quest.isMain).slice(0, 5)
+      : [];
 
   // Render empty state
   const renderEmptyState = (isMain: boolean) => (
@@ -106,8 +125,56 @@ export default function Home() {
       </TouchableOpacity>
     </View>
   );
-  const QuestItem = ({quest}: {quest: Quest}) => {
+  const QuestItem = ({
+    quest,
+    onDelete,
+    onEdit,
+  }: {
+    quest: Quest;
+    onDelete: (id: string) => void;
+    onEdit: (quest: Quest) => void;
+  }) => {
     if (!quest) return null;
+
+    const swipeableRef = useRef<any>(null);
+    const [showHint, setShowHint] = useState(true);
+
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setShowHint(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }, []);
+
+    const renderRightActions = (progress: any, _dragX: any) => {
+      const animatedStyles = useAnimatedStyle(() => {
+        return {
+          transform: [{translateX: progress.value}],
+        };
+      });
+      return (
+        <View style={styles.rightActionsContainer}>
+          <Reanimated.View style={[styles.actionButtonInner, animatedStyles]}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.editButton]}
+              onPress={() => {
+                swipeableRef.current?.close();
+                onEdit(quest);
+              }}>
+              <Text style={styles.actionText}>수정</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.deleteButton]}
+              onPress={() => {
+                swipeableRef.current?.close();
+                onDelete(quest.id);
+              }}>
+              <Text style={styles.actionText}>삭제</Text>
+            </TouchableOpacity>
+          </Reanimated.View>
+        </View>
+      );
+    };
 
     // Original date calculations
     const startDate = quest.startDate
@@ -188,6 +255,7 @@ export default function Home() {
         (quest.verificationCount ?? 0) >= (quest.requiredVerifications ?? 0))
         ? [styles.completedCard]
         : []),
+      {borderRightWidth: 4, borderRightColor: '#FF0000'},
     ];
 
     const handleCompleteQuest = (quest: Quest) => {
@@ -199,60 +267,118 @@ export default function Home() {
     };
 
     return (
-      <TouchableOpacity
-        onPress={() => navigation.navigate('QuestFeed', {quest: quest})}>
-        <View style={cardStyle}>
-          {/* New UI Implementation */}
-          <View style={styles.cardHeader}>
-            <View style={styles.titleRow}>
-              <Text style={styles.questTitle} numberOfLines={1}>
-                {quest.title}
-              </Text>
-              <View style={styles.statusBadge}>
-                {quest.isMain && <Text style={styles.mainBadge}>MAIN</Text>}
-                <Text style={styles.verificationBadge}>
-                  {quest.verificationRequired ? '인증필요' : '자유퀘스트'}
+      <ReanimatedSwipeable
+        ref={swipeableRef}
+        containerStyle={styles.swipeableContainer}
+        friction={2}
+        rightThreshold={40}
+        renderRightActions={renderRightActions}
+        onSwipeableWillOpen={() => setShowHint(false)}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('QuestFeed', {quest: quest})}
+          activeOpacity={0.88}>
+          <View style={cardStyle}>
+            {showHint && (
+              <Text style={styles.hintText}>스와이프하여 수정/삭제</Text>
+            )}
+            {/* New UI Implementation */}
+            <View style={styles.cardHeader}>
+              <View style={styles.titleRow}>
+                <Text style={styles.questTitle} numberOfLines={1}>
+                  {quest.title}
+                </Text>
+                <View style={styles.statusBadge}>
+                  {quest.isMain && <Text style={styles.mainBadge}>MAIN</Text>}
+                  <Text style={styles.verificationBadge}>
+                    {quest.verificationRequired ? '인증필요' : '자유퀘스트'}
+                  </Text>
+                </View>
+              </View>
+              <View>
+                <Text style={{fontSize: 12, color: '#888'}}>
+                  {quest.description}
+                </Text>
+              </View>
+              {/* Progress Bar */}
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBar}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      {width: `${calculateProgressPercentage()}%`},
+                    ]}
+                  />
+                </View>
+                <Text style={styles.progressText}>
+                  {calculateProgressText()}
                 </Text>
               </View>
             </View>
-            <View>
-              <Text style={{fontSize: 12, color: '#888'}}>
-                {quest.description}
+
+            {/* Date Info */}
+            <View style={styles.dateInfo}>
+              <Text style={styles.dateText}>
+                {formatDateRange(
+                  String(quest.startDate),
+                  String(quest.endDate),
+                )}
+                {isDeadlineClose && (
+                  <Text style={styles.deadlineText}>
+                    ·{' '}
+                    {daysRemaining === 0 ? '오늘 마감!' : `D-${daysRemaining}`}
+                  </Text>
+                )}
               </Text>
             </View>
-            {/* Progress Bar */}
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    {width: `${calculateProgressPercentage()}%`},
-                  ]}
-                />
-              </View>
-              <Text style={styles.progressText}>{calculateProgressText()}</Text>
+
+            {/* Reward Info */}
+            <View style={styles.rewardInfo}>
+              <Text style={styles.rewardText}>
+                보상: {calculateReward()} EXP
+              </Text>
             </View>
           </View>
-
-          {/* Date Info */}
-          <View style={styles.dateInfo}>
-            <Text style={styles.dateText}>
-              {formatDateRange(String(quest.startDate), String(quest.endDate))}
-              {isDeadlineClose && (
-                <Text style={styles.deadlineText}>
-                  · {daysRemaining === 0 ? '오늘 마감!' : `D-${daysRemaining}`}
-                </Text>
-              )}
-            </Text>
-          </View>
-
-          {/* Reward Info */}
-          <View style={styles.rewardInfo}>
-            <Text style={styles.rewardText}>보상: {calculateReward()} EXP</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </ReanimatedSwipeable>
     );
+  };
+
+  const {mutate} = useMutation({
+    mutationFn: async (questId: string) => {
+      if (API_URL === '') {
+        useQuestStore.getState().deleteQuest(questId);
+        return;
+      }
+      await instance.delete(`/quest/${questId}`);
+    },
+    onSuccess: () => {
+      Alert.alert('퀘스트 삭제!', '퀘스트를 삭제했습니다!');
+      queryClient.invalidateQueries({queryKey: ['homeQuests']});
+    },
+    onError: error => {
+      Alert.alert('오류', '퀘스트 삭제 중 오류가 발생했습니다.');
+      console.log(error);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({queryKey: ['homeQuests']});
+    },
+  });
+
+  const handleDeleteQuest = (questId: string) => {
+    Alert.alert('퀘스트 삭제!', '퀘스트를 삭제하시겠습니까?', [
+      {text: '취소', style: 'cancel'},
+      {
+        text: '삭제',
+        onPress: () => {
+          mutate(questId);
+        },
+      },
+    ]);
+  };
+
+  const handleEditQuest = (quest: Quest) => {
+    setQuestToEdit(quest);
+    setModalVisible(true);
   };
 
   return (
@@ -280,7 +406,7 @@ export default function Home() {
               />
               <View style={styles.statsContainer}>
                 <Text style={styles.welcomeText}>
-                  안녕하세요, {user?.name}님!
+                  안녕하세요, {user?.nickname}님!
                 </Text>
                 <View
                   style={{
@@ -329,7 +455,11 @@ export default function Home() {
                 )}
               </View>
               {mainQuest ? (
-                <QuestItem quest={mainQuest} />
+                <QuestItem
+                  quest={mainQuest}
+                  onDelete={handleDeleteQuest}
+                  onEdit={handleEditQuest}
+                />
               ) : (
                 renderEmptyState(true)
               )}
@@ -346,29 +476,36 @@ export default function Home() {
                   <Text style={styles.sectionLink}>+ 추가</Text>
                 </TouchableOpacity>
               </View>
-              {subQuests.length > 0 ? (
+              {subQuests && subQuests?.length > 0 ? (
                 <>
-                  {subQuests.map(quest => (
-                    <QuestItem key={quest.id} quest={quest} />
+                  {subQuests?.map((quest: Quest) => (
+                    <QuestItem
+                      key={quest.id}
+                      quest={quest}
+                      onDelete={handleDeleteQuest}
+                      onEdit={handleEditQuest}
+                    />
                   ))}
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => {
+                      setIsAddingMainQuest(false);
+                      setModalVisible(true);
+                    }}>
+                    <Text style={styles.addButtonText}>
+                      {'서브 퀘스트 추가'}
+                    </Text>
+                  </TouchableOpacity>
                 </>
               ) : (
                 renderEmptyState(false)
               )}
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => {
-                  setIsAddingMainQuest(false);
-                  setModalVisible(true);
-                }}>
-                <Text style={styles.addButtonText}>{'서브 퀘스트 추가'}</Text>
-              </TouchableOpacity>
             </View>
             <BottomSheet
               todoModalVisible={modalVisible}
               settodoModalVisible={setModalVisible}
               isMainQuest={isAddingMainQuest}
-              quests={quests}
+              questToEdit={questToEdit}
             />
           </ScrollView>
         </TouchableWithoutFeedback>
@@ -431,6 +568,59 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 16,
+  },
+  swipeableContainer: {
+    backgroundColor: '#fff',
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  rightActionsContainer: {
+    flexDirection: 'row',
+    width: 150,
+    height: '100%',
+  },
+  actionButton: {
+    width: 75,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editButton: {
+    backgroundColor: '#4e9af1',
+  },
+  deleteButton: {
+    backgroundColor: '#ff4444',
+  },
+  actionText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  swipeHint: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    transform: [{translateY: -8}],
+    color: '#aaa',
+    fontSize: 12,
+    zIndex: 1,
+  },
+  hintText: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    transform: [{translateY: -8}],
+    color: '#aaa',
+    fontSize: 12,
+    zIndex: 1,
+  },
+  actionButtonInner: {
+    flex: 1,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '90%',
   },
   xpText: {
     fontSize: 16,
@@ -554,14 +744,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    borderLeftColor: 'transparent',
   },
   mainQuestCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#B9B69B', // Blue border for main quest
+    borderWidth: 1,
+    borderColor: '#e0e0e0', // Blue border for main quest
   },
   subQuestCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#e0e0e0', // Gray border for sub-quests
+    borderWidth: 1,
+    borderColor: '#e0e0e0', // Gray border for sub-quests
   },
   questHeader: {
     marginBottom: 8,

@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -12,20 +12,20 @@ import {
   Platform,
 } from 'react-native';
 import Logo from '../../components/Logo';
-import { useNavigation } from '@react-navigation/native';
-import type { OnBoardingStackParamList } from '../../types/navigation';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useRef, useState } from 'react';
+import {useNavigation} from '@react-navigation/native';
+import type {OnBoardingStackParamList} from '../../types/navigation';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {useRef, useState} from 'react';
 import React from 'react';
-import { isFormFilled } from '../../utils/isFormFilled';
-import { useMutation } from '@tanstack/react-query';
+import {isFormFilled} from '../../utils/isFormFilled';
+import {useMutation} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
-import { tokenStore } from '../../store/tokenStore';
-import { userStore } from '../../store/userStore';
+import {tokenStore} from '../../store/tokenStore';
+import {userStore} from '../../store/userStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login() {
-  const { width } = useWindowDimensions();
+  const {width} = useWindowDimensions();
   const navigation =
     useNavigation<NativeStackNavigationProp<OnBoardingStackParamList>>();
   const emailRef = useRef<TextInput>(null);
@@ -69,12 +69,12 @@ export default function Login() {
     return isValid;
   };
 
-  const { mutate } = useMutation({
+  const {mutate} = useMutation({
     mutationFn: async () => {
-      const response = await instance.post('/users/login', loginForm);
-      const { access_token, refresh_token } = response.data;
-      setAccessToken(access_token);
-      await AsyncStorage.setItem('refresh_token', refresh_token);
+      const response = await instance.post('/user/login', loginForm);
+      const {accessToken, refreshToken} = response.data;
+      setAccessToken(accessToken);
+      await AsyncStorage.setItem('refreshToken', refreshToken);
     },
     onSuccess: async () => {
       await loadUser();
@@ -90,14 +90,13 @@ export default function Login() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <SafeAreaView style={styles.container}>
-        <View style={{ flex: 1, justifyContent: 'center' }}>
+        <View style={{flex: 1, justifyContent: 'center'}}>
           <Logo />
         </View>
         <KeyboardAvoidingView
-          style={{ flex: 3, justifyContent: 'flex-start' }}
+          style={{flex: 3, justifyContent: 'flex-start'}}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-        >
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
           <TextInput
             value={loginForm.email}
             ref={emailRef}
@@ -106,10 +105,10 @@ export default function Login() {
             autoCapitalize="none"
             autoCorrect={false}
             enterKeyHint="next"
-            style={[styles.input, { width: width - 70, height: 40 }]}
+            style={[styles.input, {width: width - 70, height: 40}]}
             onSubmitEditing={() => passwordRef.current?.focus()}
             onChangeText={text => {
-              setLoginForm({ ...loginForm, email: text });
+              setLoginForm({...loginForm, email: text});
             }}
           />
           {error.email && <Text style={styles.errorMsg}>{error.email}</Text>}
@@ -121,11 +120,9 @@ export default function Login() {
             secureTextEntry={true}
             autoCorrect={false}
             autoCapitalize="none"
-            style={[styles.input, { width: width - 70, height: 40 }]}
+            style={[styles.input, {width: width - 70, height: 40}]}
             onSubmitEditing={() => passwordConfirmRef.current?.focus()}
-            onChangeText={text =>
-              setLoginForm({ ...loginForm, password: text })
-            }
+            onChangeText={text => setLoginForm({...loginForm, password: text})}
           />
           {error.password && (
             <Text style={styles.errorMsg}>{error.password}</Text>
@@ -133,17 +130,15 @@ export default function Login() {
           <Pressable
             style={[
               isFormFilled(loginForm) ? styles.nextBtn : styles.nextBtnDisabled,
-              { width: width - 54, height: 64 },
+              {width: width - 54, height: 64},
             ]}
-            onPress={submitLogin}
-          >
+            onPress={submitLogin}>
             <Text
               style={{
                 textAlign: 'center',
                 fontSize: 24,
                 fontWeight: 'bold',
-              }}
-            >
+              }}>
               로그인
             </Text>
           </Pressable>

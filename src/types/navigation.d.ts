@@ -77,7 +77,7 @@ export type TeamNavParamList = {
   TeamScreen: undefined;
   TeamCreate: undefined;
   TeamFeedScreen: {teamId: string};
-  TeamQuestCreateScreen: {teamName: string};
+  TeamQuestCreateScreen: {teamName: string; data: string};
 };
 export type TeamProps = NativeStackNavigationProp<
   TeamNavParamList,

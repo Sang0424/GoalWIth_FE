@@ -12,21 +12,23 @@ export interface Quest {
   records: QuestRecord[];
   verifications?: QuestVerification[];
   reactions?: Reaction[];
+  user?: User;
+  team?: Team;
 }
 
 export interface QuestRecord {
   id: string;
-  date?: string;
   text?: string;
-  images?: string[];
+  images?: Asset[];
   questId: string;
   createdAt: Date;
-  userId: string;
+  user: User;
 }
 
 export interface QuestVerification {
-  userId: string;
+  user: User;
   comment: string;
+  createdAt: Date;
 }
 
 export interface RouteParams {
@@ -39,7 +41,7 @@ export type ReactionType = 'support' | 'amazing' | 'together' | 'perfect';
 export interface Reaction {
   id: string;
   questId: string;
-  userId: string;
+  user: User;
   reactionType: ReactionType;
   createdAt: Date;
 }

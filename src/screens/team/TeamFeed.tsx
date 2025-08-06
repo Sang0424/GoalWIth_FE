@@ -17,6 +17,7 @@ import {useNavigation} from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useTeamStore} from '../../store/mockData';
 import {Team, TeamPost, TeamComment} from '../../types/team.types';
+import {QuestVerification} from '../../types/quest.types';
 import {TeamFeedProps} from '@/types/navigation';
 import {useRoute} from '@react-navigation/native';
 import {useEffect, useRef} from 'react';
@@ -25,6 +26,8 @@ import {launchImageLibrary} from 'react-native-image-picker';
 import ImageCarousel from '../../components/Carousel';
 import {useQuestStore} from '../../store/mockData';
 import useKeyboardHeight from '../../utils/hooks/useKeyboardHeight';
+import {API_URL} from '@env';
+import CharacterAvatar from '../../components/CharacterAvatar';
 
 const TeamFeedScreen = () => {
   const navigation = useNavigation<TeamFeedProps>();
@@ -32,17 +35,78 @@ const TeamFeedScreen = () => {
   const route = useRoute<TeamFeedProps>();
   const {teamId} = route.params;
   const {keyboardHeight} = useKeyboardHeight();
-
-  const quest = useQuestStore(state => state.getQuestById(teamId));
-
-  const {teams, createTeamPost, addComment, getTeamById} = useTeamStore();
   const [newPostText, setNewPostText] = useState('');
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
   const [isCommenting, setIsCommenting] = useState(false);
   const [images, setImages] = useState<string[]>([]);
 
-  const team = getTeamById(teamId);
+  let team;
+  let handleAddRecord: () => void;
+  let handleCompleteQuest: () => void;
+  let handleAddComment: (
+    postId: string,
+    comment: Omit<TeamComment, 'id' | 'createdAt' | 'updatedAt' | 'reactions'>,
+  ) => void;
+  if (API_URL == '') {
+    const {teams, createTeamPost, addComment, getTeamById} = useTeamStore();
+    const quest = useQuestStore(state => state.getQuestById(teamId));
+    const addQuestRecord = useQuestStore(state => state.addQuestRecord);
+    team = getTeamById(teamId);
+    handleAddRecord = async () => {
+      if (!newPostText.trim() && images.length === 0) {
+        Alert.alert('오류', '기록할 내용을 입력해주세요.');
+        return;
+      }
+
+      if (images.length > 3) {
+        Alert.alert('오류', '이미지는 최대 3장까지만 선택할 수 있습니다.');
+        return;
+      }
+
+      // Fix: Call the store function correctly
+      addQuestRecord(teamId, {
+        text: newPostText.trim(),
+        images: images.length > 0 ? images : undefined,
+      });
+
+      // Reset form
+      setNewPostText('');
+      setImages([]);
+
+      // Show success message
+      Alert.alert('성공', '기록이 추가되었습니다!');
+    };
+
+    const handleCompleteQuest = () => {
+      Alert.alert('퀘스트 완료', '이 퀘스트를 완료하시겠습니까?', [
+        {text: '취소', style: 'cancel'},
+        {
+          text: '완료',
+          onPress: () => {
+            useQuestStore.getState().completeQuest(teamId);
+            navigation.goBack();
+          },
+        },
+      ]);
+    };
+    handleAddComment = (
+      postId: string,
+      comment: Omit<
+        TeamComment,
+        'id' | 'createdAt' | 'updatedAt' | 'reactions'
+      >,
+    ) => {
+      if (!commentText.trim()) return;
+
+      addComment(postId, {
+        postId: postId,
+        content: commentText.trim(),
+      });
+
+      setCommentText('');
+    };
+  }
 
   if (!team) {
     return (
@@ -88,45 +152,6 @@ const TeamFeedScreen = () => {
     };
   }, []);
 
-  const handleAddRecord = async () => {
-    if (!newPostText.trim() && images.length === 0) {
-      Alert.alert('오류', '기록할 내용을 입력해주세요.');
-      return;
-    }
-
-    if (images.length > 3) {
-      Alert.alert('오류', '이미지는 최대 3장까지만 선택할 수 있습니다.');
-      return;
-    }
-
-    // Fix: Call the store function correctly
-    createTeamPost(teamId, {
-      userId: team.leaderId,
-      content: newPostText.trim(),
-      images: images.length > 0 ? images : undefined,
-    });
-
-    // Reset form
-    setNewPostText('');
-    setImages([]);
-
-    // Show success message
-    Alert.alert('성공', '기록이 추가되었습니다!');
-  };
-
-  const handleCompleteQuest = () => {
-    Alert.alert('퀘스트 완료', '이 퀘스트를 완료하시겠습니까?', [
-      {text: '취소', style: 'cancel'},
-      {
-        text: '완료',
-        onPress: () => {
-          useQuestStore.getState().completeQuest(teamId);
-          navigation.goBack();
-        },
-      },
-    ]);
-  };
-
   const pickImage = () => {
     const options: any = {
       mediaType: 'photo',
@@ -155,7 +180,7 @@ const TeamFeedScreen = () => {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: Date) => {
     const date = new Date(dateString);
     return `${date.getFullYear()}년 ${
       date.getMonth() + 1
@@ -163,17 +188,6 @@ const TeamFeedScreen = () => {
       2,
       '0',
     )}:${String(date.getMinutes()).padStart(2, '0')}`;
-  };
-
-  const handleAddComment = (postId: string) => {
-    if (!commentText.trim()) return;
-
-    addComment(teamId, postId, {
-      userId: team.leaderId,
-      content: commentText.trim(),
-    });
-
-    setCommentText('');
   };
 
   //   const toggleLike = (postId: string) => {
@@ -195,10 +209,10 @@ const TeamFeedScreen = () => {
       <View style={styles.postHeader}>
         <View style={styles.postUserInfo}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{post.userId.charAt(0)}</Text>
+            <CharacterAvatar size={40} avatar={post.user.avatar} />
           </View>
           <View>
-            <Text style={styles.userName}>{post.userId}</Text>
+            <Text style={styles.userName}>{post.user.name}</Text>
             <Text style={styles.postTime}>{formatDate(post.createdAt)}</Text>
           </View>
         </View>
@@ -207,7 +221,7 @@ const TeamFeedScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.postContent}>{post.content}</Text>
+      <Text style={styles.postContent}>{post.text}</Text>
 
       {post.images && post.images.length > 0 && (
         <ImageCarousel images={post.images} />
@@ -245,26 +259,29 @@ const TeamFeedScreen = () => {
               isCommenting && selectedPostId === post.id ? '#806a5b' : '#666'
             }
           />
-          <Text style={styles.actionText}>{post.comments.length}</Text>
+          <Text style={styles.actionText}>{post.verifications.length}</Text>
         </TouchableOpacity>
       </View>
 
       {isCommenting && selectedPostId === post.id && (
         <View style={styles.commentsSection}>
-          {post.comments.length > 0 ? (
-            post.comments.map((comment: TeamComment) => (
-              <View key={comment.id} style={styles.comment}>
+          {post.verifications.length > 0 ? (
+            post.verifications.map((verification: QuestVerification) => (
+              <View key={verification.user.id} style={styles.comment}>
                 <View style={styles.commentAvatar}>
-                  <Text style={styles.commentAvatarText}>
-                    {comment.userId.charAt(0)}
-                  </Text>
+                  <CharacterAvatar
+                    size={40}
+                    avatar={verification.user.avatar}
+                  />
                 </View>
                 <View style={styles.commentContent}>
-                  <Text style={styles.commentUserName}>{comment.userId}</Text>
-                  <Text style={styles.commentText}>{comment.content}</Text>
+                  <Text style={styles.commentUserName}>
+                    {verification.user.name}
+                  </Text>
+                  <Text style={styles.commentText}>{verification.comment}</Text>
                 </View>
                 <Text style={styles.commentTime}>
-                  {formatDate(comment.createdAt)}
+                  {formatDate(verification.createdAt)}
                 </Text>
               </View>
             ))
@@ -305,7 +322,7 @@ const TeamFeedScreen = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}>
         <FlatList
-          data={team.feed}
+          data={team.quest.records}
           style={!keyboardHeight ? {marginBottom: 40} : undefined}
           renderItem={renderPost}
           keyExtractor={item => item.id}

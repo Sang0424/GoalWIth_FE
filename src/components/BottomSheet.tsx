@@ -42,7 +42,7 @@ interface BottomSheetProps {
   settodoModalVisible: (visible: boolean) => void;
   whatTodo?: string;
   isMainQuest?: boolean;
-  quests?: Quest[];
+  questToEdit?: Quest | null;
 }
 
 const BottomSheet = ({
@@ -50,17 +50,13 @@ const BottomSheet = ({
   settodoModalVisible,
   whatTodo,
   isMainQuest = false,
+  questToEdit,
 }: BottomSheetProps) => {
   const {height: screenHeight} = useWindowDimensions();
-  // const panY = useRef(new Animated.Value(screenHeight)).current;
-  // const translateY = panY.interpolate({
-  //   inputRange: [-1, 0, 1],
-  //   outputRange: [0, 0, 1],
-  // });
   const translateY = useSharedValue(screenHeight);
   const context = useSharedValue({y: 0});
 
-  const {quests, addQuest} = useQuestStore();
+  const {addQuest, updateQuest} = useQuestStore();
   const [newQuestTitle, setNewQuestTitle] = useState('');
   const [newQuestDescription, setNewQuestDescription] = useState('');
   const [startDate, setStartDate] = useState(new Date());
@@ -72,6 +68,16 @@ const BottomSheet = ({
   const [verificationRequired, setVerificationRequired] = useState(false);
   const [requiredVerifications, setRequiredVerifications] = useState(3);
 
+  useEffect(() => {
+    if (questToEdit) {
+      setNewQuestTitle(questToEdit.title);
+      setNewQuestDescription(questToEdit.description || '');
+      setStartDate(new Date(questToEdit.startDate));
+      setEndDate(new Date(questToEdit.endDate));
+      setVerificationRequired(questToEdit.verificationRequired || false);
+      setRequiredVerifications(questToEdit.requiredVerifications || 3);
+    }
+  }, [questToEdit]);
   // Handle date change for date pickers with proper typing
   const onStartDateChange = (
     event: DateTimePickerEvent,
@@ -167,63 +173,108 @@ const BottomSheet = ({
     settodoModalVisible(false);
   }, []);
 
-  // ********* Backend랑 연결 부분 *********
-  // const fetchData = async () => {
-  //   await instance.post(`/quest/addQuest`, {
-  //     title: newQuestTitle,
-  //     description: newQuestDescription,
-  //     isMain: isMainQuest,
-  //     startDate: startDate,
-  //     endDate: endDate,
-  //     procedure: 'progress',
-  //     verificationRequired: verificationRequired,
-  //     requiredVerifications: requiredVerifications,
-  //   })
-  // };
-  // const queryClient = useQueryClient();
-  // const { mutate, error } = useMutation({
-  //   mutationFn: fetchData,
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({
-  //       queryKey: ['homeQuests'],
-  //     });
-  //     settodoModalVisible(false);
-  //     setTitle('');
-  //   },
-  // });
-  // const handleSubmit = async (event: GestureResponderEvent) => {
-  //   if (newQuestTitle == '') {
-  //     Alert.alert('할 일을 입력해주세요.');
-  //   }
-  //   console.log('Creating quest with isMain:', isMainQuest);
-  //   mutate();
-  // };
-  // ********* Backend랑 연결 부분 *********
+  let handleSubmit;
 
-  // ********* Frontend test *********
-  const handleSubmit = () => {
-    addQuest({
-      title: newQuestTitle,
-      description: newQuestDescription,
-      isMain: isMainQuest,
-      startDate: startDate,
-      endDate: endDate,
-      procedure: 'progress',
-      verificationRequired: verificationRequired,
-      requiredVerifications: requiredVerifications,
+  if (API_URL == '') {
+    handleSubmit = () => {
+      if (questToEdit) {
+        updateQuest(questToEdit.id, {
+          title: newQuestTitle,
+          description: newQuestDescription,
+          isMain: isMainQuest,
+          startDate: startDate,
+          endDate: endDate,
+          procedure: 'progress',
+          verificationRequired: verificationRequired,
+          requiredVerifications: requiredVerifications,
+        });
+        setShowStartDatePicker(false);
+        setShowEndDatePicker(false);
+        closeModalImmediately();
+        Keyboard.dismiss();
+      } else {
+        addQuest({
+          title: newQuestTitle,
+          description: newQuestDescription,
+          isMain: isMainQuest,
+          startDate: startDate,
+          endDate: endDate,
+          procedure: 'progress',
+          verificationRequired: verificationRequired,
+          requiredVerifications: requiredVerifications,
+        });
+        setNewQuestTitle('');
+        setNewQuestDescription('');
+        setStartDate(new Date());
+        setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+        setVerificationRequired(false);
+        setRequiredVerifications(3);
+        setShowStartDatePicker(false);
+        setShowEndDatePicker(false);
+        closeModalImmediately();
+        Keyboard.dismiss();
+      }
+    };
+  } else {
+    // ********* Backend랑 연결 부분 *********
+    const fetchData = async () => {
+      if (questToEdit) {
+        await instance.put(`/quest/${questToEdit.id}`, {
+          title: newQuestTitle,
+          description: newQuestDescription,
+          isMain: isMainQuest,
+          startDate: startDate,
+          endDate: endDate,
+          procedure: 'progress',
+          verificationRequired: verificationRequired,
+          requiredVerification: requiredVerifications,
+        });
+        setShowStartDatePicker(false);
+        setShowEndDatePicker(false);
+        closeModalImmediately();
+        Keyboard.dismiss();
+      } else {
+        await instance.post(`/quest/create`, {
+          title: newQuestTitle,
+          description: newQuestDescription,
+          isMain: isMainQuest,
+          startDate: startDate,
+          endDate: endDate,
+          procedure: 'progress',
+          verificationRequired: verificationRequired,
+          requiredVerification: requiredVerifications,
+        });
+        setNewQuestTitle('');
+        setNewQuestDescription('');
+        setStartDate(new Date());
+        setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+        setVerificationRequired(false);
+        setRequiredVerifications(3);
+        setShowStartDatePicker(false);
+        setShowEndDatePicker(false);
+        closeModalImmediately();
+        Keyboard.dismiss();
+      }
+    };
+    const queryClient = useQueryClient();
+    const {mutate, error} = useMutation({
+      mutationFn: fetchData,
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ['homeQuests'],
+        });
+        // settodoModalVisible(false);
+        // setNewQuestTitle('');
+      },
     });
-    setNewQuestTitle('');
-    setNewQuestDescription('');
-    setStartDate(new Date());
-    setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-    setVerificationRequired(false);
-    setRequiredVerifications(3);
-    setShowStartDatePicker(false);
-    setShowEndDatePicker(false);
-    closeModalImmediately();
-    Keyboard.dismiss();
-  };
-  // ********* Frontend test *********
+    handleSubmit = async (event: GestureResponderEvent) => {
+      if (newQuestTitle == '') {
+        Alert.alert('할 일을 입력해주세요.');
+      }
+      console.log('Creating quest with isMain:', isMainQuest);
+      mutate();
+    };
+  }
 
   return (
     <SafeAreaView>
@@ -264,7 +315,9 @@ const BottomSheet = ({
                         <Text style={styles.cancelButtonText}>취소</Text>
                       </TouchableOpacity>
                       <Text style={styles.bottomSheetTitle}>
-                        {isMainQuest
+                        {questToEdit
+                          ? '퀘스트 수정하기'
+                          : isMainQuest
                           ? '메인 퀘스트 추가하기'
                           : '서브 퀘스트 추가하기'}
                       </Text>
@@ -301,14 +354,21 @@ const BottomSheet = ({
                           <Text style={styles.inputLabel}>시작일</Text>
                           <TouchableOpacity
                             style={styles.dateInput}
-                            onPress={() => toggleDatePicker(true)}>
+                            onPress={() =>
+                              !questToEdit && toggleDatePicker(true)
+                            }
+                            disabled={!!questToEdit}>
                             <Icon
                               name="event"
                               size={18}
                               color="#666"
                               style={styles.dateIcon}
                             />
-                            <Text style={styles.dateText}>
+                            <Text
+                              style={[
+                                styles.dateText,
+                                questToEdit && {color: '#ccc'},
+                              ]}>
                               {startDate.toLocaleDateString('ko-KR')}
                             </Text>
                           </TouchableOpacity>

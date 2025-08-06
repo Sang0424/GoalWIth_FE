@@ -17,14 +17,42 @@ import {Team} from '../../types/team.types';
 import {TeamNavParamList} from '@/types/navigation';
 import instance from '../../utils/axiosInterceptor';
 import {useQuery} from '@tanstack/react-query';
+import {API_URL} from '@env';
+import {useState} from 'react';
+import {useEffect} from 'react';
 
 const TeamScreen = () => {
+  // const [reload, setReload] = useState(false);
+  // useEffect(() => {
+  //   setReload(false);
+  // }, [reload]);
   const navigation =
     useNavigation<NativeStackNavigationProp<TeamNavParamList>>();
-  const {teams} = useTeamStore();
-
+  let teams: Team[] | undefined;
+  if (API_URL == '') {
+    teams = useTeamStore(state => state.teams);
+  } else {
+    const {data, error, isLoading} = useQuery<Team[]>({
+      queryKey: ['Team'],
+      queryFn: async () => {
+        const response = await instance.get(`/team`);
+        const teams = response.data;
+        return teams;
+      },
+      enabled: API_URL != '',
+    });
+    if (isLoading) {
+      return <Text>로딩중</Text>;
+    }
+    if (error) {
+      //setReload(true);
+      return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
+    }
+    teams = data;
+  }
   // Handle team press to navigate to TeamFeed
   const handleTeamPress = (teamId: string) => {
+    //setReload(true);
     navigation.navigate('TeamFeedScreen', {teamId});
   };
 
@@ -33,28 +61,14 @@ const TeamScreen = () => {
     navigation.navigate('TeamCreate');
   };
 
-  // ********* Backend랑 연결 부분 *********
-  // const { data, error, isLoading } = useQuery<Team[]>({
-  //   queryKey: ['Team'],
-  //   queryFn: async () => {
-  //     const response = await instance.get(`/team/`);
-  //     const teams = response.data;
-  //     return teams;
-  //   },
-  // });
-  // if (isLoading) {
-  //   return <Text>로딩중</Text>;
-  // }
-  // if (error) {
-  //   return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
-  // }
-  // ********* Backend랑 연결 부분 *********
-
   const renderTeamItem: ListRenderItem<Team> = ({item}) => {
     // Format member count and role
     const memberCount = item.members.length;
     const isLeader = item.leaderId === '1';
-    const hasRecentActivity = item.feed && item.feed.length > 0 && item.feed[0];
+    const hasRecentActivity =
+      item.quest.records &&
+      item.quest.records.length > 0 &&
+      item.quest.records[0];
 
     // Calculate progress (example: based on team activity or completion)
     const progress = Math.min((memberCount / 10) * 100, 100); // Example progress calculation
@@ -95,13 +109,13 @@ const TeamScreen = () => {
             <Text style={styles.recentActivityTitle}>최근 활동</Text>
             <View style={styles.recentPost}>
               <Text style={styles.recentPostText} numberOfLines={2}>
-                {item.feed[0].content.length > 20
-                  ? item.feed[0].content.slice(0, 20) + '...'
-                  : item.feed[0].content || '내용 없음'}
+                {item.quest.records[0].text.length > 20
+                  ? item.quest.records[0].text.slice(0, 20) + '...'
+                  : item.quest.records[0].text || '내용 없음'}
               </Text>
-              {item.feed[0].images?.[0] && (
+              {item.quest.records[0].images?.[0] && (
                 <Image
-                  source={{uri: item.feed[0].images[0]}}
+                  source={{uri: item.quest.records[0].images[0]}}
                   style={styles.recentPostImage}
                   resizeMode="cover"
                 />
@@ -142,7 +156,7 @@ const TeamScreen = () => {
             </View>
           }
           ListFooterComponent={
-            teams.length > 0 ? (
+            teams && teams?.length > 0 ? (
               <View style={styles.otherTeamsSection}>
                 <Text style={styles.sectionTitle}>추천 팀</Text>
                 <FlatList

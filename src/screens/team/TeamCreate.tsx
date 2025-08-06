@@ -16,6 +16,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useTeamStore} from '../../store/mockData';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {TeamNavParamList} from '../../types/navigation';
+import {API_URL} from '@env';
+import {useMutation, useQueryClient} from '@tanstack/react-query';
+import instance from '../../utils/axiosInterceptor';
+import {Team} from '../../types/team.types';
 
 const TeamCreateScreen = () => {
   const navigation =
@@ -25,36 +29,59 @@ const TeamCreateScreen = () => {
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(true);
 
-  // ****** Backend랑 연결 부분 *********
-  // const queryClient = useQueryClient();
-  // const {mutate, error} = useMutation({
-  //   mutationFn: (team: Team) => instance.post(`/team`, {
-  //     name: teamName.trim(),
-  //     description: description.trim(),
-  //     isPublic: isPublic,
-  //   }),
-  //   onSuccess: () => {
-  //     Alert.alert('성공', '팀이 추가되었습니다!');
-  //     setTeamName('');
-  //     setDescription('');
-  //     setIsPublic(true);
-  //   },
-  //   onError: (error) => {
-  //     Alert.alert('오류', '팀 추가 중 오류가 발생했습니다.');
-  //   },
-  //   onSettled: () => {
-  //     queryClient.invalidateQueries({queryKey: ['Team']});
-  //   },
-  // });
+  const queryClient = useQueryClient();
 
-  const handleCreateTeam = () => {
-    if (!teamName.trim()) {
-      Alert.alert('오류', '팀 이름을 입력해주세요.');
-      return;
-    }
-    //mutate()
-    navigation.navigate('TeamQuestCreateScreen', {teamName});
-  };
+  let handleCreateTeam;
+
+  if (API_URL == '') {
+    handleCreateTeam = () => {
+      if (!teamName.trim()) {
+        Alert.alert('오류', '팀 이름을 입력해주세요.');
+        return;
+      }
+      //mutate()
+      navigation.navigate('TeamQuestCreateScreen', {teamName, data: '0'});
+    };
+  } else {
+    const {mutate} = useMutation({
+      mutationKey: ['TeamCreate'],
+      mutationFn: ({name, description, isPublic}: any) =>
+        instance.post(`/team/create`, {
+          name: name.trim(),
+          description: description?.trim(),
+          isPublic: isPublic,
+        }),
+      onSuccess: data => {
+        queryClient.setQueryData(['TeamCreate'], data);
+        console.log('팀 생성 후:', data);
+        Alert.alert('성공', '팀이 추가되었습니다!');
+        setTeamName('');
+        setDescription('');
+        setIsPublic(true);
+        navigation.navigate('TeamQuestCreateScreen', {
+          teamName,
+          data: data.data.teamId,
+        });
+      },
+      onError: error => {
+        Alert.alert('오류', '팀 추가 중 오류가 발생했습니다.');
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries({queryKey: ['Team']});
+      },
+    });
+    handleCreateTeam = () => {
+      if (!teamName.trim()) {
+        Alert.alert('오류', '팀 이름을 입력해주세요.');
+        return;
+      }
+      mutate({
+        name: teamName.trim(),
+        description: description.trim(),
+        isPublic: isPublic,
+      });
+    };
+  }
 
   return (
     <SafeAreaView style={styles.container}>

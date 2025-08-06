@@ -1,6 +1,6 @@
 import type {Reaction, Quest} from './quest.types';
 
-interface TeamReaction extends Omit<Reaction, 'questId' | 'id'> {}
+interface TeamReaction extends Omit<Reaction, 'questId'> {}
 
 interface TeamQuest
   extends Omit<
@@ -9,40 +9,44 @@ interface TeamQuest
     | 'verificationRequired'
     | 'verificationCount'
     | 'requiredVerifications'
-    | 'records'
     | 'verifications'
     | 'description'
     | 'isMain'
-  > {}
+    | 'records'
+    | 'user'
+    | 'reactions'
+    | 'verifications'
+  > {
+  records: TeamPost[];
+}
 
 export interface Team {
   id: string;
   name: string;
   description?: string;
-  members: string[];
-  leaderId: string;
+  members: User[];
+  leaderId: User;
   isPublic?: boolean;
-  feed: TeamPost[];
-  createdAt?: string;
+  createdAt?: Date;
   quest: TeamQuest;
 }
 
 export interface TeamPost {
   id: string;
-  userId: string;
-  content: string;
-  images?: string[];
+  user: User;
+  text: string;
+  images?: Asset[];
   reactions: TeamReaction[];
-  comments: TeamComment[];
-  createdAt: string;
+  verifications: QuestVerification[];
+  createdAt: Date;
 }
 
 export interface TeamComment {
   id: string;
-  userId: string;
+  user: User;
   content: string;
   reactions: TeamReaction[];
-  createdAt: string;
+  createdAt: Date;
 }
 
 export interface TeamScreenNavigationProp {
