@@ -28,7 +28,7 @@ export interface Team {
   leaderId: User;
   isPublic?: boolean;
   createdAt?: Date;
-  quest: TeamQuest;
+  teamQuest: TeamQuest;
 }
 
 export interface TeamPost {
@@ -52,3 +52,17 @@ export interface TeamComment {
 export interface TeamScreenNavigationProp {
   navigate: (screen: string, params?: {teamId: string}) => void;
 }
+
+type TeamPayload = {
+  name: string;
+  description?: string;
+  isPublic: boolean;
+};
+
+// API 응답 데이터의 타입을 정의합니다.
+// 실제 응답 구조에 맞게 수정해주세요.
+type TeamCreationResponse = {
+  data: {
+    teamId: number | string;
+  };
+};

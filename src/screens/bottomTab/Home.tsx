@@ -12,6 +12,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   PanResponder,
+  RefreshControl,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Logo from '../../components/Logo';
@@ -38,8 +39,10 @@ import Reanimated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+
 export default function Home() {
   const [modalVisible, setModalVisible] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [questToEdit, setQuestToEdit] = useState<Quest | null>(null);
   const [isAddingMainQuest, setIsAddingMainQuest] = useState(false);
   const navigation =
@@ -47,17 +50,48 @@ export default function Home() {
   const isMockData = API_URL == '';
   const storeUser = userStore(state => state.user);
   const mockQuests = useQuestStore(state => state.quests);
-
-  let quests;
+  const swipeableRef = useRef<any>(null);
+  const [showHint, setShowHint] = useState(true);
   const queryClient = useQueryClient();
 
-  const {data, error, isLoading} = useQuery({
+  const {mutate} = useMutation({
+    mutationFn: async (questId: string) => {
+      if (API_URL === '') {
+        useQuestStore.getState().deleteQuest(questId);
+        return;
+      }
+      await instance.delete(`/quest/${questId}`);
+    },
+    onSuccess: () => {
+      Alert.alert('퀘스트 삭제!', '퀘스트를 삭제했습니다!');
+      queryClient.invalidateQueries({queryKey: ['homeQuests']});
+    },
+    onError: error => {
+      Alert.alert('오류', '퀘스트 삭제 중 오류가 발생했습니다.');
+      console.log(error);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({queryKey: ['homeQuests']});
+    },
+  });
+
+  const {data, error, isLoading, refetch} = useQuery({
     queryKey: ['homeQuests'],
     queryFn: async () => {
       const response = await instance.get(`/quest`);
       const quests = response.data;
       return quests;
     },
+    enabled: !isMockData,
+  });
+  const {data: userData} = useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const response = await instance.get(`/user/info`);
+      const user = response.data;
+      return user;
+    },
+    enabled: !isMockData,
   });
   if (isLoading) {
     return <Text>로딩중</Text>;
@@ -65,7 +99,7 @@ export default function Home() {
   if (error) {
     return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
   }
-  quests = data.quests;
+  const quests = isMockData ? mockQuests : data?.quests;
 
   const user = isMockData
     ? {
@@ -81,10 +115,10 @@ export default function Home() {
         avatar: require('../../assets/character/pico_base.png'),
         // Note: Removed createdAt and updatedAt as they're not in the User type
       }
-    : storeUser;
+    : userData;
   // ********* Backend랑 연결 부분 *********
   const currentExp = (user as User).exp;
-  const maxExp = (user as User).maxExp;
+  const maxExp = (user as User).level * 100;
   const progress = Math.min((currentExp / Math.max(maxExp, 1)) * 100, 100);
 
   const mainQuest =
@@ -136,15 +170,12 @@ export default function Home() {
   }) => {
     if (!quest) return null;
 
-    const swipeableRef = useRef<any>(null);
-    const [showHint, setShowHint] = useState(true);
-
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        setShowHint(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }, []);
+    // useEffect(() => {
+    //   const timer = setTimeout(() => {
+    //     setShowHint(false);
+    //   }, 3000);
+    //   return () => clearTimeout(timer);
+    // }, []);
 
     const renderRightActions = (progress: any, _dragX: any) => {
       const animatedStyles = useAnimatedStyle(() => {
@@ -175,14 +206,6 @@ export default function Home() {
         </View>
       );
     };
-
-    // Original date calculations
-    const startDate = quest.startDate
-      ? new Date(quest.startDate).toLocaleDateString()
-      : 'No start date';
-    const endDate = quest.endDate
-      ? new Date(quest.endDate).toLocaleDateString()
-      : 'No end date';
 
     // New date calculations
     const now = new Date();
@@ -255,7 +278,6 @@ export default function Home() {
         (quest.verificationCount ?? 0) >= (quest.requiredVerifications ?? 0))
         ? [styles.completedCard]
         : []),
-      {borderRightWidth: 4, borderRightColor: '#FF0000'},
     ];
 
     const handleCompleteQuest = (quest: Quest) => {
@@ -278,9 +300,6 @@ export default function Home() {
           onPress={() => navigation.navigate('QuestFeed', {quest: quest})}
           activeOpacity={0.88}>
           <View style={cardStyle}>
-            {showHint && (
-              <Text style={styles.hintText}>스와이프하여 수정/삭제</Text>
-            )}
             {/* New UI Implementation */}
             <View style={styles.cardHeader}>
               <View style={styles.titleRow}>
@@ -336,33 +355,17 @@ export default function Home() {
               <Text style={styles.rewardText}>
                 보상: {calculateReward()} EXP
               </Text>
+              {showHint && (
+                <Text style={styles.hintText}>
+                  {'<<< '}스와이프하여 수정/삭제
+                </Text>
+              )}
             </View>
           </View>
         </TouchableOpacity>
       </ReanimatedSwipeable>
     );
   };
-
-  const {mutate} = useMutation({
-    mutationFn: async (questId: string) => {
-      if (API_URL === '') {
-        useQuestStore.getState().deleteQuest(questId);
-        return;
-      }
-      await instance.delete(`/quest/${questId}`);
-    },
-    onSuccess: () => {
-      Alert.alert('퀘스트 삭제!', '퀘스트를 삭제했습니다!');
-      queryClient.invalidateQueries({queryKey: ['homeQuests']});
-    },
-    onError: error => {
-      Alert.alert('오류', '퀘스트 삭제 중 오류가 발생했습니다.');
-      console.log(error);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({queryKey: ['homeQuests']});
-    },
-  });
 
   const handleDeleteQuest = (questId: string) => {
     Alert.alert('퀘스트 삭제!', '퀘스트를 삭제하시겠습니까?', [
@@ -374,6 +377,17 @@ export default function Home() {
         },
       },
     ]);
+  };
+
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const handleEditQuest = (quest: Quest) => {
@@ -389,7 +403,10 @@ export default function Home() {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView
             style={styles.container}
-            keyboardShouldPersistTaps="handled">
+            keyboardShouldPersistTaps="handled"
+            refreshControl={
+              <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+            }>
             {/* Character and Stats Section */}
             <Logo
               resizeMode="contain"
@@ -400,14 +417,12 @@ export default function Home() {
                 size={150}
                 level={user?.level}
                 avatar={
-                  user?.avatar ||
+                  user?.character ||
                   require('../../assets/character/pico_base.png')
                 }
               />
               <View style={styles.statsContainer}>
-                <Text style={styles.welcomeText}>
-                  안녕하세요, {user?.nickname}님!
-                </Text>
+                <Text style={styles.welcomeText}>{user?.nickname}</Text>
                 <View
                   style={{
                     flexDirection: 'row',
@@ -548,6 +563,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   rewardInfo: {
+    flexDirection: 'row',
     marginTop: 4,
   },
   completedCard: {
@@ -607,12 +623,23 @@ const styles = StyleSheet.create({
   },
   hintText: {
     position: 'absolute',
-    right: 16,
+    right: 0,
     top: '50%',
     transform: [{translateY: -8}],
     color: '#aaa',
     fontSize: 12,
     zIndex: 1,
+  },
+  hintTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  hintContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    textAlign: 'center',
+    gap: 4,
   },
   actionButtonInner: {
     flex: 1,
@@ -711,10 +738,11 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   welcomeText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: 'bold',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   section: {
     marginBottom: 24,

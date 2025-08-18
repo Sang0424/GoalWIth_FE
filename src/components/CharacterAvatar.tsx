@@ -5,7 +5,7 @@ import {ImageSourcePropType} from 'react-native';
 interface CharacterAvatarProps {
   size?: number;
   level?: number;
-  avatar: ImageSourcePropType | {uri: string};
+  avatar: string;
   style?: ViewStyle;
 }
 
@@ -50,7 +50,9 @@ const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
             },
           ]}>
           <Image
-            source={avatar}
+            source={{
+              uri: avatar,
+            }}
             style={styles.characterImage}
             resizeMode="contain"
           />

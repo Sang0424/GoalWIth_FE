@@ -323,7 +323,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
           ) : (
             questRecord?.map((record: QuestRecord) => (
               <View key={record.id} style={styles.recordCard}>
-                {record.images && <ImageCarousel images={record.images} />}
+                {record.images && record.images?.length > 0 && (
+                  <ImageCarousel images={record.images} />
+                )}
                 <Text style={styles.recordText}>{record.text}</Text>
               </View>
             ))

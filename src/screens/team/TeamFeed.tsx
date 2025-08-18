@@ -28,10 +28,12 @@ import {useQuestStore} from '../../store/mockData';
 import useKeyboardHeight from '../../utils/hooks/useKeyboardHeight';
 import {API_URL} from '@env';
 import CharacterAvatar from '../../components/CharacterAvatar';
+import {useQuery, useQueryClient, useMutation} from '@tanstack/react-query';
+import instance from '../../utils/axiosInterceptor';
 
 const TeamFeedScreen = () => {
   const navigation = useNavigation<TeamFeedProps>();
-
+  const queryClient = useQueryClient();
   const route = useRoute<TeamFeedProps>();
   const {teamId} = route.params;
   const {keyboardHeight} = useKeyboardHeight();
@@ -41,19 +43,20 @@ const TeamFeedScreen = () => {
   const [isCommenting, setIsCommenting] = useState(false);
   const [images, setImages] = useState<string[]>([]);
 
-  let team;
-  let handleAddRecord: () => void;
-  let handleCompleteQuest: () => void;
-  let handleAddComment: (
-    postId: string,
-    comment: Omit<TeamComment, 'id' | 'createdAt' | 'updatedAt' | 'reactions'>,
-  ) => void;
-  if (API_URL == '') {
-    const {teams, createTeamPost, addComment, getTeamById} = useTeamStore();
-    const quest = useQuestStore(state => state.getQuestById(teamId));
-    const addQuestRecord = useQuestStore(state => state.addQuestRecord);
-    team = getTeamById(teamId);
-    handleAddRecord = async () => {
+  // Mock data implementation
+  const useMockData = () => {
+    const {
+      teams,
+      getTeamById,
+      createTeamPost,
+      addComment,
+      deleteTeamPost,
+      updateTeamPost,
+      deleteComment,
+    } = useTeamStore();
+    const team = getTeamById(teamId);
+
+    const handleAddRecord = async () => {
       if (!newPostText.trim() && images.length === 0) {
         Alert.alert('오류', '기록할 내용을 입력해주세요.');
         return;
@@ -64,33 +67,19 @@ const TeamFeedScreen = () => {
         return;
       }
 
-      // Fix: Call the store function correctly
-      addQuestRecord(teamId, {
+      createTeamPost(teamId, {
         text: newPostText.trim(),
         images: images.length > 0 ? images : undefined,
+        user: {id: '4', name: 'test', avatar: '', level: 1},
+        verifications: [],
       });
 
-      // Reset form
       setNewPostText('');
       setImages([]);
-
-      // Show success message
       Alert.alert('성공', '기록이 추가되었습니다!');
     };
 
-    const handleCompleteQuest = () => {
-      Alert.alert('퀘스트 완료', '이 퀘스트를 완료하시겠습니까?', [
-        {text: '취소', style: 'cancel'},
-        {
-          text: '완료',
-          onPress: () => {
-            useQuestStore.getState().completeQuest(teamId);
-            navigation.goBack();
-          },
-        },
-      ]);
-    };
-    handleAddComment = (
+    const handleAddComment = (
       postId: string,
       comment: Omit<
         TeamComment,
@@ -98,23 +87,276 @@ const TeamFeedScreen = () => {
       >,
     ) => {
       if (!commentText.trim()) return;
-
-      addComment(postId, {
-        postId: postId,
-        content: commentText.trim(),
-      });
-
+      addComment(postId, comment);
       setCommentText('');
     };
-  }
 
-  if (!team) {
+    const handleUpdatePost = (postId: string, updates: Partial<TeamPost>) => {
+      updateTeamPost(teamId, postId, updates);
+    };
+
+    const handleDeletePost = (postId: string) => {
+      deleteTeamPost(teamId, postId);
+    };
+
+    const handleDeleteComment = (postId: string, commentId: string) => {
+      deleteComment(postId, commentId);
+    };
+
+    return {
+      team,
+      handleAddRecord,
+      handleAddComment,
+      handleUpdatePost,
+      handleDeletePost,
+      handleDeleteComment,
+      isLoading: false,
+      isError: false,
+    };
+  };
+
+  // Real API implementation
+  const useApiData = () => {
+    const fetchTeamFeed = async () => {
+      const response = await instance.get(`${API_URL}/record/team/${teamId}`);
+      return response.data;
+    };
+
+    const addTeamPost = async (
+      postData: Omit<TeamPost, 'id' | 'createdAt' | 'updatedAt' | 'reactions'>,
+    ) => {
+      const formData = new FormData();
+
+      formData.append('text', postData.text || '');
+
+      if (postData.images && postData.images.length > 0) {
+        postData.images.forEach((image, index) => {
+          formData.append(`images[${index}]`, {
+            uri: image,
+            type: 'image/jpeg',
+            name: `image_${index}.jpg`,
+          });
+        });
+      } else {
+        formData.append('images', '[]');
+      }
+      const response = await instance.post(
+        `${API_URL}/record/team/${teamId}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        },
+      );
+      return response.data;
+    };
+
+    const updateTeamPost = async (
+      postId: string,
+      updates: Partial<TeamPost>,
+    ) => {
+      const formData = new FormData();
+
+      formData.append('text', updates.text || '');
+
+      if (updates.images && updates.images.length > 0) {
+        updates.images.forEach((image, index) => {
+          formData.append(`images[${index}]`, {
+            uri: image,
+            type: 'image/jpeg',
+            name: `image_${index}.jpg`,
+          });
+        });
+      } else {
+        formData.append('images', '[]');
+      }
+      const response = await instance.put(
+        `${API_URL}/record/team/${postId}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        },
+      );
+      return response.data;
+    };
+
+    const deleteTeamPost = async (postId: string) => {
+      await instance.delete(`${API_URL}/record/team/${postId}`);
+    };
+
+    const addTeamComment = async (
+      postId: string,
+      comment: Omit<
+        TeamComment,
+        'id' | 'createdAt' | 'updatedAt' | 'reactions'
+      >,
+    ) => {
+      const response = await instance.post(
+        `${API_URL}/record/team/comment/${postId}`,
+        comment,
+      );
+      return response.data;
+    };
+
+    const updateTeamComment = async (
+      postId: string,
+      commentId: string,
+      updates: Partial<TeamComment>,
+    ) => {
+      const response = await instance.put(
+        `${API_URL}/record/team/comment/${commentId}`,
+        updates,
+      );
+      return response.data;
+    };
+
+    const deleteTeamComment = async (postId: string, commentId: string) => {
+      await instance.delete(`${API_URL}/record/team/comment/${commentId}`);
+    };
+
+    // Queries
+    const {
+      data: team,
+      isLoading,
+      isError,
+    } = useQuery({
+      queryKey: ['teamFeed', teamId],
+      queryFn: fetchTeamFeed,
+    });
+
+    // Mutations
+    const addPostMutation = useMutation({
+      mutationFn: addTeamPost,
+      onSuccess: () => {
+        queryClient.invalidateQueries({queryKey: ['teamFeed', teamId]});
+        setNewPostText('');
+        setImages([]);
+        Alert.alert('성공', '기록이 추가되었습니다!');
+      },
+    });
+
+    const updatePostMutation = useMutation({
+      mutationFn: ({
+        postId,
+        updates,
+      }: {
+        postId: string;
+        updates: Partial<TeamPost>;
+      }) => updateTeamPost(postId, updates),
+      onSuccess: () => {
+        queryClient.invalidateQueries({queryKey: ['teamFeed', teamId]});
+      },
+    });
+
+    const deletePostMutation = useMutation({
+      mutationFn: deleteTeamPost,
+      onSuccess: () => {
+        queryClient.invalidateQueries({queryKey: ['teamFeed', teamId]});
+      },
+    });
+
+    const addCommentMutation = useMutation({
+      mutationFn: ({postId, comment}: {postId: string; comment: any}) =>
+        addTeamComment(postId, comment),
+      onSuccess: () => {
+        queryClient.invalidateQueries({queryKey: ['teamFeed', teamId]});
+        setCommentText('');
+      },
+    });
+
+    const deleteCommentMutation = useMutation({
+      mutationFn: ({postId, commentId}: {postId: string; commentId: string}) =>
+        deleteTeamComment(postId, commentId),
+      onSuccess: () => {
+        queryClient.invalidateQueries({queryKey: ['teamFeed', teamId]});
+      },
+    });
+
+    const handleAddRecord = async () => {
+      if (!newPostText.trim() && images.length === 0) {
+        Alert.alert('오류', '기록할 내용을 입력해주세요.');
+        return;
+      }
+
+      if (images.length > 3) {
+        Alert.alert('오류', '이미지는 최대 3장까지만 선택할 수 있습니다.');
+        return;
+      }
+
+      await addPostMutation.mutateAsync({
+        text: newPostText.trim(),
+        images: images.length > 0 ? images : undefined,
+        user: {id: '4', name: 'test', avatar: '', level: 1},
+        verifications: [],
+      });
+    };
+
+    const handleAddComment = (
+      postId: string,
+      comment: Omit<
+        TeamComment,
+        'id' | 'createdAt' | 'updatedAt' | 'reactions'
+      >,
+    ) => {
+      if (!commentText.trim()) return;
+      addCommentMutation.mutate({postId, comment});
+    };
+
+    const handleUpdatePost = (postId: string, updates: Partial<TeamPost>) => {
+      updatePostMutation.mutate({postId, updates});
+    };
+
+    const handleDeletePost = (postId: string) => {
+      deletePostMutation.mutate(postId);
+    };
+
+    const handleDeleteComment = (postId: string, commentId: string) => {
+      deleteCommentMutation.mutate({postId, commentId});
+    };
+
+    return {
+      team,
+      handleAddRecord,
+      handleAddComment,
+      handleUpdatePost,
+      handleDeletePost,
+      handleDeleteComment,
+      isLoading,
+      isError,
+    };
+  };
+
+  // Select implementation based on API_URL
+  const {
+    team,
+    handleAddRecord,
+    handleAddComment,
+    handleUpdatePost,
+    handleDeletePost,
+    handleDeleteComment,
+    isLoading,
+    isError,
+  } = API_URL === '' ? useMockData() : useApiData();
+
+  if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <Text>팀을 찾을 수 없습니다.</Text>
+        <Text>로딩 중...</Text>
       </View>
     );
   }
+
+  if (isError || !team) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text>팀을 불러오는 중 오류가 발생했습니다.</Text>
+      </View>
+    );
+  }
+
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
   // 200 duration is somewhat a magic number that seemed to work nicely with
@@ -295,7 +537,12 @@ const TeamFeedScreen = () => {
               placeholder="댓글을 입력하세요..."
               value={commentText}
               onChangeText={setCommentText}
-              onSubmitEditing={() => handleAddComment(post.id)}
+              onSubmitEditing={() =>
+                handleAddComment(post.id, {
+                  content: commentText,
+                  user: {id: '4', name: 'test', avatar: '', level: 1},
+                })
+              }
             />
             <TouchableOpacity
               style={
@@ -303,7 +550,12 @@ const TeamFeedScreen = () => {
                   ? styles.commentButton
                   : styles.commentButtonDisabled
               }
-              onPress={() => handleAddComment(post.id)}
+              onPress={() =>
+                handleAddComment(post.id, {
+                  content: commentText,
+                  user: {id: '4', name: 'test', avatar: '', level: 1},
+                })
+              }
               disabled={!commentText.trim()}>
               <Ionicons name="send" size={20} color="white" />
             </TouchableOpacity>
@@ -322,7 +574,7 @@ const TeamFeedScreen = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}>
         <FlatList
-          data={team.quest.records}
+          data={team.teamQuest.records}
           style={!keyboardHeight ? {marginBottom: 40} : undefined}
           renderItem={renderPost}
           keyExtractor={item => item.id}
@@ -388,7 +640,18 @@ const TeamFeedScreen = () => {
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={[styles.postActionButton, styles.completeButton]}
-              onPress={handleCompleteQuest}>
+              onPress={() =>
+                Alert.alert('퀘스트 완료', '이 퀘스트를 완료하시겠습니까?', [
+                  {text: '취소', style: 'cancel'},
+                  {
+                    text: '완료',
+                    onPress: () => {
+                      // useQuestStore.getState().completeQuest(teamId);
+                      navigation.goBack();
+                    },
+                  },
+                ])
+              }>
               <Ionicons name="checkmark-circle" size={18} color="white" />
               <Text style={styles.completeButtonText}>완료하기</Text>
             </TouchableOpacity>

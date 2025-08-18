@@ -30,7 +30,10 @@ const TeamQuestCreateScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<TeamNavParamList>>();
   const route = useRoute();
-  const {teamName, data} = route.params as {teamName: string; data: string};
+  const {teamName, data} = route.params as {
+    teamName: string;
+    data: string | number;
+  };
 
   const {quests, addQuest} = useQuestStore();
   const [newQuestTitle, setNewQuestTitle] = useState('');

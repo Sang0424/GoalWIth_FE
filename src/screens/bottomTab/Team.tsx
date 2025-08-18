@@ -8,57 +8,101 @@ import {
   Image,
   SafeAreaView,
   ListRenderItem,
+  Alert,
+  TextInput,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {useTeamStore} from '../../store/mockData';
+import {useTeamStore, useQuestStore} from '../../store/mockData';
 import {Team} from '../../types/team.types';
+import {Quest} from '@/types/quest.types';
 import {TeamNavParamList} from '@/types/navigation';
 import instance from '../../utils/axiosInterceptor';
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {API_URL} from '@env';
-import {useState} from 'react';
-import {useEffect} from 'react';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Reanimated, {
+  SharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import {useRef, useState} from 'react';
 
 const TeamScreen = () => {
-  // const [reload, setReload] = useState(false);
-  // useEffect(() => {
-  //   setReload(false);
-  // }, [reload]);
   const navigation =
     useNavigation<NativeStackNavigationProp<TeamNavParamList>>();
-  let teams: Team[] | undefined;
-  if (API_URL == '') {
-    teams = useTeamStore(state => state.teams);
-  } else {
-    const {data, error, isLoading} = useQuery<Team[]>({
-      queryKey: ['Team'],
-      queryFn: async () => {
-        const response = await instance.get(`/team`);
-        const teams = response.data;
-        return teams;
-      },
-      enabled: API_URL != '',
-    });
-    if (isLoading) {
-      return <Text>로딩중</Text>;
-    }
-    if (error) {
-      //setReload(true);
-      return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
-    }
-    teams = data;
+  const [showHint, setShowHint] = useState(true);
+  const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const swipeableRef = useRef<any>(null);
+  const queryClient = useQueryClient();
+  const isMockData = API_URL == '';
+  const mockTeams = useTeamStore(state => state.teams);
+
+  const {mutate} = useMutation({
+    mutationFn: async (teamId: string) => {
+      if (API_URL === '') {
+        useTeamStore.getState().deleteTeam(teamId);
+        return;
+      }
+      await instance.delete(`/team/${teamId}`);
+    },
+    onSuccess: () => {
+      Alert.alert('팀 삭제!', '팀을 삭제했습니다!');
+      queryClient.invalidateQueries({queryKey: ['team']});
+    },
+    onError: error => {
+      Alert.alert('오류', '팀 삭제 중 오류가 발생했습니다.');
+      console.log(error);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({queryKey: ['team']});
+    },
+  });
+
+  const {data, refetch} = useQuery({
+    queryKey: ['team'],
+    queryFn: async () => {
+      const response = await instance.get(`/team`);
+      const teams = response.data;
+      return teams;
+    },
+    enabled: !isMockData,
+  });
+  let teams = data?.teams || [];
+
+  if (isMockData) {
+    teams = mockTeams;
   }
+
+  console.log('teams : ', teams);
+  const handleDeleteTeam = (teamId: string) => {
+    Alert.alert('팀 삭제!', '팀을 삭제하시겠습니까?', [
+      {text: '취소', style: 'cancel'},
+      {
+        text: '삭제',
+        onPress: () => {
+          mutate(teamId);
+        },
+      },
+    ]);
+  };
+  const handleEditTeam = (team: Team) => {
+    navigation.navigate('TeamCreate', {teamToEdit: team});
+  };
+
   // Handle team press to navigate to TeamFeed
   const handleTeamPress = (teamId: string) => {
-    //setReload(true);
     navigation.navigate('TeamFeedScreen', {teamId});
   };
 
   // Handle create team button press
   const handleCreateTeam = () => {
-    navigation.navigate('TeamCreate');
+    navigation.navigate('TeamCreate', {teamToEdit: null});
   };
 
   const renderTeamItem: ListRenderItem<Team> = ({item}) => {
@@ -66,9 +110,117 @@ const TeamScreen = () => {
     const memberCount = item.members.length;
     const isLeader = item.leaderId === '1';
     const hasRecentActivity =
-      item.quest.records &&
-      item.quest.records.length > 0 &&
-      item.quest.records[0];
+      item.teamQuest?.records &&
+      item.teamQuest?.records.length > 0 &&
+      item.teamQuest?.records[0];
+
+    const renderRightActions = (progress: any, _dragX: any) => {
+      const animatedStyles = useAnimatedStyle(() => {
+        return {
+          transform: [{translateX: progress.value}],
+        };
+      });
+      return (
+        <View style={styles.rightActionsContainer}>
+          <Reanimated.View style={[styles.actionButtonInner, animatedStyles]}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.editButton]}
+              onPress={() => {
+                swipeableRef.current?.close();
+                handleEditTeam(item);
+              }}>
+              <Text style={styles.actionText}>수정</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.deleteButton]}
+              onPress={() => {
+                swipeableRef.current?.close();
+                handleDeleteTeam(item.id);
+              }}>
+              <Text style={styles.actionText}>삭제</Text>
+            </TouchableOpacity>
+          </Reanimated.View>
+        </View>
+      );
+    };
+    // Calculate progress (example: based on team activity or completion)
+    const progress = Math.min((memberCount / 10) * 100, 100); // Example progress calculation
+
+    return (
+      <ReanimatedSwipeable
+        ref={swipeableRef}
+        containerStyle={styles.swipeableContainer}
+        friction={2}
+        rightThreshold={40}
+        renderRightActions={renderRightActions}
+        onSwipeableWillOpen={() => setShowHint(false)}>
+        <TouchableOpacity
+          style={[styles.questCard, isLeader && styles.mainQuestCard]}
+          onPress={() => handleTeamPress(item.id)}>
+          <View style={styles.cardHeader}>
+            <View style={styles.titleRow}>
+              <Text style={styles.questTitle} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <View style={styles.statusBadge}>
+                {isLeader && <Text style={styles.mainBadge}>LEADER</Text>}
+                <Text style={styles.verificationBadge}>
+                  {memberCount}명의 팀원
+                </Text>
+              </View>
+            </View>
+            <Text style={{fontSize: 12, color: '#666'}} numberOfLines={1}>
+              {item?.teamQuest.title}
+            </Text>
+            {/* Progress Bar */}
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, {width: `${progress}%`}]} />
+              </View>
+              <Text style={styles.progressText}>
+                {Math.round(progress)}% 완료
+              </Text>
+            </View>
+            {showHint && (
+              <Text style={styles.hintText}>
+                {'<<< '}스와이프하여 수정/삭제
+              </Text>
+            )}
+          </View>
+
+          {/* Recent Activity */}
+          {hasRecentActivity && (
+            <View style={styles.recentActivity}>
+              <Text style={styles.recentActivityTitle}>최근 활동</Text>
+              <View style={styles.recentPost}>
+                <Text style={styles.recentPostText} numberOfLines={2}>
+                  {item.teamQuest?.records[0].text.length > 20
+                    ? item.teamQuest?.records[0].text.slice(0, 20) + '...'
+                    : item.teamQuest?.records[0].text || '내용 없음'}
+                </Text>
+                {item.teamQuest?.records[0].images?.[0] && (
+                  <Image
+                    source={{uri: item.teamQuest?.records[0].images[0]}}
+                    style={styles.recentPostImage}
+                    resizeMode="cover"
+                  />
+                )}
+              </View>
+            </View>
+          )}
+        </TouchableOpacity>
+      </ReanimatedSwipeable>
+    );
+  };
+
+  const renderRecommendTeamItem: ListRenderItem<Team> = ({item}) => {
+    // Format member count and role
+    const memberCount = item.members.length;
+    const isLeader = item.leaderId === '1';
+    const hasRecentActivity =
+      item.teamQuest?.records &&
+      item.teamQuest?.records.length > 0 &&
+      item.teamQuest?.records[0];
 
     // Calculate progress (example: based on team activity or completion)
     const progress = Math.min((memberCount / 10) * 100, 100); // Example progress calculation
@@ -90,7 +242,7 @@ const TeamScreen = () => {
             </View>
           </View>
           <Text style={{fontSize: 12, color: '#666'}} numberOfLines={1}>
-            {item.quest.title}
+            {item.teamQuest.title}
           </Text>
           {/* Progress Bar */}
           <View style={styles.progressContainer}>
@@ -109,13 +261,13 @@ const TeamScreen = () => {
             <Text style={styles.recentActivityTitle}>최근 활동</Text>
             <View style={styles.recentPost}>
               <Text style={styles.recentPostText} numberOfLines={2}>
-                {item.quest.records[0].text.length > 20
-                  ? item.quest.records[0].text.slice(0, 20) + '...'
-                  : item.quest.records[0].text || '내용 없음'}
+                {item.teamQuest?.records[0].text.length > 20
+                  ? item.teamQuest?.records[0].text.slice(0, 20) + '...'
+                  : item.teamQuest?.records[0].text || '내용 없음'}
               </Text>
-              {item.quest.records[0].images?.[0] && (
+              {item.teamQuest?.records[0].images?.[0] && (
                 <Image
-                  source={{uri: item.quest.records[0].images[0]}}
+                  source={{uri: item.teamQuest?.records[0].images[0]}}
                   style={styles.recentPostImage}
                   resizeMode="cover"
                 />
@@ -127,6 +279,16 @@ const TeamScreen = () => {
     );
   };
 
+  const onRefresh = async () => {
+    if (isMockData) {
+      teams = mockTeams;
+      return;
+    }
+    setIsRefreshing(true);
+    await refetch();
+    setIsRefreshing(false);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -135,15 +297,52 @@ const TeamScreen = () => {
           renderItem={renderTeamItem}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.teamList}
+          onRefresh={onRefresh}
+          refreshing={isRefreshing}
+          stickyHeaderIndices={[0]}
           ListHeaderComponent={
-            <View style={styles.header}>
-              <Text style={styles.title}>내 팀</Text>
-              <TouchableOpacity
-                style={styles.createButton}
-                onPress={handleCreateTeam}>
-                <Icon name="add" size={20} color="white" />
-                <Text style={styles.createButtonText}>팀 생성</Text>
-              </TouchableOpacity>
+            <View style={[{backgroundColor: '#FFFFFF'}]}>
+              <View style={styles.header}>
+                <Text style={styles.title}>내 팀</Text>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <TouchableOpacity
+                    style={styles.searchButton}
+                    onPress={() => setShowSearch(!showSearch)}>
+                    <Icon name="search" size={32} color="black" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.createButton}
+                    onPress={handleCreateTeam}>
+                    <Icon name="add" size={24} color="white" />
+                    <Text style={styles.createButtonText}>팀 생성</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {showSearch ? (
+                <View style={styles.searchContainer}>
+                  <Icon
+                    name="search"
+                    size={32}
+                    color={'#000000'}
+                    style={styles.searchIcon}
+                  />
+                  <TextInput
+                    placeholder="검색어를 입력해주세요"
+                    style={[styles.searchInput]}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                  />
+                  {searchQuery.length > 0 && (
+                    <Icon
+                      style={styles.searchIcon}
+                      name="cancel"
+                      size={24}
+                      color="#a1a1a1"
+                      onPress={() => setSearchQuery('')}
+                    />
+                  )}
+                </View>
+              ) : null}
             </View>
           }
           ListEmptyComponent={
@@ -161,7 +360,7 @@ const TeamScreen = () => {
                 <Text style={styles.sectionTitle}>추천 팀</Text>
                 <FlatList
                   data={teams}
-                  renderItem={renderTeamItem}
+                  renderItem={renderRecommendTeamItem}
                   keyExtractor={item => item.id}
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -353,6 +552,93 @@ const styles = StyleSheet.create({
   },
   otherTeamsList: {
     paddingBottom: 5,
+  },
+  swipeableContainer: {
+    backgroundColor: '#fff',
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  rightActionsContainer: {
+    flexDirection: 'row',
+    width: 150,
+    height: '100%',
+  },
+  actionButton: {
+    width: 75,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editButton: {
+    backgroundColor: '#4e9af1',
+  },
+  deleteButton: {
+    backgroundColor: '#ff4444',
+  },
+  actionText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  swipeHint: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    transform: [{translateY: -8}],
+    color: '#aaa',
+    fontSize: 12,
+    zIndex: 1,
+  },
+  hintText: {
+    position: 'absolute',
+    right: 0,
+    top: '50%',
+    transform: [{translateY: -8}],
+    color: '#aaa',
+    fontSize: 12,
+    zIndex: 1,
+  },
+  hintTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  hintContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    textAlign: 'center',
+    gap: 4,
+  },
+  actionButtonInner: {
+    flex: 1,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '90%',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'gray',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 10,
+    padding: 8,
+    marginTop: 16,
+    height: 48,
+  },
+  searchIcon: {backgroundColor: 'transparent'},
+  searchInput: {flex: 1, paddingLeft: 8},
+  searchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    padding: 8,
+    height: 48,
+    marginRight: 12,
   },
 });
 

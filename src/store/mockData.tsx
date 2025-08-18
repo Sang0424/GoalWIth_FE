@@ -312,7 +312,7 @@ export const mockTeams: Team[] = [
     members: ['user1', 'user2', 'user3'],
     leaderId: 'user1',
     isPublic: true,
-    quest: {
+    teamQuest: {
       // Required TeamQuest properties
       title: '피트니스 마스터 도전',
       procedure: 'progress',
@@ -356,7 +356,7 @@ export const mockTeams: Team[] = [
     members: ['user4', 'user5', 'user6'],
     leaderId: 'user4',
     isPublic: true,
-    quest: {
+    teamQuest: {
       // Required TeamQuest properties
       title: '독서 모임 도전',
       procedure: 'progress',
@@ -373,7 +373,7 @@ export const mockTeams: Team[] = [
     members: ['user7', 'user8'],
     leaderId: 'user7',
     isPublic: false,
-    quest: {
+    teamQuest: {
       // Required TeamQuest properties
       title: '코딩 스터디 도전',
       procedure: 'progress',
@@ -391,6 +391,8 @@ interface TeamStore {
   createTeam: (
     team: Omit<Team, 'id' | 'createdAt' | 'updatedAt' | 'feed' | 'members'>,
   ) => Team;
+  deleteTeam: (teamId: string) => void;
+  updateTeam: (teamId: string, team: Partial<Team>) => void;
   getTeamById: (id: string) => Team | undefined;
   addTeamMember: (teamId: string, userId: string) => void;
   removeTeamMember: (teamId: string, userId: string) => void;
@@ -442,6 +444,20 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     return newTeam;
   },
 
+  deleteTeam: teamId => {
+    set(state => ({
+      teams: state.teams.filter(team => team.id !== teamId),
+    }));
+  },
+  updateTeam: (teamId: string, updates: Partial<Team>) => {
+    set(state => ({
+      teams: state.teams.map(team =>
+        team.id === teamId
+          ? {...team, ...updates, updatedAt: new Date()}
+          : team,
+      ),
+    }));
+  },
   getTeamById: id => {
     return get().teams.find(team => team.id === id);
   },
@@ -494,9 +510,9 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
         team.id === teamId
           ? {
               ...team,
-              quest: {
-                ...team.quest,
-                records: [newPost, ...team.quest.records],
+              teamQuest: {
+                ...team.teamQuest,
+                records: [newPost, ...team.teamQuest.records],
               },
               updatedAt: new Date().toISOString(),
             }
@@ -518,9 +534,9 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
 
         return {
           ...team,
-          quest: {
-            ...team.quest,
-            records: team.quest.records.map(post =>
+          teamQuest: {
+            ...team.teamQuest,
+            records: team.teamQuest.records.map(post =>
               post.id === postId
                 ? {
                     ...post,
@@ -542,9 +558,11 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
         team.id === teamId
           ? {
               ...team,
-              quest: {
-                ...team.quest,
-                records: team.quest.records.filter(post => post.id !== postId),
+              teamQuest: {
+                ...team.teamQuest,
+                records: team.teamQuest.records.filter(
+                  post => post.id !== postId,
+                ),
               },
               updatedAt: new Date().toISOString(),
             }
@@ -557,9 +575,9 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     set(state => ({
       teams: state.teams.map(team => ({
         ...team,
-        quest: {
-          ...team.quest,
-          records: team.quest.records.map(post => {
+        teamQuest: {
+          ...team.teamQuest,
+          records: team.teamQuest.records.map(post => {
             if (post.id !== postId) return post;
 
             // Remove user's existing reaction if exists
@@ -590,9 +608,9 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     set(state => ({
       teams: state.teams.map(team => ({
         ...team,
-        quest: {
-          ...team.quest,
-          records: team.quest.records.map(post => {
+        teamQuest: {
+          ...team.teamQuest,
+          records: team.teamQuest.records.map(post => {
             if (post.id !== postId) return post;
 
             // Remove user's reaction
@@ -624,9 +642,9 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     set(state => ({
       teams: state.teams.map(team => ({
         ...team,
-        quest: {
-          ...team.quest,
-          records: team.quest.records.map(post => {
+        teamQuest: {
+          ...team.teamQuest,
+          records: team.teamQuest.records.map(post => {
             if (post.id !== postId) return post;
 
             return {
@@ -651,9 +669,9 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       teams: state.teams.map(team => {
         return {
           ...team,
-          quest: {
-            ...team.quest,
-            records: team.quest.records.map(post => {
+          teamQuest: {
+            ...team.teamQuest,
+            records: team.teamQuest.records.map(post => {
               if (post.id !== postId) return post;
 
               return {
@@ -680,9 +698,9 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       teams: state.teams.map(team => {
         return {
           ...team,
-          quest: {
-            ...team.quest,
-            records: team.quest.records.map(post => {
+          teamQuest: {
+            ...team.teamQuest,
+            records: team.teamQuest.records.map(post => {
               if (post.id !== postId) return post;
 
               return {

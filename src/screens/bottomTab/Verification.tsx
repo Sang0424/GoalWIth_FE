@@ -122,44 +122,65 @@ const VerificationFeedScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'realtime' | 'peers'>('realtime');
+  const [error, setError] = useState<string | null>(null);
 
-  let verificationQuests: Quest[] | undefined;
-  if (API_URL == '') {
-    verificationQuests = useQuestStore(state => state.getVerificationFeed());
-  } else {
-    const {data, error, isLoading} = useQuery({
-      queryKey: ['Verification'],
-      queryFn: async () => {
+  const quests = useQuestStore(state => state.quests);
+  const {data, isLoading, refetch} = useQuery({
+    queryKey: ['Verification'],
+    queryFn: async () => {
+      try {
         const response = await instance.get(`/quest/verification`);
         const quests = response.data;
         return quests;
-      },
-    });
-    if (isLoading) {
-      return <Text>로딩중</Text>;
+      } catch (e: any) {
+        setError(e.message);
+        return [];
+      }
+    },
+    enabled: API_URL != '',
+    refetchOnWindowFocus: true,
+  });
+  const verificationQuests = React.useMemo(() => {
+    if (API_URL === '') {
+      return quests.filter(
+        quest =>
+          quest.verificationRequired === true && quest.procedure === 'verify',
+      );
     }
-    if (error) {
-      return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
-    }
-    verificationQuests = data;
-    setLoading(false);
-  }
+    return data || [];
+  }, [quests, data]);
+
+  console.log('verificationQuests', verificationQuests);
 
   const fetchFeed = useCallback(async () => {
     setLoading(true);
-    setTimeout(() => {
+    try {
       setFeed(verificationQuests);
+    } catch (error) {
+      console.error('Error fetching feed:', error);
+    } finally {
       setLoading(false);
-    }, 0);
-  }, []);
+    }
+  }, [verificationQuests]);
 
   useEffect(() => {
     fetchFeed();
   }, [fetchFeed]);
 
   const onRefresh = () => {
-    setRefreshing(true);
-    fetchFeed().then(() => setRefreshing(false));
+    if (API_URL) {
+      // API_URL이 있을 때만 refetch 실행
+      setRefreshing(true);
+      refetch().finally(() => setRefreshing(false));
+    } else {
+      // 로컬 모드에서는 그냥 현재 데이터로 다시 설정
+      setRefreshing(true);
+      try {
+        setFeed(verificationQuests);
+      } finally {
+        setRefreshing(false);
+      }
+    }
   };
 
   // 팔로잉 피드는 userId가 'user1'인 것만 노출 (예시)
@@ -167,8 +188,16 @@ const VerificationFeedScreen = () => {
     activeTab === 'peers' ? feed?.filter(item => item.id === 'user1') : feed;
   //activeTab === 'peers' ? feed?.filter(item => item.userId.includes('user1')) : feed;
 
-  if (loading) {
+  if (loading || isLoading) {
     return <ActivityIndicator style={{flex: 1, marginTop: 100}} size="large" />;
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={{flex: 1, backgroundColor: '#ffffff'}}>
+        <Text>시부럴 에러네 + {error}</Text>
+      </SafeAreaView>
+    );
   }
 
   return (
