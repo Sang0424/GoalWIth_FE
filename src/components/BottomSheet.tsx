@@ -41,26 +41,22 @@ interface BottomSheetProps {
   todoModalVisible: boolean;
   settodoModalVisible: (visible: boolean) => void;
   whatTodo?: string;
-  isMainQuest?: boolean;
-  quests?: Quest[];
+  isMainQuest: boolean;
+  questToEdit?: Quest | null;
 }
 
 const BottomSheet = ({
   todoModalVisible,
   settodoModalVisible,
   whatTodo,
-  isMainQuest = false,
+  isMainQuest,
+  questToEdit,
 }: BottomSheetProps) => {
   const {height: screenHeight} = useWindowDimensions();
-  // const panY = useRef(new Animated.Value(screenHeight)).current;
-  // const translateY = panY.interpolate({
-  //   inputRange: [-1, 0, 1],
-  //   outputRange: [0, 0, 1],
-  // });
   const translateY = useSharedValue(screenHeight);
   const context = useSharedValue({y: 0});
 
-  const {quests, addQuest} = useQuestStore();
+  const {addQuest, updateQuest} = useQuestStore();
   const [newQuestTitle, setNewQuestTitle] = useState('');
   const [newQuestDescription, setNewQuestDescription] = useState('');
   const [startDate, setStartDate] = useState(new Date());
@@ -71,7 +67,19 @@ const BottomSheet = ({
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [verificationRequired, setVerificationRequired] = useState(false);
   const [requiredVerifications, setRequiredVerifications] = useState(3);
+  const queryClient = useQueryClient();
+  console.log('edit:', questToEdit);
 
+  useEffect(() => {
+    if (questToEdit) {
+      setNewQuestTitle(questToEdit.title);
+      setNewQuestDescription(questToEdit.description || '');
+      setStartDate(new Date(questToEdit.startDate));
+      setEndDate(new Date(questToEdit.endDate));
+      setVerificationRequired(questToEdit.verificationRequired || false);
+      setRequiredVerifications(questToEdit.requiredVerifications || 3);
+    }
+  }, [questToEdit]);
   // Handle date change for date pickers with proper typing
   const onStartDateChange = (
     event: DateTimePickerEvent,
@@ -167,63 +175,78 @@ const BottomSheet = ({
     settodoModalVisible(false);
   }, []);
 
-  // ********* Backend랑 연결 부분 *********
-  // const fetchData = async () => {
-  //   await instance.post(`/quest/addQuest`, {
-  //     title: newQuestTitle,
-  //     description: newQuestDescription,
-  //     isMain: isMainQuest,
-  //     startDate: startDate,
-  //     endDate: endDate,
-  //     procedure: 'progress',
-  //     verificationRequired: verificationRequired,
-  //     requiredVerifications: requiredVerifications,
-  //   })
-  // };
-  // const queryClient = useQueryClient();
-  // const { mutate, error } = useMutation({
-  //   mutationFn: fetchData,
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({
-  //       queryKey: ['homeQuests'],
-  //     });
-  //     settodoModalVisible(false);
-  //     setTitle('');
-  //   },
-  // });
-  // const handleSubmit = async (event: GestureResponderEvent) => {
-  //   if (newQuestTitle == '') {
-  //     Alert.alert('할 일을 입력해주세요.');
-  //   }
-  //   console.log('Creating quest with isMain:', isMainQuest);
-  //   mutate();
-  // };
-  // ********* Backend랑 연결 부분 *********
+  const {mutate, error, isPending} = useMutation({
+    // ✅ 2. mutationFn 내에서 API_URL에 따라 분기 처리
+    mutationFn: async (
+      payload: Omit<Quest, 'id' | 'createdAt' | 'updatedAt' | 'records'>,
+    ) => {
+      // questData: mutate 함수 호출 시 전달된 변수
+      if (API_URL === '') {
+        // 로컬 상태 관리 로직 (Zustand, Redux 등)
+        if (questToEdit) {
+          // questToEdit.id와 questData를 사용해 업데이트
+          updateQuest(questToEdit.id, payload);
+        } else {
+          addQuest(payload);
+        }
+        // 로컬 로직은 보통 Promise를 반환하지 않으므로, 일관성을 위해 Promise로 감싸줌
+        return Promise.resolve();
+      } else {
+        // 백엔드 연결 로직
+        if (questToEdit) {
+          return instance.put(`/quest/${questToEdit.id}`, payload);
+        } else {
+          return instance.post(`/quest/create`, payload);
+        }
+      }
+    },
+    onSuccess: () => {
+      // 성공 시 공통 로직
+      if (API_URL !== '') {
+        queryClient.invalidateQueries({queryKey: ['homeQuests']});
+      }
+      // 상태 초기화 및 모달 닫기
+      setNewQuestTitle('');
+      setNewQuestDescription('');
+      setStartDate(new Date());
+      setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+      setVerificationRequired(false);
+      setRequiredVerifications(3);
+      setShowStartDatePicker(false);
+      setShowEndDatePicker(false);
+      closeModalImmediately();
+      Keyboard.dismiss();
+    },
+    onError: err => {
+      console.error('Mutation failed:', err);
+      Alert.alert('오류가 발생했습니다.');
+    },
+  });
 
-  // ********* Frontend test *********
-  const handleSubmit = () => {
-    addQuest({
-      title: newQuestTitle,
-      description: newQuestDescription,
-      isMain: isMainQuest,
-      startDate: startDate,
-      endDate: endDate,
-      procedure: 'progress',
-      verificationRequired: verificationRequired,
-      requiredVerifications: requiredVerifications,
-    });
-    setNewQuestTitle('');
-    setNewQuestDescription('');
-    setStartDate(new Date());
-    setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-    setVerificationRequired(false);
-    setRequiredVerifications(3);
-    setShowStartDatePicker(false);
-    setShowEndDatePicker(false);
-    closeModalImmediately();
-    Keyboard.dismiss();
+  // ✅ 3. handleSubmit을 하나로 통합하고 mutate 호출
+  const handleSubmit = (event: GestureResponderEvent) => {
+    if (newQuestTitle.trim() === '') {
+      Alert.alert('할 일을 입력해주세요.');
+      return;
+    }
+
+    const questData: Omit<Quest, 'id' | 'createdAt' | 'updatedAt' | 'records'> =
+      {
+        title: newQuestTitle,
+        description: newQuestDescription,
+        isMain: questToEdit ? questToEdit.isMain : isMainQuest,
+        startDate: startDate,
+        endDate: endDate,
+        procedure: 'progress',
+        verificationRequired: verificationRequired,
+        // 백엔드 API 스펙에 맞게 키 이름을 통일하는 것이 좋음
+        // (requiredVerifications vs requiredVerification)
+        requiredVerifications: requiredVerifications,
+      };
+
+    // mutate 함수에 데이터를 담아 호출하면 mutationFn으로 전달됨
+    mutate(questData);
   };
-  // ********* Frontend test *********
 
   return (
     <SafeAreaView>
@@ -264,7 +287,9 @@ const BottomSheet = ({
                         <Text style={styles.cancelButtonText}>취소</Text>
                       </TouchableOpacity>
                       <Text style={styles.bottomSheetTitle}>
-                        {isMainQuest
+                        {questToEdit
+                          ? '퀘스트 수정하기'
+                          : isMainQuest
                           ? '메인 퀘스트 추가하기'
                           : '서브 퀘스트 추가하기'}
                       </Text>
@@ -301,14 +326,21 @@ const BottomSheet = ({
                           <Text style={styles.inputLabel}>시작일</Text>
                           <TouchableOpacity
                             style={styles.dateInput}
-                            onPress={() => toggleDatePicker(true)}>
+                            onPress={() =>
+                              !questToEdit && toggleDatePicker(true)
+                            }
+                            disabled={!!questToEdit}>
                             <Icon
                               name="event"
                               size={18}
                               color="#666"
                               style={styles.dateIcon}
                             />
-                            <Text style={styles.dateText}>
+                            <Text
+                              style={[
+                                styles.dateText,
+                                questToEdit && {color: '#ccc'},
+                              ]}>
                               {startDate.toLocaleDateString('ko-KR')}
                             </Text>
                           </TouchableOpacity>

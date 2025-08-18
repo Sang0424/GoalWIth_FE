@@ -36,26 +36,26 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
   const {setAccessToken} = tokenStore(state => state.actions);
   const loadUser = userStore(state => state.loadUser);
   const [userInfo, setUserInfo] = useState({
-    nick: '',
+    nickname: '',
     userType: '',
   });
   const [error, setError] = useState<
     Partial<{
-      nick: string;
+      nickname: string;
       userType: string;
     }>
   >({});
   const validateUserInfo = () => {
     let isValid = true;
     const errorMsg: Partial<{
-      nick: string;
+      nickname: string;
       userType: string;
     }> = {};
-    if (userInfo.nick.length < 2) {
-      errorMsg.nick = '닉네임은 2글자 이상이어야 합니다.';
+    if (userInfo.nickname.length < 2) {
+      errorMsg.nickname = '닉네임은 2글자 이상이어야 합니다.';
       isValid = false;
-    } else if (!userInfo.nick) {
-      errorMsg.nick = '닉네임을 입력해주세요.';
+    } else if (!userInfo.nickname) {
+      errorMsg.nickname = '닉네임을 입력해주세요.';
       isValid = false;
     }
     if (userInfo.userType.length < 2) {
@@ -73,10 +73,10 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
       ...userInfo,
       ...registerForm,
     };
-    const response = await instance.post(`/users/signup`, userData);
-    const {access_token, refresh_token} = response.data;
-    setAccessToken(access_token);
-    await AsyncStorage.setItem('refresh_token', refresh_token);
+    const response = await instance.post(`/user/register`, userData);
+    const {accessToken, refreshToken} = response.data;
+    setAccessToken(accessToken);
+    await AsyncStorage.setItem('refreshToken', refreshToken);
     await loadUser();
   };
   const {mutate} = useMutation({
@@ -102,17 +102,20 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
           <TextInput
-            value={userInfo.nick}
+            value={userInfo.nickname}
             placeholder="닉네임"
             enterKeyHint="next"
             autoCapitalize="none"
             autoCorrect={false}
             style={[styles.input, {width: width - 70, height: 40}]}
             onSubmitEditing={() => roleRef.current?.focus()}
-            onChangeText={text => setUserInfo({...userInfo, nick: text})}
+            onChangeText={text => setUserInfo({...userInfo, nickname: text})}
           />
-          {error.nick && <Text style={styles.errorMsg}>{error.nick}</Text>}
+          {error.nickname && (
+            <Text style={styles.errorMsg}>{error.nickname}</Text>
+          )}
           <TextInput
+            ref={roleRef}
             value={userInfo.userType}
             placeholder="사용자 유형 ex)학생, 대학생, 직장인 ..."
             enterKeyHint="done"

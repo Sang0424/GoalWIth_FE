@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -16,44 +16,120 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useTeamStore} from '../../store/mockData';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {TeamNavParamList} from '../../types/navigation';
+import {API_URL} from '@env';
+import {useMutation, useQueryClient} from '@tanstack/react-query';
+import instance from '../../utils/axiosInterceptor';
+import {TeamPayload, TeamCreationResponse} from '../../types/team.types';
 
-const TeamCreateScreen = () => {
+const TeamCreateScreen = ({route}: {route: any}) => {
   const navigation =
     useNavigation<NativeStackNavigationProp<TeamNavParamList>>();
-
+  const {teamToEdit} = route.params || {};
+  console.log('editTeam:', teamToEdit);
   const [teamName, setTeamName] = useState('');
   const [description, setDescription] = useState('');
-  const [isPublic, setIsPublic] = useState(true);
+  const [isPublic, setIsPublic] = useState(false);
+  const {updateTeam} = useTeamStore();
 
-  // ****** Backend랑 연결 부분 *********
-  // const queryClient = useQueryClient();
-  // const {mutate, error} = useMutation({
-  //   mutationFn: (team: Team) => instance.post(`/team`, {
-  //     name: teamName.trim(),
-  //     description: description.trim(),
-  //     isPublic: isPublic,
-  //   }),
-  //   onSuccess: () => {
-  //     Alert.alert('성공', '팀이 추가되었습니다!');
-  //     setTeamName('');
-  //     setDescription('');
-  //     setIsPublic(true);
-  //   },
-  //   onError: (error) => {
-  //     Alert.alert('오류', '팀 추가 중 오류가 발생했습니다.');
-  //   },
-  //   onSettled: () => {
-  //     queryClient.invalidateQueries({queryKey: ['Team']});
-  //   },
-  // });
+  const queryClient = useQueryClient();
 
+  useEffect(() => {
+    if (teamToEdit) {
+      setTeamName(teamToEdit.name);
+      setDescription(teamToEdit.description || '');
+      setIsPublic(teamToEdit.isPublic || false);
+    }
+  }, [teamToEdit]);
+
+  const {mutate, isPending} = useMutation<
+    TeamCreationResponse,
+    Error,
+    TeamPayload
+  >({
+    // 3. mutationFn 내부에서 API_URL에 따라 로직 분기
+    mutationFn: async (payload: TeamPayload) => {
+      if (API_URL === '') {
+        // 로컬 모드: API 호출 없이 성공한 것처럼 응답 객체를 시뮬레이션하여 반환
+        console.log('로컬 모드: 팀 생성 시뮬레이션', payload);
+        // onSuccess 콜백에서 일관된 데이터 처리를 위해
+        // 실제 API와 유사한 구조의 객체를 Promise로 감싸서 반환합니다.
+        return Promise.resolve({data: {teamId: '0'}}); // '0'은 로컬 모드를 의미하는 임시 ID
+      } else {
+        // 백엔드 모드: 실제 API 호출
+        if (teamToEdit) {
+          return instance.put(`/team/${teamToEdit.id}`, payload);
+        }
+        return instance.post(`/team/create`, payload);
+      }
+    },
+
+    // 4. onSuccess 콜백 통합: 이제 로컬/백엔드 모드 모두 이 로직을 따름
+    onSuccess: response => {
+      // response는 mutationFn이 반환한 값 (실제 API 응답 또는 시뮬레이션된 객체)
+      const {teamId} = response.data;
+
+      Alert.alert('성공', '팀이 추가되었습니다!');
+
+      // 상태 초기화
+      setTeamName('');
+      setDescription('');
+      setIsPublic(true);
+
+      // 백엔드 모드일 때만 쿼리 데이터 조작
+      if (API_URL !== '') {
+        queryClient.setQueryData(['TeamCreate'], response);
+      }
+
+      // teamToEdit 로직은 주로 수정 화면에서 사용되므로, 생성 로직에서는 제외하거나 별도 처리합니다.
+      // 여기서는 항상 생성 후 퀘스트 생성 화면으로 이동한다고 가정합니다.
+      navigation.navigate('TeamQuestCreateScreen', {
+        teamName, // 새로 생성한 팀 이름
+        data: teamId, // 실제 teamId 또는 임시 ID '0'
+      });
+    },
+
+    onError: error => {
+      // onError는 실제 API 호출 시에만 의미가 있으므로, 주로 백엔드 모드를 위한 것
+      Alert.alert('오류', '팀 추가 중 오류가 발생했습니다.');
+      console.error(error);
+    },
+
+    onSettled: () => {
+      // 백엔드 모드일 때만 팀 목록 쿼리를 무효화하여 새로고침
+      if (API_URL !== '') {
+        queryClient.invalidateQueries({queryKey: ['Team']});
+      }
+    },
+  });
+
+  // 5. handleCreateTeam 함수 통합
   const handleCreateTeam = () => {
     if (!teamName.trim()) {
       Alert.alert('오류', '팀 이름을 입력해주세요.');
       return;
     }
-    //mutate()
-    navigation.navigate('TeamQuestCreateScreen', {teamName});
+
+    // 수정 로직은 별도의 함수(예: handleUpdateTeam)로 분리하는 것이 좋습니다.
+    if (teamToEdit) {
+      // TODO: 팀 수정 로직 구현
+      console.log('팀 수정 로직을 여기에 구현하세요.');
+      updateTeam(teamToEdit.id, {
+        name: teamName.trim(),
+        description: description.trim(),
+        isPublic: isPublic,
+      });
+      navigation.navigate('TeamScreen'); // 기존 로직 유지
+      return;
+    }
+
+    // 생성할 데이터를 객체로 만들어 mutate 함수에 전달
+    const payload: TeamPayload = {
+      name: teamName.trim(),
+      description: description.trim(),
+      isPublic: isPublic,
+    };
+
+    mutate(payload);
   };
 
   return (
@@ -178,7 +254,7 @@ const TeamCreateScreen = () => {
             ]}
             onPress={() => handleCreateTeam()}
             disabled={!teamName}>
-            <Text style={styles.createButtonText}>다음으로</Text>
+            <Text style={styles.createButtonText}>팀 퀘스트 만들기</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

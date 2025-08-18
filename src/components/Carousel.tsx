@@ -6,11 +6,12 @@ import {
   Animated,
   useWindowDimensions,
 } from 'react-native';
-import type {ImageType} from '../types/todos';
+import {Asset} from 'react-native-image-picker';
 // import {API_URL} from '@env';
 import {FlatList} from 'react-native-gesture-handler';
 
-const ImageCarousel = ({images}: {images: any[]}) => {
+const ImageCarousel = ({images}: {images: string[]}) => {
+  console.log('feed image: ', images);
   const scrollX = new Animated.Value(0);
   const [activeIndex, setActiveIndex] = React.useState(0);
   const {width} = useWindowDimensions();

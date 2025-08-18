@@ -69,6 +69,7 @@ const initialQuests: Quest[] = [
     records: [],
     procedure: 'progress',
     reactions: [],
+    user: initialUser[0],
   },
   {
     id: '2',
@@ -82,6 +83,8 @@ const initialQuests: Quest[] = [
     requiredVerifications: 12,
     records: [],
     procedure: 'progress',
+    reactions: [],
+    user: initialUser[1],
   },
   {
     id: '3',
@@ -97,14 +100,15 @@ const initialQuests: Quest[] = [
       {
         id: '1',
         questId: '3',
-        date: '2025-06-28',
         text: 'dkfjdakfjad',
         createdAt: new Date('2025-06-28'),
-        userId: 'user1',
+        user: initialUser[0],
         images: ['https://via.placeholder.com/150'],
       },
     ],
     procedure: 'verify',
+    reactions: [],
+    user: initialUser[2],
   },
 ];
 
@@ -308,43 +312,42 @@ export const mockTeams: Team[] = [
     members: ['user1', 'user2', 'user3'],
     leaderId: 'user1',
     isPublic: true,
-    quest: {
+    teamQuest: {
       // Required TeamQuest properties
       title: '피트니스 마스터 도전',
       procedure: 'progress',
       startDate: '2025-07-01',
       endDate: '2025-12-31',
+      records: [
+        {
+          id: 'post1',
+          user: initialUser[0],
+          text: '오늘도 열심히 운동했어요! 다들 화이팅입니다 💪',
+          reactions: [
+            {
+              id: 'reaction1',
+              user: initialUser[1],
+              reactionType: 'amazing',
+              createdAt: new Date('2025-07-09T10:20:00Z'),
+            },
+            {
+              id: 'reaction2',
+              user: initialUser[2],
+              reactionType: 'support',
+              createdAt: new Date('2025-07-09T10:21:00Z'),
+            },
+          ],
+          verifications: [
+            {
+              user: initialUser[1],
+              comment: '대단하세요!',
+              createdAt: '2025-07-09T10:30:00Z',
+            },
+          ],
+          createdAt: new Date('2025-07-09T10:15:00Z'),
+        },
+      ],
     },
-    feed: [
-      {
-        id: 'post1',
-        userId: 'user1',
-        content: '오늘도 열심히 운동했어요! 다들 화이팅입니다 💪',
-        reactions: [
-          {
-            userId: 'user2',
-            reactionType: 'amazing',
-            createdAt: new Date('2025-07-09T10:20:00Z'),
-          },
-          {
-            userId: 'user3',
-            reactionType: 'support',
-            createdAt: new Date('2025-07-09T10:21:00Z'),
-          },
-        ],
-        comments: [
-          {
-            id: 'comment1',
-            userId: 'user2',
-            content: '대단하세요!',
-            reactions: [],
-            createdAt: '2025-07-09T10:30:00Z',
-          },
-        ],
-        createdAt: '2025-07-09T10:15:00Z',
-      },
-    ],
-    createdAt: '2025-06-01T00:00:00Z',
   },
   {
     id: 'team2',
@@ -353,15 +356,15 @@ export const mockTeams: Team[] = [
     members: ['user4', 'user5', 'user6'],
     leaderId: 'user4',
     isPublic: true,
-    quest: {
+    teamQuest: {
       // Required TeamQuest properties
       title: '독서 모임 도전',
       procedure: 'progress',
       startDate: '2025-07-01',
       endDate: '2025-12-31',
+      records: [],
     },
-    feed: [],
-    createdAt: '2025-06-15T00:00:00Z',
+    createdAt: new Date('2025-06-15T00:00:00Z'),
   },
   {
     id: 'team3',
@@ -370,15 +373,15 @@ export const mockTeams: Team[] = [
     members: ['user7', 'user8'],
     leaderId: 'user7',
     isPublic: false,
-    quest: {
+    teamQuest: {
       // Required TeamQuest properties
       title: '코딩 스터디 도전',
       procedure: 'progress',
       startDate: '2025-07-01',
       endDate: '2025-12-31',
+      records: [],
     },
-    feed: [],
-    createdAt: '2025-07-01T00:00:00Z',
+    createdAt: new Date('2025-07-01T00:00:00Z'),
   },
 ];
 
@@ -388,6 +391,8 @@ interface TeamStore {
   createTeam: (
     team: Omit<Team, 'id' | 'createdAt' | 'updatedAt' | 'feed' | 'members'>,
   ) => Team;
+  deleteTeam: (teamId: string) => void;
+  updateTeam: (teamId: string, team: Partial<Team>) => void;
   getTeamById: (id: string) => Team | undefined;
   addTeamMember: (teamId: string, userId: string) => void;
   removeTeamMember: (teamId: string, userId: string) => void;
@@ -404,31 +409,22 @@ interface TeamStore {
     updates: Partial<Omit<TeamPost, 'id' | 'userId' | 'createdAt'>>,
   ) => void;
   deleteTeamPost: (teamId: string, postId: string) => void;
-  // addReaction: (
-  //   teamId: string,
-  //   postId: string,
-  //   commentId: string | null,
-  //   userId: string,
-  //   reactionType: TeamReaction,
-  // ) => void;
-  // removeReaction: (
-  //   teamId: string,
-  //   postId: string,
-  //   commentId: string | null,
-  //   userId: string,
-  // ) => void;
+  addReaction: (postId: string, user: User, reactionType: ReactionType) => void;
+  removeReaction: (
+    postId: string,
+    user: User,
+    reactionType: ReactionType,
+  ) => void;
   addComment: (
-    teamId: string,
     postId: string,
     comment: Omit<TeamComment, 'id' | 'createdAt' | 'updatedAt' | 'reactions'>,
   ) => TeamComment;
   updateComment: (
-    teamId: string,
     postId: string,
     commentId: string,
     updates: Partial<Omit<TeamComment, 'id' | 'userId' | 'createdAt'>>,
   ) => void;
-  deleteComment: (teamId: string, postId: string, commentId: string) => void;
+  deleteComment: (postId: string, commentId: string) => void;
 }
 
 // Zustand store for teams
@@ -440,8 +436,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       ...team,
       id: `team${Date.now()}`,
       members: [team.leaderId],
-      feed: [],
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     };
     set(state => ({
       teams: [...state.teams, newTeam],
@@ -449,11 +444,25 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     return newTeam;
   },
 
+  deleteTeam: teamId => {
+    set(state => ({
+      teams: state.teams.filter(team => team.id !== teamId),
+    }));
+  },
+  updateTeam: (teamId: string, updates: Partial<Team>) => {
+    set(state => ({
+      teams: state.teams.map(team =>
+        team.id === teamId
+          ? {...team, ...updates, updatedAt: new Date()}
+          : team,
+      ),
+    }));
+  },
   getTeamById: id => {
     return get().teams.find(team => team.id === id);
   },
 
-  addTeamMember: (teamId, userId) => {
+  addTeamMember: (teamId: string, userId: string) => {
     set(state => ({
       teams: state.teams.map(team =>
         team.id === teamId && !team.members.includes(userId)
@@ -467,7 +476,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     }));
   },
 
-  removeTeamMember: (teamId, userId) => {
+  removeTeamMember: (teamId: string, userId: string) => {
     set(state => ({
       teams: state.teams.map(team =>
         team.id === teamId
@@ -481,13 +490,19 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     }));
   },
 
-  createTeamPost: (teamId, post) => {
+  createTeamPost: (
+    teamId: string,
+    post: Omit<
+      TeamPost,
+      'id' | 'createdAt' | 'updatedAt' | 'reactions' | 'comments'
+    >,
+  ) => {
     const newPost: TeamPost = {
       ...post,
       id: `post${Date.now()}`,
       reactions: [],
-      comments: [],
-      createdAt: new Date().toISOString(),
+      verifications: [],
+      createdAt: new Date(),
     };
 
     set(state => ({
@@ -495,7 +510,10 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
         team.id === teamId
           ? {
               ...team,
-              feed: [newPost, ...team.feed],
+              teamQuest: {
+                ...team.teamQuest,
+                records: [newPost, ...team.teamQuest.records],
+              },
               updatedAt: new Date().toISOString(),
             }
           : team,
@@ -505,35 +523,47 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     return newPost;
   },
 
-  updateTeamPost: (teamId, postId, updates) => {
+  updateTeamPost: (
+    teamId: string,
+    postId: string,
+    updates: Partial<Omit<TeamPost, 'id' | 'userId' | 'createdAt'>>,
+  ) => {
     set(state => ({
       teams: state.teams.map(team => {
         if (team.id !== teamId) return team;
 
         return {
           ...team,
-          feed: team.feed.map(post =>
-            post.id === postId
-              ? {
-                  ...post,
-                  ...updates,
-                  updatedAt: new Date().toISOString(),
-                }
-              : post,
-          ),
+          teamQuest: {
+            ...team.teamQuest,
+            records: team.teamQuest.records.map(post =>
+              post.id === postId
+                ? {
+                    ...post,
+                    ...updates,
+                    updatedAt: new Date().toISOString(),
+                  }
+                : post,
+            ),
+          },
           updatedAt: new Date().toISOString(),
         };
       }),
     }));
   },
 
-  deleteTeamPost: (teamId, postId) => {
+  deleteTeamPost: (teamId: string, postId: string) => {
     set(state => ({
       teams: state.teams.map(team =>
         team.id === teamId
           ? {
               ...team,
-              feed: team.feed.filter(post => post.id !== postId),
+              teamQuest: {
+                ...team.teamQuest,
+                records: team.teamQuest.records.filter(
+                  post => post.id !== postId,
+                ),
+              },
               updatedAt: new Date().toISOString(),
             }
           : team,
@@ -541,182 +571,146 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     }));
   },
 
-  // addReaction: (teamId, postId, commentId, userId, reactionType) => {
-  //   set(state => ({
-  //     teams: state.teams.map(team => {
-  //       if (team.id !== teamId) return team;
+  addReaction: (postId: string, user: User, reactionType: ReactionType) => {
+    set(state => ({
+      teams: state.teams.map(team => ({
+        ...team,
+        teamQuest: {
+          ...team.teamQuest,
+          records: team.teamQuest.records.map(post => {
+            if (post.id !== postId) return post;
 
-  //       const newReaction = {
-  //         userId,
-  //         type: reactionType,
-  //         createdAt: new Date().toISOString(),
-  //       };
+            // Remove user's existing reaction if exists
+            const filteredReactions = post.reactions.filter(
+              r => r.user.id !== user.id,
+            );
 
-  //       return {
-  //         ...team,
-  //         feed: team.feed.map(post => {
-  //           if (post.id !== postId) return post;
+            return {
+              ...post,
+              reactions: [
+                ...filteredReactions,
+                {
+                  id: `react-${Date.now()}`,
+                  user,
+                  reactionType,
+                  createdAt: new Date(),
+                },
+              ],
+              updatedAt: new Date(),
+            };
+          }),
+        },
+      })),
+    }));
+  },
 
-  //           // If it's a comment reaction
-  //           if (commentId) {
-  //             return {
-  //               ...post,
-  //               comments: post.comments.map(comment => {
-  //                 if (comment.id !== commentId) return comment;
+  removeReaction: (postId: string, user: User) => {
+    set(state => ({
+      teams: state.teams.map(team => ({
+        ...team,
+        teamQuest: {
+          ...team.teamQuest,
+          records: team.teamQuest.records.map(post => {
+            if (post.id !== postId) return post;
 
-  //                 // Remove existing reaction from this user if exists
-  //                 const filteredReactions = comment.reactions.filter(
-  //                   r => r.userId !== userId,
-  //                 );
-  //                 return {
-  //                   ...comment,
-  //                   reactions: [...filteredReactions, newReaction],
-  //                   updatedAt: new Date().toISOString(),
-  //                 };
-  //               }),
-  //               updatedAt: new Date().toISOString(),
-  //             };
-  //           }
+            // Remove user's reaction
+            const filteredReactions = post.reactions.filter(
+              r => r.user.id !== user.id,
+            );
 
-  //           // It's a post reaction
-  //           // Remove existing reaction from this user if exists
-  //           const filteredReactions = post.reactions.filter(
-  //             r => r.userId !== userId,
-  //           );
-  //           return {
-  //             ...post,
-  //             reactions: [...filteredReactions, newReaction],
-  //             updatedAt: new Date().toISOString(),
-  //           };
-  //         }),
-  //         updatedAt: new Date().toISOString(),
-  //       };
-  //     }),
-  //   }));
-  // },
-
-  // removeReaction: (teamId, postId, commentId, userId) => {
-  //   set(state => ({
-  //     teams: state.teams.map(team => {
-  //       if (team.id !== teamId) return team;
-
-  //       return {
-  //         ...team,
-  //         feed: team.feed.map(post => {
-  //           if (post.id !== postId) return post;
-
-  //           // If it's a comment reaction
-  //           if (commentId) {
-  //             return {
-  //               ...post,
-  //               comments: post.comments.map(comment => {
-  //                 if (comment.id !== commentId) return comment;
-
-  //                 return {
-  //                   ...comment,
-  //                   reactions: comment.reactions.filter(
-  //                     r => r.userId !== userId,
-  //                   ),
-  //                   updatedAt: new Date().toISOString(),
-  //                 };
-  //               }),
-  //               updatedAt: new Date().toISOString(),
-  //             };
-  //           }
-
-  //           // It's a post reaction
-  //           return {
-  //             ...post,
-  //             reactions: post.reactions.filter(r => r.userId !== userId),
-  //             updatedAt: new Date().toISOString(),
-  //           };
-  //         }),
-  //         updatedAt: new Date().toISOString(),
-  //       };
-  //     }),
-  //   }));
-  // },
-
-  addComment: (teamId, postId, comment) => {
+            return {
+              ...post,
+              reactions: filteredReactions,
+              updatedAt: new Date(),
+            };
+          }),
+        },
+      })),
+    }));
+  },
+  addComment: (
+    postId: string,
+    comment: Omit<TeamComment, 'id' | 'createdAt' | 'updatedAt' | 'reactions'>,
+  ) => {
     const newComment: TeamComment = {
       ...comment,
-      id: `comment${Date.now()}`,
+      id: `comment-${Date.now()}`,
       reactions: [],
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     };
 
     set(state => ({
-      teams: state.teams.map(team => {
-        if (team.id !== teamId) return team;
-
-        return {
-          ...team,
-          feed: team.feed.map(post => {
+      teams: state.teams.map(team => ({
+        ...team,
+        teamQuest: {
+          ...team.teamQuest,
+          records: team.teamQuest.records.map(post => {
             if (post.id !== postId) return post;
 
             return {
               ...post,
-              comments: [...post.comments, newComment],
-              updatedAt: new Date().toISOString(),
+              verifications: [...(post.verifications || []), newComment],
+              updatedAt: new Date(),
             };
           }),
-          updatedAt: new Date().toISOString(),
-        };
-      }),
+        },
+      })),
     }));
 
     return newComment;
   },
 
-  updateComment: (teamId, postId, commentId, updates) => {
+  updateComment: (
+    postId: string,
+    commentId: string,
+    updates: Partial<Omit<TeamComment, 'id' | 'createdAt' | 'userId'>>,
+  ) => {
     set(state => ({
       teams: state.teams.map(team => {
-        if (team.id !== teamId) return team;
-
         return {
           ...team,
-          feed: team.feed.map(post => {
-            if (post.id !== postId) return post;
+          teamQuest: {
+            ...team.teamQuest,
+            records: team.teamQuest.records.map(post => {
+              if (post.id !== postId) return post;
 
-            return {
-              ...post,
-              comments: post.comments.map(comment =>
-                comment.id === commentId
-                  ? {
-                      ...comment,
-                      ...updates,
-                      updatedAt: new Date().toISOString(),
-                    }
-                  : comment,
-              ),
-              updatedAt: new Date().toISOString(),
-            };
-          }),
-          updatedAt: new Date().toISOString(),
+              return {
+                ...post,
+                verifications: post.verifications.map(comment =>
+                  comment.id === commentId
+                    ? {
+                        ...comment,
+                        ...updates,
+                        updatedAt: new Date(),
+                      }
+                    : comment,
+                ),
+              };
+            }),
+          },
         };
       }),
     }));
   },
 
-  deleteComment: (teamId, postId, commentId) => {
+  deleteComment: (postId: string, commentId: string) => {
     set(state => ({
       teams: state.teams.map(team => {
-        if (team.id !== teamId) return team;
-
         return {
           ...team,
-          feed: team.feed.map(post => {
-            if (post.id !== postId) return post;
+          teamQuest: {
+            ...team.teamQuest,
+            records: team.teamQuest.records.map(post => {
+              if (post.id !== postId) return post;
 
-            return {
-              ...post,
-              comments: post.comments.filter(
-                comment => comment.id !== commentId,
-              ),
-              updatedAt: new Date().toISOString(),
-            };
-          }),
-          updatedAt: new Date().toISOString(),
+              return {
+                ...post,
+                verifications: post.verifications.filter(
+                  comment => comment.id !== commentId,
+                ),
+              };
+            }),
+          },
         };
       }),
     }));

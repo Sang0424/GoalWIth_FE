@@ -53,6 +53,7 @@
     "prettier": "2.8.8",
     "react-native-dotenv": "^3.4.11",
     "react-test-renderer": "19.0.0",
+    "reactotron-react-native": "^5.1.14",
     "typescript": "^5.0.4"
   },
   "engines": {

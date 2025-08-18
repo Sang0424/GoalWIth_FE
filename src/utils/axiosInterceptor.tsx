@@ -1,8 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@env';
-import { tokenStore } from '../store/tokenStore';
-import { userStore } from '../store/userStore';
+import {API_URL} from '@env';
+import {tokenStore} from '../store/tokenStore';
+import {userStore} from '../store/userStore';
 
 // Axios 인스턴스 생성
 const instance = axios.create({
@@ -10,9 +10,8 @@ const instance = axios.create({
   headers: {
     withCredentials: true,
   },
-  timeout: 10000,
+  timeout: 20000,
 });
-
 // 요청 인터셉터: Authorization 헤더 추가
 instance.interceptors.request.use(
   async config => {
@@ -61,16 +60,16 @@ instance.interceptors.response.use(
   async error => {
     if (error.response?.status === 401) {
       try {
-        const refreshToken = await AsyncStorage.getItem('refresh_token');
+        const refreshToken = await AsyncStorage.getItem('refreshToken');
         if (!refreshToken) {
           throw new Error('No refresh token found');
         }
 
-        const { data } = await instance.post('/users/refresh', {
+        const {data} = await instance.post('/users/refresh', {
           refreshToken: refreshToken,
         });
         // tokenStore.getState().actions.setAccessToken(data.access_token);
-        error.config.headers.Authorization = `Bearer ${data.access_token}`;
+        error.config.headers.Authorization = `Bearer ${data.accessToken}`;
         return instance(error.config);
       } catch (refreshError) {
         console.error('Failed to refresh access token', refreshError);

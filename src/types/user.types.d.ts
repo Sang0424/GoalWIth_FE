@@ -8,8 +8,20 @@ export interface User {
   userType: string;
   level: number;
   actionPoints: number;
-  avatar?: string | ImageSourcePropType;
-  badge?: string;
+  avatar?: Avatar;
+  badge?: Badge;
   exp: number;
   maxExp: number;
+}
+
+export interface Avatar {
+  id: string;
+  name: string;
+  image: string;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  image: string;
 }

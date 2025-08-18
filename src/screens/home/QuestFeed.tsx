@@ -14,12 +14,16 @@ import {
   Pressable,
   Platform,
 } from 'react-native';
-import {useRef, useEffect} from 'react';
+import {useRef, useEffect, useCallback} from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {launchImageLibrary} from 'react-native-image-picker';
+import {
+  launchImageLibrary,
+  Asset,
+  ImagePickerResponse,
+} from 'react-native-image-picker';
 import {QuestFeedProps} from '../../types/navigation';
 import {useQuestStore} from '../../store/mockData';
 import useKeyboardHeight from '../../utils/hooks/useKeyboardHeight';
@@ -27,59 +31,115 @@ import ImageCarousel from '../../components/Carousel';
 import {useQuery, useMutation} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
 import {useQueryClient} from '@tanstack/react-query';
-import type {QuestRecord} from '../../types/quest.types';
+import type {QuestRecord, Quest} from '../../types/quest.types';
+import {API_URL} from '@env';
 
 const QuestFeed = ({route}: QuestFeedProps) => {
   const navigation = useNavigation();
   const {quest} = route.params;
   const [newRecordText, setNewRecordText] = useState('');
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<Asset[]>([]);
+  const [questRecord, setQuestRecord] = useState<QuestRecord[]>([]);
   const {keyboardHeight} = useKeyboardHeight();
   const scrollViewRef = useRef<ScrollView>(null);
+  const queryClient = useQueryClient();
 
-  // ********* Backend랑 연결 부분 *********
-  // const queryClient = useQueryClient()
-  // const { data, error, isLoading } = useQuery<Quest>({
-  //   queryKey: ['QuestRecord', questId],
-  //   queryFn: async () => {
-  //     const response = await instance.get(`/record/${questId}`);
-  //     const record = response.data;
-  //     return record;
-  //   },
-  // });
-  // if (isLoading) {
-  //   return <Text>로딩중</Text>;
-  // }
-  // if (error) {
-  //   return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
-  // }
-  // const quest = data;
-  // const {mutate, error} = useMutation({
-  //   mutationFn: (quest: Quest) => instance.post(`/quest/${questId}`, {
-  //     text: newRecordText.trim(),
-  //     images: images.length > 0 ? images : undefined,
-  //   }),
-  //   onSuccess: () => {
-  //     Alert.alert('성공', '기록이 추가되었습니다!');
-  //     setNewRecordText('');
-  //     setImages([]);
-  //   },
-  //   onError: (error) => {
-  //     Alert.alert('오류', '기록 추가 중 오류가 발생했습니다.');
-  //   },
-  //   onSettled: () => {
-  //     queryClient.invalidateQueries({queryKey: ['QuestRecord', questId]});
-  //   },
-  // });
-  // ********* Backend랑 연결 부분 *********
+  const {data, isLoading} = useQuery({
+    queryKey: ['QuestRecord', quest.id],
+    queryFn: async () => {
+      if (API_URL !== '') {
+        const response = await instance.get(`/record/${quest.id}`);
+        return response.data;
+      }
+      return {records: quest.records || []};
+    },
+    enabled: API_URL !== '', // Only run the query if API_URL is not empty
+  });
+
+  console.log('QuestRecord:', data);
+
+  // Set questRecord when data changes
+  useEffect(() => {
+    if (data) {
+      setQuestRecord(data);
+    } else {
+      setQuestRecord(quest.records || []);
+    }
+  }, [data, quest.records]);
+
+  const createRecord = useCallback(
+    async ({questId, text, images: recordImages}: any) => {
+      if (API_URL === '') {
+        useQuestStore.getState().addQuestRecord(questId, {
+          text,
+          images: recordImages,
+          user: 'user',
+        });
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('text', text);
+      recordImages.forEach((image: Asset) => {
+        formData.append('images', {
+          uri: image.uri,
+          type: image.type,
+          name: image.fileName,
+        });
+      });
+      await instance.post(`/record/create/${questId}`, formData);
+    },
+    [],
+  );
+
+  const {mutate} = useMutation({
+    mutationFn: createRecord,
+    onSuccess: () => {
+      Alert.alert('성공', '기록이 추가되었습니다!');
+    },
+    onError: error => {
+      Alert.alert('오류', '기록 추가 중 오류가 발생했습니다.');
+      console.log(error);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
+    },
+  });
+
+  const handleAddRecord = useCallback(async () => {
+    if (!newRecordText.trim() && images.length === 0) {
+      Alert.alert('오류', '기록할 내용을 입력해주세요.');
+      return;
+    }
+
+    if (API_URL === '') {
+      useQuestStore.getState().addQuestRecord(quest.id, {
+        text: newRecordText,
+        images,
+        user: 'user1',
+      });
+      setNewRecordText('');
+      setImages([]);
+      navigation.goBack();
+      return;
+    }
+
+    mutate({
+      questId: quest.id,
+      text: newRecordText,
+      images,
+    });
+    setNewRecordText('');
+    setImages([]);
+  }, [newRecordText, images, quest.id, mutate, navigation]);
 
   useEffect(() => {
-    if (quest?.records?.length) {
+    if (questRecord?.length) {
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({animated: true});
       }, 100);
     }
-  }, [quest?.records]);
+  }, [questRecord]);
 
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
@@ -126,32 +186,6 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     );
   }
 
-  const handleAddRecord = async () => {
-    if (!newRecordText.trim() && images.length === 0) {
-      Alert.alert('오류', '기록할 내용을 입력해주세요.');
-      return;
-    }
-
-    if (images.length > 3) {
-      Alert.alert('오류', '이미지는 최대 3장까지만 선택할 수 있습니다.');
-      return;
-    }
-
-    // Fix: Call the store function correctly
-    useQuestStore.getState().addQuestRecord(quest.id, {
-      date: new Date().toISOString(),
-      text: newRecordText.trim(),
-      images: images.length > 0 ? images : undefined,
-    });
-
-    // Reset form
-    setNewRecordText('');
-    setImages([]);
-
-    // Show success message
-    Alert.alert('성공', '기록이 추가되었습니다!');
-  };
-
   const handleCompleteQuest = () => {
     Alert.alert('퀘스트 완료', '이 퀘스트를 완료하시겠습니까?', [
       {text: '취소', style: 'cancel'},
@@ -182,10 +216,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
         console.log('ImagePicker Error: ', response.errorMessage);
         Alert.alert('오류', '이미지 선택 중 오류가 발생했습니다.');
       } else if (response.assets?.length) {
-        const newImages = response.assets
-          .map((asset: any) => asset.uri)
-          .filter((uri: string) => uri);
-        setImages(prev => [...prev, ...newImages].slice(0, 3));
+        const images: Asset[] = [];
+        response.assets.forEach((asset: Asset) => images.push(asset));
+        setImages(prev => [...prev, ...images].slice(0, 3));
       }
     });
   };
@@ -260,7 +293,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                         100,
                         Math.max(
                           0,
-                          (quest.records ? quest.records.length / 7 : 0) * 100,
+                          (questRecord ? questRecord.length / 7 : 0) * 100,
                         ),
                       )}%`,
                       backgroundColor: quest.isMain ? '#4a90e2' : '#a0a0a0',
@@ -269,7 +302,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                 />
               </View>
               <Text style={styles.progressText}>
-                {quest.records?.length ?? 0}일차
+                {questRecord?.length ?? 0}일차
               </Text>
             </View>
           </View>
@@ -279,7 +312,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>기록 타임라인</Text>
 
-          {quest.records?.length === 0 ? (
+          {questRecord?.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="time-outline" size={50} color="#ccc" />
               <Text style={styles.emptyStateText}>아직 기록이 없습니다.</Text>
@@ -288,20 +321,10 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               </Text>
             </View>
           ) : (
-            quest.records?.map((record: QuestRecord) => (
+            questRecord?.map((record: QuestRecord) => (
               <View key={record.id} style={styles.recordCard}>
-                <View style={styles.recordHeader}>
-                  <Text style={styles.recordDate}>
-                    {formatDate(record.date || '')}
-                  </Text>
-                </View>
-                {record.images && (
+                {record.images && record.images?.length > 0 && (
                   <ImageCarousel images={record.images} />
-                  // <Image
-                  //   source={{uri: record.images[0]}}
-                  //   style={styles.recordImage}
-                  //   resizeMode="cover"
-                  // />
                 )}
                 <Text style={styles.recordText}>{record.text}</Text>
               </View>
@@ -323,7 +346,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                 key={`image-${index}-${image}`}
                 onPress={() => removeImage(index)}
                 style={styles.imageWrapper}>
-                <Image source={{uri: image}} style={styles.imagePreview} />
+                <Image source={{uri: image.uri}} style={styles.imagePreview} />
               </TouchableOpacity>
             ))}
             <TouchableOpacity
