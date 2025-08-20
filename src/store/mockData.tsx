@@ -1,6 +1,11 @@
 // src/store/mockData.ts
 import {create} from 'zustand';
-import {Quest, QuestRecord, ReactionType} from '../types/quest.types';
+import {
+  Quest,
+  QuestRecord,
+  QuestVerification,
+  ReactionType,
+} from '../types/quest.types';
 import {Team, TeamPost, TeamComment, TeamReaction} from '../types/team.types';
 import {User} from '../types/user.types';
 
@@ -339,9 +344,10 @@ export const mockTeams: Team[] = [
           ],
           verifications: [
             {
+              id: 'verification1',
               user: initialUser[1],
               comment: '대단하세요!',
-              createdAt: '2025-07-09T10:30:00Z',
+              createdAt: new Date('2025-07-09T10:30:00Z'),
             },
           ],
           createdAt: new Date('2025-07-09T10:15:00Z'),
@@ -417,14 +423,13 @@ interface TeamStore {
   ) => void;
   addComment: (
     postId: string,
-    comment: Omit<TeamComment, 'id' | 'createdAt' | 'updatedAt' | 'reactions'>,
-  ) => TeamComment;
+    comment: Omit<QuestVerification, 'id' | 'createdAt' | 'updatedAt' | 'user'>,
+  ) => QuestVerification;
   updateComment: (
-    postId: string,
     commentId: string,
-    updates: Partial<Omit<TeamComment, 'id' | 'userId' | 'createdAt'>>,
+    updates: Partial<Omit<QuestVerification, 'id' | 'user' | 'createdAt'>>,
   ) => void;
-  deleteComment: (postId: string, commentId: string) => void;
+  deleteComment: (commentId: string) => void;
 }
 
 // Zustand store for teams
@@ -630,13 +635,13 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   },
   addComment: (
     postId: string,
-    comment: Omit<TeamComment, 'id' | 'createdAt' | 'updatedAt' | 'reactions'>,
+    comment: Omit<QuestVerification, 'id' | 'createdAt' | 'updatedAt' | 'user'>,
   ) => {
-    const newComment: TeamComment = {
+    const newComment: QuestVerification = {
       ...comment,
       id: `comment-${Date.now()}`,
-      reactions: [],
       createdAt: new Date(),
+      user: initialUser[1],
     };
 
     set(state => ({
@@ -661,9 +666,8 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   },
 
   updateComment: (
-    postId: string,
     commentId: string,
-    updates: Partial<Omit<TeamComment, 'id' | 'createdAt' | 'userId'>>,
+    updates: Partial<Omit<QuestVerification, 'id' | 'createdAt' | 'userId'>>,
   ) => {
     set(state => ({
       teams: state.teams.map(team => {
@@ -672,8 +676,6 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
           teamQuest: {
             ...team.teamQuest,
             records: team.teamQuest.records.map(post => {
-              if (post.id !== postId) return post;
-
               return {
                 ...post,
                 verifications: post.verifications.map(comment =>
@@ -693,7 +695,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     }));
   },
 
-  deleteComment: (postId: string, commentId: string) => {
+  deleteComment: (commentId: string) => {
     set(state => ({
       teams: state.teams.map(team => {
         return {
@@ -701,8 +703,6 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
           teamQuest: {
             ...team.teamQuest,
             records: team.teamQuest.records.map(post => {
-              if (post.id !== postId) return post;
-
               return {
                 ...post,
                 verifications: post.verifications.filter(

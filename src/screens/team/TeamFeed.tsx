@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -11,130 +11,203 @@ import {
   Platform,
   Animated,
   Alert,
+  GestureResponderEvent,
+  Keyboard,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useTeamStore} from '../../store/mockData';
-import {Team, TeamPost, TeamComment} from '../../types/team.types';
+import {
+  TeamPost,
+  TeamComment,
+  TeamFeedResponse,
+  ApiDataReturnType,
+  Team,
+} from '../../types/team.types';
 import {QuestVerification} from '../../types/quest.types';
-import {TeamFeedProps} from '@/types/navigation';
-import {useRoute} from '@react-navigation/native';
-import {useEffect, useRef} from 'react';
-import {Keyboard} from 'react-native';
-import {launchImageLibrary} from 'react-native-image-picker';
+import {TeamFeedProps as TeamFeedRouteProps} from '@/types/navigation';
+import {launchImageLibrary, Asset} from 'react-native-image-picker';
 import ImageCarousel from '../../components/Carousel';
-import {useQuestStore} from '../../store/mockData';
 import useKeyboardHeight from '../../utils/hooks/useKeyboardHeight';
 import {API_URL} from '@env';
 import CharacterAvatar from '../../components/CharacterAvatar';
-import {useQuery, useQueryClient, useMutation} from '@tanstack/react-query';
+import {
+  useQueryClient,
+  useMutation,
+  useInfiniteQuery,
+} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
+import {
+  Menu,
+  MenuOptions,
+  MenuOption,
+  MenuTrigger,
+} from 'react-native-popup-menu';
 
-const TeamFeedScreen = () => {
-  const navigation = useNavigation<TeamFeedProps>();
+// #region Custom Hooks (Moved outside component)
+
+const useMockData = ({
+  teamId,
+  newPostText,
+  images,
+  commentText,
+  setNewPostText,
+  setImages,
+  setCommentText,
+}: any): Omit<ApiDataReturnType, 'team'> & {team?: Team} => {
+  const {
+    teams,
+    getTeamById,
+    createTeamPost,
+    addComment,
+    deleteTeamPost,
+    updateTeamPost,
+    deleteComment,
+    updateComment,
+  } = useTeamStore();
+  const team = getTeamById(teamId);
+
+  const handleAddRecord = async () => {
+    if (!newPostText.trim() && images.length === 0) {
+      Alert.alert('오류', '기록할 내용을 입력해주세요.');
+      return;
+    }
+    if (images.length > 3) {
+      Alert.alert('오류', '이미지는 최대 3장까지만 선택할 수 있습니다.');
+      return;
+    }
+    createTeamPost(teamId, {
+      text: newPostText.trim(),
+      images: images.length > 0 ? images : undefined,
+      user: {id: '4', name: 'test', avatar: '', level: 1},
+      verifications: [],
+    });
+    setNewPostText('');
+    setImages([]);
+    Alert.alert('성공', '기록이 추가되었습니다!');
+  };
+
+  const handleAddComment = (
+    postId: string,
+    comment: Omit<QuestVerification, 'id' | 'createdAt' | 'updatedAt' | 'user'>,
+  ) => {
+    if (!commentText.trim()) return;
+    addComment(postId, comment);
+    setCommentText('');
+  };
+
+  const handleUpdatePost = (postId: string, updates: Partial<TeamPost>) => {
+    const currentPost = team?.teamQuest?.records.find(
+      post => post.id === postId,
+    );
+    if (!currentPost) return;
+
+    const updatedPost = {
+      ...currentPost,
+      ...updates,
+      images: updates.images || currentPost.images,
+    };
+    updateTeamPost(teamId, postId, updates);
+  };
+
+  const handleUpdateComment = (commentId: string, comment: string) => {
+    const currentComment = team?.teamQuest?.records.find(
+      post => post.id === commentId,
+    );
+    if (!currentComment) return;
+    updateComment(commentId, {comment});
+  };
+
+  const handleDeletePost = (postId: string) => {
+    deleteTeamPost(teamId, postId);
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    deleteComment(commentId);
+  };
+
+  return {
+    data: team?.teamQuest?.records || [],
+    pages: team?.teamQuest?.records
+      ? [{records: team.teamQuest.records, nextPage: undefined}]
+      : [],
+    pageParams: [],
+    fetchNextPage: () => {},
+    hasNextPage: false,
+    isFetchingNextPage: false,
+    isLoading: false,
+    isError: false,
+    handleAddRecord,
+    handleAddComment,
+    handleUpdatePost,
+    handleUpdateComment,
+    handleDeletePost,
+    handleDeleteComment,
+    loadMore: () => {},
+  };
+};
+
+const useApiData = ({
+  teamId,
+  page,
+  pageSize,
+  newPostText,
+  images,
+  setNewPostText,
+  setImages,
+  setCommentText,
+  commentText,
+}: any): ApiDataReturnType => {
   const queryClient = useQueryClient();
-  const route = useRoute<TeamFeedProps>();
-  const {teamId} = route.params;
-  const {keyboardHeight} = useKeyboardHeight();
-  const [newPostText, setNewPostText] = useState('');
-  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
-  const [commentText, setCommentText] = useState('');
-  const [isCommenting, setIsCommenting] = useState(false);
-  const [images, setImages] = useState<string[]>([]);
 
-  // Mock data implementation
-  const useMockData = () => {
-    const {
-      teams,
-      getTeamById,
-      createTeamPost,
-      addComment,
-      deleteTeamPost,
-      updateTeamPost,
-      deleteComment,
-    } = useTeamStore();
-    const team = getTeamById(teamId);
-
-    const handleAddRecord = async () => {
-      if (!newPostText.trim() && images.length === 0) {
-        Alert.alert('오류', '기록할 내용을 입력해주세요.');
-        return;
-      }
-
-      if (images.length > 3) {
-        Alert.alert('오류', '이미지는 최대 3장까지만 선택할 수 있습니다.');
-        return;
-      }
-
-      createTeamPost(teamId, {
-        text: newPostText.trim(),
-        images: images.length > 0 ? images : undefined,
-        user: {id: '4', name: 'test', avatar: '', level: 1},
-        verifications: [],
-      });
-
-      setNewPostText('');
-      setImages([]);
-      Alert.alert('성공', '기록이 추가되었습니다!');
-    };
-
-    const handleAddComment = (
-      postId: string,
-      comment: Omit<
-        TeamComment,
-        'id' | 'createdAt' | 'updatedAt' | 'reactions'
-      >,
-    ) => {
-      if (!commentText.trim()) return;
-      addComment(postId, comment);
-      setCommentText('');
-    };
-
-    const handleUpdatePost = (postId: string, updates: Partial<TeamPost>) => {
-      updateTeamPost(teamId, postId, updates);
-    };
-
-    const handleDeletePost = (postId: string) => {
-      deleteTeamPost(teamId, postId);
-    };
-
-    const handleDeleteComment = (postId: string, commentId: string) => {
-      deleteComment(postId, commentId);
-    };
-
+  const fetchTeamFeed = async ({pageParam = 0}) => {
+    const response = await instance.get<TeamFeedResponse>(
+      `${API_URL}/record/team/${teamId}?page=${pageParam}&size=${pageSize}`,
+    );
     return {
-      team,
-      handleAddRecord,
-      handleAddComment,
-      handleUpdatePost,
-      handleDeletePost,
-      handleDeleteComment,
-      isLoading: false,
-      isError: false,
+      records: response.data.content,
+      nextPage:
+        response.data.content.length === pageSize ? pageParam + 1 : undefined,
     };
   };
 
-  // Real API implementation
-  const useApiData = () => {
-    const fetchTeamFeed = async () => {
-      const response = await instance.get(`${API_URL}/record/team/${teamId}`);
-      return response.data;
-    };
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isError,
+    isLoading,
+  } = useInfiniteQuery({
+    queryKey: ['teamFeed', teamId],
+    queryFn: ({pageParam = page}) => fetchTeamFeed({pageParam}),
+    initialPageParam: 0,
+    getNextPageParam: lastPage => lastPage.nextPage,
+  });
 
-    const addTeamPost = async (
-      postData: Omit<TeamPost, 'id' | 'createdAt' | 'updatedAt' | 'reactions'>,
-    ) => {
+  const loadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
+
+  const mutationOptions = {
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ['teamFeed', teamId]});
+    },
+  };
+
+  const addPostMutation = useMutation({
+    mutationFn: async (postData: any) => {
       const formData = new FormData();
-
       formData.append('text', postData.text || '');
-
       if (postData.images && postData.images.length > 0) {
-        postData.images.forEach((image, index) => {
-          formData.append(`images[${index}]`, {
-            uri: image,
-            type: 'image/jpeg',
-            name: `image_${index}.jpg`,
+        postData.images.forEach((image: Asset) => {
+          formData.append(`images`, {
+            uri: image.uri,
+            type: image.type,
+            name: image.fileName,
           });
         });
       } else {
@@ -143,241 +216,218 @@ const TeamFeedScreen = () => {
       const response = await instance.post(
         `${API_URL}/record/team/${teamId}`,
         formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        },
+        {headers: {'Content-Type': 'multipart/form-data'}},
       );
       return response.data;
-    };
+    },
+    ...mutationOptions,
+    onSuccess: () => {
+      mutationOptions.onSuccess();
+      setNewPostText('');
+      setImages([]);
+      Alert.alert('성공', '기록이 추가되었습니다!');
+    },
+  });
 
-    const updateTeamPost = async (
-      postId: string,
-      updates: Partial<TeamPost>,
-    ) => {
+  const updatePostMutation = useMutation({
+    mutationFn: async ({
+      postId,
+      updates,
+    }: {
+      postId: string;
+      updates: Partial<TeamPost>;
+    }) => {
       const formData = new FormData();
+      const existingUrlsToKeep: string[] = [];
 
-      formData.append('text', updates.text || '');
+      formData.append('text', updates.text);
 
-      if (updates.images && updates.images.length > 0) {
-        updates.images.forEach((image, index) => {
-          formData.append(`images[${index}]`, {
-            uri: image,
-            type: 'image/jpeg',
-            name: `image_${index}.jpg`,
-          });
+      updates.images &&
+        updates.images.forEach((image: Asset) => {
+          // 로그를 보면 image는 { uri, type, name } 형태의 객체입니다.
+          if (image?.uri?.startsWith('http')) {
+            // 서버 URL('http'로 시작)이면 '유지할 URL 목록'에 추가
+            existingUrlsToKeep.push(image.uri);
+          } else {
+            // 로컬 파일 URI('file://'로 시작)이면 '새 이미지 파일'로 FormData에 추가
+            formData.append('newImages', {
+              uri: image.uri,
+              type: image.type || 'image/jpeg', // 혹시 type이 없을 경우를 대비한 기본값
+              name: image.fileName || `image-${Date.now()}.jpg`, // 혹시 이름이 없을 경우를 대비
+            });
+          }
         });
-      } else {
-        formData.append('images', '[]');
-      }
+      formData.append('existingImages', JSON.stringify(existingUrlsToKeep));
+
+      // const metadataBlob = new Blob(
+      //   [
+      //     JSON.stringify({
+      //       text: updates.text,
+      //       existingImages: existingUrlsToKeep,
+      //     }),
+      //   ],
+      //   {
+      //     type: 'application/json',
+      //     lastModified: Date.now(),
+      //   },
+      // );
+      // formData.append('data', metadataBlob);
       const response = await instance.put(
         `${API_URL}/record/team/${postId}`,
         formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        },
+        {headers: {'Content-Type': 'multipart/form-data'}},
       );
       return response.data;
-    };
+    },
+    ...mutationOptions,
+  });
 
-    const deleteTeamPost = async (postId: string) => {
-      await instance.delete(`${API_URL}/record/team/${postId}`);
-    };
+  const deletePostMutation = useMutation({
+    mutationFn: (postId: string) =>
+      instance.delete(`${API_URL}/record/team/${postId}`),
+    ...mutationOptions,
+  });
 
-    const addTeamComment = async (
-      postId: string,
-      comment: Omit<
-        TeamComment,
-        'id' | 'createdAt' | 'updatedAt' | 'reactions'
-      >,
-    ) => {
-      const response = await instance.post(
-        `${API_URL}/record/team/comment/${postId}`,
+  const addCommentMutation = useMutation({
+    mutationFn: ({recordId, comment}: {recordId: string; comment: any}) =>
+      instance.post(
+        `${API_URL}/record/team/verifications/${recordId}`,
         comment,
-      );
-      return response.data;
-    };
+      ),
+    ...mutationOptions,
+    onSuccess: () => {
+      mutationOptions.onSuccess();
+      setCommentText('');
+    },
+  });
 
-    const updateTeamComment = async (
-      postId: string,
-      commentId: string,
-      updates: Partial<TeamComment>,
-    ) => {
-      const response = await instance.put(
-        `${API_URL}/record/team/comment/${commentId}`,
-        updates,
-      );
-      return response.data;
-    };
+  const updateCommentMutation = useMutation({
+    mutationFn: ({commentId, comment}: {commentId: string; comment: string}) =>
+      instance.put(`${API_URL}/record/team/verifications/${commentId}`, {
+        comment: comment,
+      }),
+    ...mutationOptions,
+    onSuccess: () => {
+      mutationOptions.onSuccess();
+      setCommentText('');
+    },
+  });
 
-    const deleteTeamComment = async (postId: string, commentId: string) => {
-      await instance.delete(`${API_URL}/record/team/comment/${commentId}`);
-    };
+  const deleteCommentMutation = useMutation({
+    mutationFn: ({commentId}: {commentId: string}) =>
+      instance.delete(`${API_URL}/record/team/verifications/${commentId}`),
+    ...mutationOptions,
+  });
 
-    // Queries
-    const {
-      data: team,
-      isLoading,
-      isError,
-    } = useQuery({
-      queryKey: ['teamFeed', teamId],
-      queryFn: fetchTeamFeed,
+  const handleAddRecord = async () => {
+    if (!newPostText.trim() && images.length === 0) {
+      Alert.alert('오류', '기록할 내용을 입력해주세요.');
+      return;
+    }
+    if (images.length > 3) {
+      Alert.alert('오류', '이미지는 최대 3장까지만 선택할 수 있습니다.');
+      return;
+    }
+    await addPostMutation.mutateAsync({
+      text: newPostText.trim(),
+      images: images.length > 0 ? images : undefined,
+      user: {id: '4', name: 'test', character: '', level: 1},
+      verifications: [],
     });
-
-    // Mutations
-    const addPostMutation = useMutation({
-      mutationFn: addTeamPost,
-      onSuccess: () => {
-        queryClient.invalidateQueries({queryKey: ['teamFeed', teamId]});
-        setNewPostText('');
-        setImages([]);
-        Alert.alert('성공', '기록이 추가되었습니다!');
-      },
-    });
-
-    const updatePostMutation = useMutation({
-      mutationFn: ({
-        postId,
-        updates,
-      }: {
-        postId: string;
-        updates: Partial<TeamPost>;
-      }) => updateTeamPost(postId, updates),
-      onSuccess: () => {
-        queryClient.invalidateQueries({queryKey: ['teamFeed', teamId]});
-      },
-    });
-
-    const deletePostMutation = useMutation({
-      mutationFn: deleteTeamPost,
-      onSuccess: () => {
-        queryClient.invalidateQueries({queryKey: ['teamFeed', teamId]});
-      },
-    });
-
-    const addCommentMutation = useMutation({
-      mutationFn: ({postId, comment}: {postId: string; comment: any}) =>
-        addTeamComment(postId, comment),
-      onSuccess: () => {
-        queryClient.invalidateQueries({queryKey: ['teamFeed', teamId]});
-        setCommentText('');
-      },
-    });
-
-    const deleteCommentMutation = useMutation({
-      mutationFn: ({postId, commentId}: {postId: string; commentId: string}) =>
-        deleteTeamComment(postId, commentId),
-      onSuccess: () => {
-        queryClient.invalidateQueries({queryKey: ['teamFeed', teamId]});
-      },
-    });
-
-    const handleAddRecord = async () => {
-      if (!newPostText.trim() && images.length === 0) {
-        Alert.alert('오류', '기록할 내용을 입력해주세요.');
-        return;
-      }
-
-      if (images.length > 3) {
-        Alert.alert('오류', '이미지는 최대 3장까지만 선택할 수 있습니다.');
-        return;
-      }
-
-      await addPostMutation.mutateAsync({
-        text: newPostText.trim(),
-        images: images.length > 0 ? images : undefined,
-        user: {id: '4', name: 'test', avatar: '', level: 1},
-        verifications: [],
-      });
-    };
-
-    const handleAddComment = (
-      postId: string,
-      comment: Omit<
-        TeamComment,
-        'id' | 'createdAt' | 'updatedAt' | 'reactions'
-      >,
-    ) => {
-      if (!commentText.trim()) return;
-      addCommentMutation.mutate({postId, comment});
-    };
-
-    const handleUpdatePost = (postId: string, updates: Partial<TeamPost>) => {
-      updatePostMutation.mutate({postId, updates});
-    };
-
-    const handleDeletePost = (postId: string) => {
-      deletePostMutation.mutate(postId);
-    };
-
-    const handleDeleteComment = (postId: string, commentId: string) => {
-      deleteCommentMutation.mutate({postId, commentId});
-    };
-
-    return {
-      team,
-      handleAddRecord,
-      handleAddComment,
-      handleUpdatePost,
-      handleDeletePost,
-      handleDeleteComment,
-      isLoading,
-      isError,
-    };
   };
 
-  // Select implementation based on API_URL
+  const handleAddComment = (recordId: string, comment: any) => {
+    if (!commentText.trim()) return;
+    addCommentMutation.mutate({recordId, comment});
+  };
+
+  return {
+    data: data?.pages.flatMap(page => page.records) || [],
+    pages: data?.pages || [],
+    pageParams: data?.pageParams || [],
+    fetchNextPage,
+    hasNextPage: !!hasNextPage,
+    isFetchingNextPage,
+    isError,
+    isLoading,
+    handleAddRecord,
+    handleAddComment,
+    handleUpdatePost: (postId: string, updates: Partial<TeamPost>) =>
+      updatePostMutation.mutate({postId, updates}),
+    handleUpdateComment: (commentId: string, comment: string) =>
+      updateCommentMutation.mutate({commentId, comment}),
+    handleDeletePost: deletePostMutation.mutate,
+    handleDeleteComment: (commentId: string) =>
+      deleteCommentMutation.mutate({commentId}),
+    loadMore,
+  };
+};
+
+// #endregion
+
+const TeamFeedScreen = () => {
+  const navigation = useNavigation<any>();
+  const route = useRoute<TeamFeedRouteProps>();
+  const {teamId, teamName, teamQuest} = route.params;
+  const {keyboardHeight} = useKeyboardHeight();
+  const keyboardOffset = useRef(new Animated.Value(0)).current;
+
+  const [newPostText, setNewPostText] = useState('');
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState('');
+  const [isCommenting, setIsCommenting] = useState(false);
+  const [images, setImages] = useState<Asset[]>([]);
+  const [existingImages, setExistingImages] = useState<Asset[]>([]);
+  const [isUpdate, setIsUpdate] = useState(false);
+  const [page, setPage] = useState(0);
+  const pageSize = 5;
+  const useMock = API_URL === '';
+
+  const hookProps = {
+    teamId,
+    page,
+    pageSize,
+    newPostText,
+    images,
+    commentText,
+    setNewPostText,
+    setImages,
+    setCommentText,
+  };
+
+  const mockData = useMockData(hookProps);
+  const apiData = useApiData(hookProps);
+
   const {
     team,
+    data: teamPosts,
     handleAddRecord,
     handleAddComment,
     handleUpdatePost,
+    handleUpdateComment,
     handleDeletePost,
     handleDeleteComment,
     isLoading,
     isError,
-  } = API_URL === '' ? useMockData() : useApiData();
-
-  if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>로딩 중...</Text>
-      </View>
-    );
-  }
-
-  if (isError || !team) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>팀을 불러오는 중 오류가 발생했습니다.</Text>
-      </View>
-    );
-  }
-
-  const keyboardOffset = useRef(new Animated.Value(0)).current;
-
-  // 200 duration is somewhat a magic number that seemed to work nicely with
-  // the default keyboard opening speed
-  const startAnimation = (toValue: number) =>
-    Animated.timing(keyboardOffset, {
-      toValue,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
+    loadMore,
+  } = useMock ? mockData : apiData;
 
   useEffect(() => {
     const keyboardWillShow = (e: any) => {
-      startAnimation(-e.endCoordinates?.height + 81);
+      Animated.timing(keyboardOffset, {
+        toValue: -e.endCoordinates?.height + 81,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
     };
-
     const keyboardWillHide = () => {
-      startAnimation(0);
+      Animated.timing(keyboardOffset, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
     };
 
-    // Add listeners
     const showSubscription = Keyboard.addListener(
       'keyboardWillShow',
       keyboardWillShow,
@@ -386,38 +436,35 @@ const TeamFeedScreen = () => {
       'keyboardWillHide',
       keyboardWillHide,
     );
-
-    // Clean up
     return () => {
       showSubscription.remove();
       hideSubscription.remove();
     };
-  }, []);
+  }, [keyboardOffset]);
 
   const pickImage = () => {
-    const options: any = {
-      mediaType: 'photo',
-      selectionLimit: 3 - images.length,
-      maxWidth: 1000,
-      maxHeight: 1000,
-      quality: 1, // 0-1 where 1 is best quality
-      includeBase64: false,
-    };
-
-    launchImageLibrary(options, (response: any) => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (response.errorCode) {
-        console.log('ImagePicker Error: ', response.errorMessage);
-        Alert.alert('오류', '이미지 선택 중 오류가 발생했습니다.');
-      } else if (response.assets?.length) {
-        const newImages = response.assets
-          .map((asset: any) => asset.uri)
-          .filter((uri: string) => uri);
-        setImages(prev => [...prev, ...newImages].slice(0, 3));
-      }
-    });
+    launchImageLibrary(
+      {
+        mediaType: 'photo',
+        selectionLimit: 3 - images.length,
+        maxWidth: 1000,
+        maxHeight: 1000,
+        quality: 1,
+        includeBase64: false,
+      },
+      (response: any) => {
+        if (response.didCancel) return;
+        if (response.errorCode) {
+          Alert.alert('오류', '이미지 선택 중 오류가 발생했습니다.');
+          return;
+        }
+        if (response.assets?.length) {
+          setImages(prev => [...prev, ...response.assets].slice(0, 3));
+        }
+      },
+    );
   };
+
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
@@ -432,10 +479,6 @@ const TeamFeedScreen = () => {
     )}:${String(date.getMinutes()).padStart(2, '0')}`;
   };
 
-  //   const toggleLike = (postId: string) => {
-  //     likeTeamPost(teamId, postId, team.leaderId);
-  //   };
-
   const toggleComments = (postId: string) => {
     if (isCommenting && selectedPostId === postId) {
       setIsCommenting(false);
@@ -446,47 +489,90 @@ const TeamFeedScreen = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text>로딩 중...</Text>
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text>팀을 불러오는 중 오류가 발생했습니다.</Text>
+      </View>
+    );
+  }
+
   const renderPost = ({item: post}: {item: TeamPost}) => (
     <View style={styles.postCard}>
       <View style={styles.postHeader}>
         <View style={styles.postUserInfo}>
           <View style={styles.avatar}>
-            <CharacterAvatar size={40} avatar={post.user.avatar} />
+            <CharacterAvatar size={40} avatar={post.user.character} />
           </View>
           <View>
-            <Text style={styles.userName}>{post.user.name}</Text>
+            <Text style={styles.userName}>{post.user.nickname}</Text>
             <Text style={styles.postTime}>{formatDate(post.createdAt)}</Text>
           </View>
         </View>
-        <TouchableOpacity>
-          <Ionicons name="ellipsis-horizontal" size={20} color="#888" />
-        </TouchableOpacity>
+        <Menu style={styles.menuContainer}>
+          <MenuTrigger>
+            <View>
+              <Ionicons name="ellipsis-horizontal" size={20} color="#888" />
+            </View>
+          </MenuTrigger>
+          <MenuOptions optionsContainerStyle={styles.menuOptions}>
+            <MenuOption
+              onSelect={() => {
+                setNewPostText(post.text);
+                const existings = (post.images || []).map(image => ({
+                  uri: image,
+                }));
+                setExistingImages(existings);
+                setImages(existings);
+                setSelectedPostId(post.id);
+                setIsUpdate(true);
+              }}
+              style={styles.menuOption}>
+              <Text>수정</Text>
+            </MenuOption>
+            <MenuOption
+              onSelect={() => {
+                Alert.alert('삭제', '정말로 삭제하시겠습니까?', [
+                  {
+                    text: '취소',
+                    onPress: () => {},
+                  },
+                  {
+                    text: '삭제',
+                    onPress: () => {
+                      handleDeletePost(post.id);
+                      setSelectedPostId(null);
+                    },
+                  },
+                ]);
+              }}
+              style={[styles.menuOption, styles.deleteOption]}>
+              <Text style={styles.deleteText}>삭제</Text>
+            </MenuOption>
+            <MenuOption
+              onSelect={() => Alert.alert('공유')}
+              style={styles.menuOption}>
+              <Text>공유</Text>
+            </MenuOption>
+          </MenuOptions>
+        </Menu>
       </View>
 
       <Text style={styles.postContent}>{post.text}</Text>
 
       {post.images && post.images.length > 0 && (
-        <ImageCarousel images={post.images} />
+        <ImageCarousel images={post.images.map(img => img.uri || img)} />
       )}
 
       <View style={styles.postActions}>
-        {/* <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => toggleLike(post.id)}>
-          <Ionicons
-            name={post.reactions.includes(user.id) ? 'heart' : 'heart-outline'}
-            size={20}
-            color={post.reactions.includes(user.id) ? '#ff4444' : '#666'}
-          />
-          <Text
-            style={[
-              styles.actionText,
-              {color: post.reactions.includes(post.userId) ? '#ff4444' : '#666'},
-            ]}>
-            {post.reactions.length}
-          </Text>
-        </TouchableOpacity> */}
-
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => toggleComments(post.id)}>
@@ -508,23 +594,45 @@ const TeamFeedScreen = () => {
       {isCommenting && selectedPostId === post.id && (
         <View style={styles.commentsSection}>
           {post.verifications.length > 0 ? (
-            post.verifications.map((verification: QuestVerification) => (
-              <View key={verification.user.id} style={styles.comment}>
+            post.verifications.map((verification: any) => (
+              <View key={verification.user_id} style={styles.comment}>
                 <View style={styles.commentAvatar}>
-                  <CharacterAvatar
-                    size={40}
-                    avatar={verification.user.avatar}
-                  />
+                  <CharacterAvatar size={40} avatar={verification.character} />
                 </View>
                 <View style={styles.commentContent}>
                   <Text style={styles.commentUserName}>
-                    {verification.user.name}
+                    {verification.username}
                   </Text>
-                  <Text style={styles.commentText}>{verification.comment}</Text>
+                  <Text style={styles.commentText}>{verification.text}</Text>
                 </View>
                 <Text style={styles.commentTime}>
                   {formatDate(verification.createdAt)}
                 </Text>
+                <View>
+                  <TouchableOpacity
+                    onPress={() =>
+                      handleUpdateComment(post.id, verification.id)
+                    }>
+                    <Text>수정</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      Alert.alert('삭제', '정말로 삭제하시겠습니까?', [
+                        {
+                          text: '취소',
+                          onPress: () => {},
+                        },
+                        {
+                          text: '삭제',
+                          onPress: () => {
+                            handleDeleteComment(verification.id);
+                          },
+                        },
+                      ]);
+                    }}>
+                    <Text>삭제</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ))
           ) : (
@@ -539,8 +647,7 @@ const TeamFeedScreen = () => {
               onChangeText={setCommentText}
               onSubmitEditing={() =>
                 handleAddComment(post.id, {
-                  content: commentText,
-                  user: {id: '4', name: 'test', avatar: '', level: 1},
+                  comment: commentText,
                 })
               }
             />
@@ -552,8 +659,7 @@ const TeamFeedScreen = () => {
               }
               onPress={() =>
                 handleAddComment(post.id, {
-                  content: commentText,
-                  user: {id: '4', name: 'test', avatar: '', level: 1},
+                  comment: commentText,
                 })
               }
               disabled={!commentText.trim()}>
@@ -574,11 +680,12 @@ const TeamFeedScreen = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}>
         <FlatList
-          data={team.teamQuest.records}
-          style={!keyboardHeight ? {marginBottom: 40} : undefined}
+          data={teamPosts}
           renderItem={renderPost}
           keyExtractor={item => item.id}
-          contentContainerStyle={[styles.feedContainer]}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          contentContainerStyle={styles.feedContainer}
           stickyHeaderIndices={[0]}
           ListHeaderComponent={
             <View style={styles.header}>
@@ -587,7 +694,8 @@ const TeamFeedScreen = () => {
                 onPress={() => navigation.goBack()}>
                 <Ionicons name="arrow-back" size={24} color="#333" />
               </TouchableOpacity>
-              <Text style={styles.teamName}>{team.name}</Text>
+              <Text
+                style={styles.teamName}>{`${teamName} 팀의 ${teamQuest}`}</Text>
               <View style={{width: 24}} />
             </View>
           }
@@ -602,82 +710,99 @@ const TeamFeedScreen = () => {
           }
         />
 
-        <Animated.View
-          style={[
-            styles.inputContainer,
-            {transform: [{translateY: keyboardOffset}]},
-          ]}>
-          {images.length > 0 && (
-            <View style={styles.imagePreviewContainer}>
-              {images.map((image, index) => (
+        {!isCommenting && (
+          <Animated.View
+            style={[
+              styles.inputContainer,
+              {transform: [{translateY: keyboardOffset}]},
+            ]}>
+            {images.length > 0 && (
+              <View style={styles.imagePreviewContainer}>
+                {images.map((image, index) => (
+                  <TouchableOpacity
+                    key={`image-${index}-${image.uri}`}
+                    onPress={() => removeImage(index)}
+                    style={styles.imageWrapper}>
+                    <Image
+                      source={{uri: image.uri}}
+                      style={styles.imagePreview}
+                    />
+                  </TouchableOpacity>
+                ))}
                 <TouchableOpacity
-                  key={`image-${index}-${image}`}
-                  onPress={() => removeImage(index)}
-                  style={styles.imageWrapper}>
-                  <Image source={{uri: image}} style={styles.imagePreview} />
+                  style={styles.removeImageButton}
+                  onPress={() => setImages([])}>
+                  <Ionicons name="close" size={16} color="white" />
                 </TouchableOpacity>
-              ))}
-              <TouchableOpacity
-                style={styles.removeImageButton}
-                onPress={() => setImages([])}>
-                <Ionicons name="close" size={16} color="white" />
+              </View>
+            )}
+            <View style={[styles.inputRow]}>
+              <TextInput
+                style={styles.input}
+                placeholder="오늘의 활동을 기록하세요..."
+                value={newPostText}
+                onChangeText={setNewPostText}
+                multiline
+              />
+              <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
+                <Ionicons name="camera" size={24} color="#806a5b" />
               </TouchableOpacity>
             </View>
-          )}
-          <View style={[styles.inputRow]}>
-            <TextInput
-              style={styles.input}
-              placeholder="오늘의 활동을 기록하세요..."
-              value={newPostText}
-              onChangeText={setNewPostText}
-              multiline
-            />
-            <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
-              <Ionicons name="camera" size={24} color="#806a5b" />
-            </TouchableOpacity>
-          </View>
 
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={[styles.postActionButton, styles.completeButton]}
-              onPress={() =>
-                Alert.alert('퀘스트 완료', '이 퀘스트를 완료하시겠습니까?', [
-                  {text: '취소', style: 'cancel'},
-                  {
-                    text: '완료',
-                    onPress: () => {
-                      // useQuestStore.getState().completeQuest(teamId);
-                      navigation.goBack();
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.postActionButton, styles.completeButton]}
+                onPress={() =>
+                  Alert.alert('퀘스트 완료', '이 퀘스트를 완료하시겠습니까?', [
+                    {text: '취소', style: 'cancel'},
+                    {
+                      text: '완료',
+                      onPress: () => navigation.goBack(),
                     },
-                  },
-                ])
-              }>
-              <Ionicons name="checkmark-circle" size={18} color="white" />
-              <Text style={styles.completeButtonText}>완료하기</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.postActionButton,
-                styles.addButton,
-                !newPostText.trim() &&
-                  images.length === 0 && {
-                    backgroundColor: '#ccc',
-                  },
-              ]}
-              onPress={handleAddRecord}
-              disabled={!newPostText.trim() && images.length === 0}>
-              <Ionicons name="add" size={18} color="white" />
-              <Text
-                style={
-                  !newPostText.trim() && images.length === 0
-                    ? styles.addButtonText
-                    : styles.addButtonText
+                  ])
                 }>
-                기록 추가
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
+                <Ionicons name="checkmark-circle" size={18} color="white" />
+                <Text style={styles.completeButtonText}>완료하기</Text>
+              </TouchableOpacity>
+              {isUpdate ? (
+                <TouchableOpacity
+                  style={[
+                    styles.postActionButton,
+                    styles.addButton,
+                    !newPostText.trim() &&
+                      images.length === 0 && {
+                        backgroundColor: '#ccc',
+                      },
+                  ]}
+                  onPress={() =>
+                    handleUpdatePost(selectedPostId!, {
+                      text: newPostText,
+                      images: images,
+                    })
+                  }
+                  disabled={!newPostText.trim() && images.length === 0}>
+                  <Ionicons name="add" size={18} color="white" />
+                  <Text style={styles.addButtonText}>수정하기</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.postActionButton,
+                    styles.addButton,
+                    !newPostText.trim() &&
+                      images.length === 0 && {
+                        backgroundColor: '#ccc',
+                      },
+                  ]}
+                  onPress={handleAddRecord}
+                  disabled={!newPostText.trim() && images.length === 0}>
+                  <Ionicons name="add" size={18} color="white" />
+                  <Text style={styles.addButtonText}>기록 추가</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </Animated.View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -712,7 +837,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   feedContainer: {
-    paddingBottom: 80,
+    paddingBottom: 120,
   },
   postCard: {
     backgroundColor: 'white',
@@ -863,10 +988,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // commentButtonText: {
-  //   color: 'white',
-  //   fontSize: 12,
-  // },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -973,6 +1094,31 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginHorizontal: 5,
+  },
+  menuContainer: {
+    position: 'relative',
+    zIndex: 1000,
+  },
+  menuOptions: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    width: 100,
+    padding: 5,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  menuOption: {
+    padding: 10,
+  },
+  deleteOption: {
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  deleteText: {
+    color: 'red',
   },
 });
 

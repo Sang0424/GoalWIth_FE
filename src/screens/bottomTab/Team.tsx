@@ -79,7 +79,6 @@ const TeamScreen = () => {
     teams = mockTeams;
   }
 
-  console.log('teams : ', teams);
   const handleDeleteTeam = (teamId: string) => {
     Alert.alert('팀 삭제!', '팀을 삭제하시겠습니까?', [
       {text: '취소', style: 'cancel'},
@@ -96,8 +95,12 @@ const TeamScreen = () => {
   };
 
   // Handle team press to navigate to TeamFeed
-  const handleTeamPress = (teamId: string) => {
-    navigation.navigate('TeamFeedScreen', {teamId});
+  const handleTeamPress = (
+    teamId: string,
+    teamName: string,
+    teamQuest: string,
+  ) => {
+    navigation.navigate('TeamFeedScreen', {teamId, teamName, teamQuest});
   };
 
   // Handle create team button press
@@ -156,7 +159,9 @@ const TeamScreen = () => {
         onSwipeableWillOpen={() => setShowHint(false)}>
         <TouchableOpacity
           style={[styles.questCard, isLeader && styles.mainQuestCard]}
-          onPress={() => handleTeamPress(item.id)}>
+          onPress={() =>
+            handleTeamPress(item.id, item.name, item.teamQuest.title)
+          }>
           <View style={styles.cardHeader}>
             <View style={styles.titleRow}>
               <Text style={styles.questTitle} numberOfLines={1}>
@@ -228,7 +233,9 @@ const TeamScreen = () => {
     return (
       <TouchableOpacity
         style={[styles.questCard, isLeader && styles.mainQuestCard]}
-        onPress={() => handleTeamPress(item.id)}>
+        onPress={() =>
+          handleTeamPress(item.id, item.name, item.teamQuest.title)
+        }>
         <View style={styles.cardHeader}>
           <View style={styles.titleRow}>
             <Text style={styles.questTitle} numberOfLines={1}>

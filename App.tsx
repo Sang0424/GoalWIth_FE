@@ -17,6 +17,7 @@ import instance from './src/utils/axiosInterceptor';
 import SplashScreen from 'react-native-splash-screen';
 import {decodeJwt} from './src/utils/jwtUtils';
 import {API_URL} from '@env';
+import {MenuProvider} from 'react-native-popup-menu';
 
 const queryClient = new QueryClient();
 
@@ -26,13 +27,15 @@ const App = () => {
     const accessToken = 'abc';
     return (
       <QueryClientProvider client={queryClient}>
-        <NavigationContainer>
-          <SafeAreaProvider>
-            <GestureHandlerRootView>
-              {accessToken !== null ? <BottomNav /> : <OnBoardingNav />}
-            </GestureHandlerRootView>
-          </SafeAreaProvider>
-        </NavigationContainer>
+        <MenuProvider>
+          <NavigationContainer>
+            <SafeAreaProvider>
+              <GestureHandlerRootView>
+                {accessToken !== null ? <BottomNav /> : <OnBoardingNav />}
+              </GestureHandlerRootView>
+            </SafeAreaProvider>
+          </NavigationContainer>
+        </MenuProvider>
       </QueryClientProvider>
     );
   } else {
@@ -82,13 +85,15 @@ const App = () => {
     // }, [accessToken]);
     return (
       <QueryClientProvider client={queryClient}>
-        <NavigationContainer>
-          <SafeAreaProvider>
-            <GestureHandlerRootView>
-              {accessToken !== null ? <BottomNav /> : <OnBoardingNav />}
-            </GestureHandlerRootView>
-          </SafeAreaProvider>
-        </NavigationContainer>
+        <MenuProvider>
+          <NavigationContainer>
+            <SafeAreaProvider>
+              <GestureHandlerRootView>
+                {accessToken !== null ? <BottomNav /> : <OnBoardingNav />}
+              </GestureHandlerRootView>
+            </SafeAreaProvider>
+          </NavigationContainer>
+        </MenuProvider>
       </QueryClientProvider>
     );
   }

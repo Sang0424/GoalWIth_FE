@@ -76,7 +76,7 @@ type NavigationProp = DrawerNavigationProp<any> &
 export type TeamNavParamList = {
   TeamScreen: undefined;
   TeamCreate: {teamToEdit?: Team};
-  TeamFeedScreen: {teamId: string};
+  TeamFeedScreen: {teamId: string; teamName: string; teamQuest: string};
   TeamQuestCreateScreen: {teamName: string; data: string | number};
 };
 export type TeamProps = NativeStackNavigationProp<

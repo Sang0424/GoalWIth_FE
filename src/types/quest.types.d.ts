@@ -26,6 +26,7 @@ export interface QuestRecord {
 }
 
 export interface QuestVerification {
+  id: string;
   user: User;
   comment: string;
   createdAt: Date;
