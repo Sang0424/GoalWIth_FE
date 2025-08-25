@@ -18,18 +18,21 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {DrawerNavigationProp} from '@react-navigation/drawer';
 import {NavigationProp} from '../../types/navigation';
 import {initialUser} from '../../store/mockData';
+import {API_URL} from '@env';
 
 export default function Peers() {
   const [search, setSearch] = useState('');
-  const users = initialUser;
+
   const {data, error, isLoading} = useQuery({
     queryKey: ['requestedPeers'],
     queryFn: async () => {
-      const response = await instance.get(`/users/requestedPeers`);
+      const response = await instance.get(`/peer/requested`);
       return response.data;
     },
+    enabled: API_URL === '',
   });
 
+  const users = API_URL === '' ? initialUser : [];
   const requestedPeers = data || [];
   const navigation = useNavigation<NavigationProp>();
 
@@ -109,7 +112,7 @@ export default function Peers() {
               flexWrap: 'wrap',
               gap: 8,
             }}>
-            {users.map(user => (
+            {users.map((user: any) => (
               <UserCard key={user.id} user={user} from="peers" />
             ))}
           </View>

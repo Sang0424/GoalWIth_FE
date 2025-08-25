@@ -3,35 +3,32 @@ import {
   DrawerItemList,
   DrawerItem,
 } from '@react-navigation/drawer';
-import { View, Text, StyleSheet, Image } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import {View, Text, StyleSheet, Image} from 'react-native';
+import {useQuery} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
-import { userStore } from '../../store/userStore';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import {userStore} from '../../store/userStore';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
-export default function CustomDrawerContent({ props }: { props: any }) {
+export default function CustomDrawerContent({props}: {props: any}) {
   const user = userStore(state => state.user);
 
-  const { data: peersData } = useQuery({
+  const {data: peersData} = useQuery({
     queryKey: ['peers'],
     queryFn: async () => {
-      const response = await instance.get('/users/peers');
+      const response = await instance.get('/peer');
       return response.data;
     },
   });
 
-  const { data: requestedPeersData } = useQuery({
+  const {data: requestedPeersData} = useQuery({
     queryKey: ['requestedPeers'],
     queryFn: async () => {
-      const response = await instance.get('/users/requestedPeers');
+      const response = await instance.get('/peer/requested');
       return response.data;
     },
   });
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+    <SafeAreaView style={{flex: 1}} edges={['top']}>
       <DrawerContentScrollView {...props}>
         <View style={[styles.profileContainer]}>
           {/* <Image
@@ -70,12 +67,12 @@ export default function CustomDrawerContent({ props }: { props: any }) {
           ))}
         </View>
 
-        <DrawerItem
+        {/* <DrawerItem
           label="로그아웃"
           onPress={() => {
             // 로그아웃 로직 구현
           }}
-        />
+        /> */}
       </DrawerContentScrollView>
     </SafeAreaView>
   );

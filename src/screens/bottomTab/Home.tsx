@@ -112,7 +112,7 @@ export default function Home() {
         exp: 0,
         maxExp: 100,
         actionPoints: 100,
-        avatar: require('../../assets/character/pico_base.png'),
+        avatar: '../../assets/character/pico_base.png',
         // Note: Removed createdAt and updatedAt as they're not in the User type
       }
     : userData;
@@ -412,7 +412,14 @@ export default function Home() {
               resizeMode="contain"
               style={{width: 150, height: 45, marginBottom: 16}}
             />
-            <View style={styles.characterContainer}>
+            <TouchableOpacity
+              style={styles.characterContainer}
+              onPress={() => {
+                navigation.navigate('CharacterSelection', {
+                  currentCharacter: user?.character,
+                });
+              }}
+              activeOpacity={0.8}>
               <CharacterAvatar
                 size={150}
                 level={user?.level}
@@ -454,7 +461,7 @@ export default function Home() {
                   </Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
 
             {/* Main Quest Section */}
             <View style={styles.section}>

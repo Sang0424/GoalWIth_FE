@@ -1,12 +1,19 @@
 import React from 'react';
-import {View, StyleSheet, Image, ViewStyle, Platform} from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  ViewStyle,
+} from 'react-native';
 import {ImageSourcePropType} from 'react-native';
 
 interface CharacterAvatarProps {
   size?: number;
   level?: number;
-  avatar: string;
+  avatar: string | {id: string; name: string; image: string};
   style?: ViewStyle;
+  onPress?: () => void;
 }
 
 const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
@@ -14,6 +21,7 @@ const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
   level = 1,
   avatar,
   style,
+  onPress,
 }) => {
   // Get border color based on level
   const getBorderColor = () => {
@@ -25,39 +33,57 @@ const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
   };
 
   const colors = getBorderColor();
+  const imageSource =
+    typeof avatar === 'string'
+      ? {uri: avatar}
+      : require('../assets/character/pico_base.png');
+
+  const content = (
+    <View
+      style={[
+        styles.gradientContainer,
+        {
+          borderRadius: size / 2,
+          borderWidth: 2,
+          borderColor: colors[0],
+        },
+      ]}>
+      <View
+        style={[
+          styles.characterContainer,
+          {
+            width: size * 0.9,
+            height: size * 0.9,
+            borderRadius: (size * 0.9) / 2,
+            backgroundColor: 'white',
+            borderWidth: 2,
+            borderColor: colors[1] || colors[0],
+          },
+        ]}>
+        <Image
+          source={imageSource}
+          style={styles.characterImage}
+          resizeMode="contain"
+          defaultSource={require('../assets/character/pico_base.png')}
+        />
+      </View>
+    </View>
+  );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.8}
+        style={[styles.container, {width: size, height: size}, style]}>
+        {content}
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <View style={[styles.container, {width: size, height: size}, style]}>
-      <View
-        style={[
-          styles.gradientContainer,
-          {
-            borderRadius: size / 2,
-            borderWidth: 2,
-            borderColor: colors[0], // Use the first color as border color as fallback
-          },
-        ]}>
-        <View
-          style={[
-            styles.characterContainer,
-            {
-              width: size * 0.9,
-              height: size * 0.9,
-              borderRadius: (size * 0.9) / 2,
-              backgroundColor: 'white',
-              borderWidth: 2,
-              borderColor: colors[1] || colors[0], // Use the second color or first as border color
-            },
-          ]}>
-          <Image
-            source={{
-              uri: avatar,
-            }}
-            style={styles.characterImage}
-            resizeMode="contain"
-          />
-        </View>
-      </View>
+      {content}
     </View>
   );
 };
@@ -72,7 +98,7 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f0f0f0', // Fallback background color
+    backgroundColor: '#ffffff',
   },
   characterContainer: {
     alignItems: 'center',

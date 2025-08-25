@@ -111,7 +111,8 @@ const useMockData = ({
     updateTeamPost(teamId, postId, updates);
   };
 
-  const handleUpdateComment = (commentId: string, comment: string) => {
+  const handleUpdateComment = (commentId: string | null, comment: string) => {
+    if (!commentId) return;
     const currentComment = team?.teamQuest?.records.find(
       post => post.id === commentId,
     );
@@ -123,7 +124,8 @@ const useMockData = ({
     deleteTeamPost(teamId, postId);
   };
 
-  const handleDeleteComment = (commentId: string) => {
+  const handleDeleteComment = (commentId: string | null) => {
+    if (!commentId) return;
     deleteComment(commentId);
   };
 
@@ -303,7 +305,7 @@ const useApiData = ({
 
   const updateCommentMutation = useMutation({
     mutationFn: ({commentId, comment}: {commentId: string; comment: string}) =>
-      instance.put(`${API_URL}/record/team/verifications/${commentId}`, {
+      instance.put(`${API_URL}/record/team/verification/${commentId}`, {
         comment: comment,
       }),
     ...mutationOptions,
@@ -315,7 +317,7 @@ const useApiData = ({
 
   const deleteCommentMutation = useMutation({
     mutationFn: ({commentId}: {commentId: string}) =>
-      instance.delete(`${API_URL}/record/team/verifications/${commentId}`),
+      instance.delete(`${API_URL}/record/team/verification/${commentId}`),
     ...mutationOptions,
   });
 
@@ -375,10 +377,12 @@ const TeamFeedScreen = () => {
   const [newPostText, setNewPostText] = useState('');
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
+  const [commentId, setCommentId] = useState<string | null>(null);
   const [isCommenting, setIsCommenting] = useState(false);
   const [images, setImages] = useState<Asset[]>([]);
   const [existingImages, setExistingImages] = useState<Asset[]>([]);
   const [isUpdate, setIsUpdate] = useState(false);
+  const [isCommentUpdate, setIsCommentUpdate] = useState(false);
   const [page, setPage] = useState(0);
   const pageSize = 5;
   const useMock = API_URL === '';
@@ -595,7 +599,7 @@ const TeamFeedScreen = () => {
         <View style={styles.commentsSection}>
           {post.verifications.length > 0 ? (
             post.verifications.map((verification: any) => (
-              <View key={verification.user_id} style={styles.comment}>
+              <View key={verification.id} style={styles.comment}>
                 <View style={styles.commentAvatar}>
                   <CharacterAvatar size={40} avatar={verification.character} />
                 </View>
@@ -610,9 +614,11 @@ const TeamFeedScreen = () => {
                 </Text>
                 <View>
                   <TouchableOpacity
-                    onPress={() =>
-                      handleUpdateComment(post.id, verification.id)
-                    }>
+                    onPress={() => {
+                      setCommentText(verification.text);
+                      setIsCommentUpdate(true);
+                      setCommentId(verification.id);
+                    }}>
                     <Text>수정</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -645,11 +651,11 @@ const TeamFeedScreen = () => {
               placeholder="댓글을 입력하세요..."
               value={commentText}
               onChangeText={setCommentText}
-              onSubmitEditing={() =>
-                handleAddComment(post.id, {
-                  comment: commentText,
-                })
-              }
+              // onSubmitEditing={() =>
+              //   handleAddComment(post.id, {
+              //     comment: commentText,
+              //   })
+              // }
             />
             <TouchableOpacity
               style={
@@ -657,11 +663,20 @@ const TeamFeedScreen = () => {
                   ? styles.commentButton
                   : styles.commentButtonDisabled
               }
-              onPress={() =>
-                handleAddComment(post.id, {
-                  comment: commentText,
-                })
-              }
+              onPress={() => {
+                if (isCommentUpdate) {
+                  if (commentId) {
+                    handleUpdateComment(commentId, commentText);
+                    setIsCommentUpdate(false);
+                    setCommentId(null);
+                  }
+                } else {
+                  handleAddComment(selectedPostId, {
+                    comment: commentText,
+                  });
+                  setCommentText('');
+                }
+              }}
               disabled={!commentText.trim()}>
               <Ionicons name="send" size={20} color="white" />
             </TouchableOpacity>

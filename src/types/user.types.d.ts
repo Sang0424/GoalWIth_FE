@@ -8,7 +8,7 @@ export interface User {
   userType: string;
   level: number;
   actionPoints: number;
-  avatar?: Avatar;
+  character?: string;
   badge?: Badge;
   exp: number;
   maxExp: number;

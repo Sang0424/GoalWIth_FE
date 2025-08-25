@@ -16,7 +16,7 @@ export default function UserCard({user, from}: {user?: User; from: string}) {
   // const {mutate: acceptPeer} = useMutation({
   //   mutationFn: async () => {
   //     const response = await instance.post(
-  //       `/users/acceptPeerRequest/${user?.id}`,
+  //       `/peer/accept/${user?.id}`,
   //     );
   //     return response.data;
   //   },
@@ -29,7 +29,7 @@ export default function UserCard({user, from}: {user?: User; from: string}) {
   // const {mutate: rejectPeer} = useMutation({
   //   mutationFn: async () => {
   //     const response = await instance.post(
-  //       `/users/rejectPeerRequest/${user?.id}`,
+  //       `/peer/reject/${user?.id}`,
   //     );
   //     return response.data;
   //   },
@@ -45,7 +45,9 @@ export default function UserCard({user, from}: {user?: User; from: string}) {
         <CharacterAvatar
           size={80}
           level={user?.level || 1}
-          avatar={user?.avatar || require('../assets/character/pico_base.png')}
+          avatar={
+            user?.character || require('../assets/character/pico_base.png')
+          }
         />
       </View>
       <View style={styles.cardMain}>

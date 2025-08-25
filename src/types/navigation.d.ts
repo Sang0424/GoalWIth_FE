@@ -39,6 +39,7 @@ export type MyPageProps = BottomTabNavigationProp<
 export type HomeNavParamList = {
   Home: undefined;
   QuestFeed: {quest: Quest};
+  CharacterSelection;
 };
 
 export type QuestFeedProps = NativeStackNavigationProp<

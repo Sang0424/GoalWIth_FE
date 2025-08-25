@@ -21,7 +21,7 @@ import {VerificationNavParamList} from '../../types/navigation';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import instance from '../../utils/axiosInterceptor';
-import {useQuery} from '@tanstack/react-query';
+import {useInfiniteQuery, useQuery} from '@tanstack/react-query';
 import {API_URL} from '@env';
 
 const VerificationFeedCard = ({item}: {item: {quest: Quest; user: User}}) => {
@@ -117,6 +117,8 @@ const TAB_LIST = [
 ];
 
 const VerificationFeedScreen = () => {
+  const PAGE_SIZE = 5;
+  const [page, setPage] = useState(0);
   const [feed, setFeed] = useState<Quest[] | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -125,30 +127,86 @@ const VerificationFeedScreen = () => {
   const [error, setError] = useState<string | null>(null);
 
   const quests = useQuestStore(state => state.quests);
-  const {data, isLoading, refetch} = useQuery({
+  // const {data, isLoading, refetch} = useQuery({
+  //   queryKey: ['Verification'],
+  //   queryFn: async () => {
+  //     try {
+  //       const response = await instance.get(`/quest/verification`);
+  //       const quests = response.data;
+  //       return quests;
+  //     } catch (e: any) {
+  //       setError(e.message);
+  //       return [];
+  //     }
+  //   },
+  //   enabled: API_URL != '',
+  //   refetchOnWindowFocus: true,
+  // });
+  // const verificationQuests = React.useMemo(() => {
+  //   if (API_URL === '') {
+  //     return quests.filter(
+  //       quest =>
+  //         quest.verificationRequired === true && quest.procedure === 'verify',
+  //     );
+  //   }
+  //   return data || [];
+  // }, [quests, data]);
+
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    refetch,
+    isRefetching,
+  } = useInfiniteQuery({
     queryKey: ['Verification'],
-    queryFn: async () => {
+    initialPageParam: 0,
+    queryFn: async ({pageParam = 0}) => {
       try {
-        const response = await instance.get(`/quest/verification`);
-        const quests = response.data;
-        return quests;
+        const response = await instance.get('/quest/verification', {
+          params: {
+            page: pageParam,
+            limit: PAGE_SIZE,
+          },
+        });
+        return response.data;
       } catch (e: any) {
         setError(e.message);
-        return [];
+        return {items: [], nextPage: null};
       }
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.hasNext ? allPages.length : undefined;
     },
     enabled: API_URL != '',
     refetchOnWindowFocus: true,
   });
+
   const verificationQuests = React.useMemo(() => {
     if (API_URL === '') {
-      return quests.filter(
+      const filtered = quests.filter(
         quest =>
           quest.verificationRequired === true && quest.procedure === 'verify',
       );
+      return filtered.slice(0, (page + 1) * PAGE_SIZE);
     }
-    return data || [];
-  }, [quests, data]);
+    return data?.pages.flatMap(page => page.items) || [];
+  }, [quests, data, page]);
+
+  const hasMore = verificationQuests.length < (page + 1) * PAGE_SIZE;
+
+  const handleLoadMore = () => {
+    if (API_URL == '') {
+      if (hasMore) {
+        setPage(page => page + 1);
+      }
+    }
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
 
   console.log('verificationQuests', verificationQuests);
 
@@ -167,20 +225,25 @@ const VerificationFeedScreen = () => {
     fetchFeed();
   }, [fetchFeed]);
 
-  const onRefresh = () => {
-    if (API_URL) {
-      // API_URL이 있을 때만 refetch 실행
-      setRefreshing(true);
-      refetch().finally(() => setRefreshing(false));
-    } else {
-      // 로컬 모드에서는 그냥 현재 데이터로 다시 설정
-      setRefreshing(true);
-      try {
-        setFeed(verificationQuests);
-      } finally {
-        setRefreshing(false);
-      }
-    }
+  // const onRefresh = async () => {
+  //   if (API_URL) {
+  //     // API_URL이 있을 때만 refetch 실행
+  //     setRefreshing(true);
+  //     await refetch();
+  //   } else {
+  //     // 로컬 모드에서는 그냥 현재 데이터로 다시 설정
+  //     setRefreshing(true);
+  //     try {
+  //       setFeed(verificationQuests);
+  //     } finally {
+  //       setRefreshing(false);
+  //     }
+  //   }
+  // };
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
   };
 
   // 팔로잉 피드는 userId가 'user1'인 것만 노출 (예시)
@@ -253,6 +316,8 @@ const VerificationFeedScreen = () => {
       <FlatList
         data={filteredFeed}
         keyExtractor={item => item.id}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
         renderItem={({item}) => (
           <VerificationFeedCard
             item={{
@@ -278,6 +343,11 @@ const VerificationFeedScreen = () => {
           //   }}
           // />
         )}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <ActivityIndicator size="small" color="#000" />
+          ) : null
+        }
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }

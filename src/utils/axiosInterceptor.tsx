@@ -2,80 +2,94 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {API_URL} from '@env';
 import {tokenStore} from '../store/tokenStore';
-import {userStore} from '../store/userStore';
 
-// Axios 인스턴스 생성
 const instance = axios.create({
   baseURL: API_URL,
+  timeout: 10000,
+  withCredentials: true,
   headers: {
-    withCredentials: true,
+    'Content-Type': 'application/json',
   },
-  timeout: 20000,
 });
-// 요청 인터셉터: Authorization 헤더 추가
+
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 instance.interceptors.request.use(
   async config => {
     const token = tokenStore.getState().accessToken;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    if (config.data instanceof FormData) {
-      config.headers['Content-Type'] = 'multipart/form-data';
-    } else {
-      config.headers['Content-Type'] = 'application/json';
-    }
     return config;
   },
   error => {
-    console.error(error.response.detail);
     return Promise.reject(error);
   },
 );
 
-// 응답 인터셉터: 액세스 토큰 만료 시 자동 갱신
-// instance.interceptors.response.use(
-//   response => response,
-//   async error => {
-//     console.error(error.response.status);
-//     const originalRequest = error.config;
-//     if (error.response?.status === 401) {
-//       const refreshToken = await AsyncStorage.getItem('refresh_token');
-//       if (refreshToken) {
-//         const res = await axios.post(`${API_URL}/users/refresh`, {
-//           refresh_token: refreshToken,
-//         });
-//         //const { setAccessToken } = tokenStore(state => state.actions);
-//         //setAccessToken(res.data.access_token);
-//         tokenStore.getState().actions.setAccessToken(res.data.access_token);
-//         await userStore.getState().loadUser();
-//         error.config.headers.Authorization = `Bearer ${res.data.access_token}`;
-//         return axios(error.config);
-//       }
-//     }
-//     return Promise.reject(error);
-//   },
-// );
 instance.interceptors.response.use(
-  response => response, // 성공 응답 그대로 반환
+  response => response,
   async error => {
-    if (error.response?.status === 401) {
+    const originalRequest = error.config;
+
+    if (
+      (error.response?.status === 401 || error.response?.status === 403) &&
+      !originalRequest._retry
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({resolve, reject});
+        })
+          .then(token => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return instance(originalRequest);
+          })
+          .catch(err => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
       try {
         const refreshToken = await AsyncStorage.getItem('refreshToken');
         if (!refreshToken) {
-          throw new Error('No refresh token found');
+          throw new Error('No refresh token available');
         }
 
-        const {data} = await instance.post('/users/refresh', {
+        const response = await axios.post(`${API_URL}/user/refresh`, {
           refreshToken: refreshToken,
         });
-        // tokenStore.getState().actions.setAccessToken(data.access_token);
-        error.config.headers.Authorization = `Bearer ${data.accessToken}`;
-        return instance(error.config);
+        const {accessToken, refreshToken: newRefreshToken} = response.data;
+
+        tokenStore.getState().actions.setAccessToken(accessToken);
+        await AsyncStorage.setItem('refreshToken', newRefreshToken);
+
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        isRefreshing = false;
+        processQueue(null, accessToken);
+
+        return instance(originalRequest);
       } catch (refreshError) {
-        console.error('Failed to refresh access token', refreshError);
+        processQueue(refreshError, null);
+        tokenStore.getState().actions.setAccessToken(null);
+        await AsyncStorage.removeItem('refreshToken');
+        isRefreshing = false;
         return Promise.reject(refreshError);
       }
     }
+
     return Promise.reject(error);
   },
 );
