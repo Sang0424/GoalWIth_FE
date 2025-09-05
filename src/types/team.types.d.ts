@@ -1,4 +1,4 @@
-import type {Reaction, Quest} from './quest.types';
+import type {Reaction, Quest, QuestVerification} from './quest.types';
 
 interface TeamReaction extends Omit<Reaction, 'questId'> {}
 
@@ -66,3 +66,57 @@ type TeamCreationResponse = {
     teamId: number | string;
   };
 };
+
+interface TeamPostResponse {
+  id: string;
+  text: string;
+  images: string[];
+  createdAt: string;
+  reactions: any[]; // Replace with proper reaction type
+  comments: TeamComment[];
+  verifications: QuestVerification[];
+  user: User;
+  // Add other fields that come from the API
+}
+
+interface TeamFeedResponse {
+  content: TeamPost[];
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+}
+
+interface ApiDataReturnType {
+  data?: any;
+  team?: Team;
+  pages: {
+    records: TeamPost[];
+    nextPage?: number;
+  }[];
+  pageParams: number[] | unknown[];
+  fetchNextPage: () => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage: boolean;
+  isError: boolean;
+  isLoading: boolean;
+  // addTeamPost: (
+  //   postData: Omit<TeamPost, 'id' | 'createdAt' | 'updatedAt' | 'reactions'>,
+  // ) => void;
+  // Add other methods that useApiData returns
+  handleAddRecord: () => void;
+  handleAddComment: (
+    postId: string,
+    commentData: Omit<
+      QuestVerification,
+      'id' | 'createdAt' | 'updatedAt' | 'user'
+    >,
+  ) => void;
+  handleUpdatePost: (postId: string, updates: Partial<TeamPost>) => void;
+  handleUpdateComment: (commentId: string, comment: string) => void;
+  handleDeletePost: (postId: string) => void;
+  handleDeleteComment: (commentId: string) => void;
+  loadMore: () => void;
+}

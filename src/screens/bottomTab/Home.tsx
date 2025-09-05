@@ -45,13 +45,14 @@ export default function Home() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [questToEdit, setQuestToEdit] = useState<Quest | null>(null);
   const [isAddingMainQuest, setIsAddingMainQuest] = useState(false);
+  const [filter, setFilter] = useState<'ONGOING' | 'COMPLETED'>('ONGOING');
   const navigation =
     useNavigation<NativeStackNavigationProp<HomeNavParamList>>();
   const isMockData = API_URL == '';
-  const storeUser = userStore(state => state.user);
   const mockQuests = useQuestStore(state => state.quests);
   const swipeableRef = useRef<any>(null);
   const [showHint, setShowHint] = useState(true);
+  const setUser = userStore(state => state.setUser);
   const queryClient = useQueryClient();
 
   const {mutate} = useMutation({
@@ -103,20 +104,22 @@ export default function Home() {
 
   const user = isMockData
     ? {
-        id: '',
+        id: '0',
         name: 'User',
-        email: '',
+        email: 'user@example.com',
         nickname: 'User',
         userType: 'student',
         level: 10,
         exp: 0,
         maxExp: 100,
         actionPoints: 100,
-        avatar: require('../../assets/character/pico_base.png'),
+        avatar: '../../assets/character/pico_base.png',
         // Note: Removed createdAt and updatedAt as they're not in the User type
       }
     : userData;
   // ********* Backend랑 연결 부분 *********
+
+  setUser(user);
   const currentExp = (user as User).exp;
   const maxExp = (user as User).level * 100;
   const progress = Math.min((currentExp / Math.max(maxExp, 1)) * 100, 100);
@@ -127,8 +130,26 @@ export default function Home() {
       : null;
   const subQuests =
     quests && quests?.length > 0
-      ? quests?.filter((quest: Quest) => !quest.isMain).slice(0, 5)
+      ? quests?.filter((quest: Quest) => !quest.isMain).slice(0, 10)
       : [];
+
+  const isQuestCompleted = (quest: Quest) => {
+    return (
+      quest.procedure === 'complete' ||
+      (quest.requiredVerification &&
+        (quest.verificationCount ?? 0) >= quest.requiredVerification)
+    );
+  };
+  const filteredMainQuest =
+    mainQuest &&
+    ((filter === 'COMPLETED' && isQuestCompleted(mainQuest)) ||
+      (filter === 'ONGOING' && !isQuestCompleted(mainQuest)))
+      ? mainQuest
+      : null;
+
+  const filteredSubQuests = subQuests.filter((q: Quest) =>
+    filter === 'COMPLETED' ? isQuestCompleted(q) : !isQuestCompleted(q),
+  );
 
   // Render empty state
   const renderEmptyState = (isMain: boolean) => (
@@ -140,23 +161,33 @@ export default function Home() {
         style={styles.emptyStateIcon}
       />
       <Text style={styles.emptyStateText}>
-        {isMain ? '메인 퀘스트를 생성해보세요' : '서브 퀘스트를 생성해보세요'}
+        {filter === 'COMPLETED'
+          ? isMain
+            ? '완료된 메인 퀘스트가 없어요'
+            : '완료된 서브 퀘스트가 없어요'
+          : isMain
+          ? '진행 중인 메인 퀘스트가 없어요'
+          : '진행 중인 서브 퀘스트가 없어요'}
       </Text>
       <Text style={styles.emptyStateSubtext}>
-        {isMain
+        {filter === 'COMPLETED'
+          ? '완료된 퀘스트가 이곳에 표시됩니다'
+          : isMain
           ? '단 하나의 메인 퀘스트만 생성할 수 있습니다'
           : '마음껏 서브 퀘스트를 생성해보세요'}
       </Text>
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => {
-          setIsAddingMainQuest(isMain);
-          setModalVisible(true);
-        }}>
-        <Text style={styles.addButtonText}>
-          {isMain ? '메인 퀘스트 추가' : '서브 퀘스트 추가'}
-        </Text>
-      </TouchableOpacity>
+      {filter === 'ONGOING' && (
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => {
+            setIsAddingMainQuest(isMain);
+            setModalVisible(true);
+          }}>
+          <Text style={styles.addButtonText}>
+            {isMain ? '메인 퀘스트 추가' : '서브 퀘스트 추가'}
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
   const QuestItem = ({
@@ -173,7 +204,7 @@ export default function Home() {
     // useEffect(() => {
     //   const timer = setTimeout(() => {
     //     setShowHint(false);
-    //   }, 3000);
+    //   }, 100000);
     //   return () => clearTimeout(timer);
     // }, []);
 
@@ -187,19 +218,23 @@ export default function Home() {
         <View style={styles.rightActionsContainer}>
           <Reanimated.View style={[styles.actionButtonInner, animatedStyles]}>
             <TouchableOpacity
+              activeOpacity={0.85}
               style={[styles.actionButton, styles.editButton]}
               onPress={() => {
                 swipeableRef.current?.close();
                 onEdit(quest);
               }}>
+              <Icon name="edit" size={24} color="#FFFFFF" />
               <Text style={styles.actionText}>수정</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              activeOpacity={0.85}
               style={[styles.actionButton, styles.deleteButton]}
               onPress={() => {
                 swipeableRef.current?.close();
                 onDelete(quest.id);
               }}>
+              <Icon name="delete" size={24} color="#FFFFFF" />
               <Text style={styles.actionText}>삭제</Text>
             </TouchableOpacity>
           </Reanimated.View>
@@ -234,7 +269,7 @@ export default function Home() {
       const percentage = calculateProgressPercentage();
       if (quest.verificationRequired) {
         return `인증 ${quest.verificationCount || 0} / ${
-          quest.requiredVerifications || 0
+          quest.requiredVerification || 0
         }`;
       }
       return `${Math.round(percentage)}% 완료`;
@@ -274,8 +309,8 @@ export default function Home() {
       styles.questCard,
       ...(quest.isMain ? [styles.mainQuestCard] : []),
       ...(quest.procedure === 'complete' ||
-      (quest.requiredVerifications &&
-        (quest.verificationCount ?? 0) >= (quest.requiredVerifications ?? 0))
+      (quest.requiredVerification &&
+        (quest.verificationCount ?? 0) >= (quest.requiredVerification ?? 0))
         ? [styles.completedCard]
         : []),
     ];
@@ -297,7 +332,11 @@ export default function Home() {
         renderRightActions={renderRightActions}
         onSwipeableWillOpen={() => setShowHint(false)}>
         <TouchableOpacity
-          onPress={() => navigation.navigate('QuestFeed', {quest: quest})}
+          onPress={() =>
+            navigation.navigate('QuestFeed', {
+              quest,
+            })
+          }
           activeOpacity={0.88}>
           <View style={cardStyle}>
             {/* New UI Implementation */}
@@ -412,7 +451,14 @@ export default function Home() {
               resizeMode="contain"
               style={{width: 150, height: 45, marginBottom: 16}}
             />
-            <View style={styles.characterContainer}>
+            <TouchableOpacity
+              style={styles.characterContainer}
+              onPress={() => {
+                navigation.navigate('CharacterSelection', {
+                  currentCharacter: user?.character,
+                });
+              }}
+              activeOpacity={0.8}>
               <CharacterAvatar
                 size={150}
                 level={user?.level}
@@ -454,13 +500,46 @@ export default function Home() {
                   </Text>
                 </View>
               </View>
+            </TouchableOpacity>
+
+            <View style={styles.filterSegmentContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.filterChip,
+                  filter === 'ONGOING' && styles.filterChipActive,
+                ]}
+                onPress={() => setFilter('ONGOING')}
+                activeOpacity={0.8}>
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    filter === 'ONGOING' && styles.filterChipTextActive,
+                  ]}>
+                  진행중
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.filterChip,
+                  filter === 'COMPLETED' && styles.filterChipActive,
+                ]}
+                onPress={() => setFilter('COMPLETED')}
+                activeOpacity={0.8}>
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    filter === 'COMPLETED' && styles.filterChipTextActive,
+                  ]}>
+                  완료됨
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* Main Quest Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>메인 퀘스트</Text>
-                {!mainQuest && (
+                {!filteredMainQuest && filter === 'ONGOING' && (
                   <TouchableOpacity
                     onPress={() => {
                       setModalVisible(true);
@@ -469,9 +548,9 @@ export default function Home() {
                   </TouchableOpacity>
                 )}
               </View>
-              {mainQuest ? (
+              {filteredMainQuest ? (
                 <QuestItem
-                  quest={mainQuest}
+                  quest={filteredMainQuest}
                   onDelete={handleDeleteQuest}
                   onEdit={handleEditQuest}
                 />
@@ -484,16 +563,18 @@ export default function Home() {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>서브 퀘스트</Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    setModalVisible(true);
-                  }}>
-                  <Text style={styles.sectionLink}>+ 추가</Text>
-                </TouchableOpacity>
+                {filter === 'ONGOING' && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setModalVisible(true);
+                    }}>
+                    <Text style={styles.sectionLink}>+ 추가</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-              {subQuests && subQuests?.length > 0 ? (
+              {filteredSubQuests && filteredSubQuests?.length > 0 ? (
                 <>
-                  {subQuests?.map((quest: Quest) => (
+                  {filteredSubQuests?.map((quest: Quest) => (
                     <QuestItem
                       key={quest.id}
                       quest={quest}
@@ -501,16 +582,18 @@ export default function Home() {
                       onEdit={handleEditQuest}
                     />
                   ))}
-                  <TouchableOpacity
-                    style={styles.addButton}
-                    onPress={() => {
-                      setIsAddingMainQuest(false);
-                      setModalVisible(true);
-                    }}>
-                    <Text style={styles.addButtonText}>
-                      {'서브 퀘스트 추가'}
-                    </Text>
-                  </TouchableOpacity>
+                  {filter === 'ONGOING' && (
+                    <TouchableOpacity
+                      style={styles.addButton}
+                      onPress={() => {
+                        setIsAddingMainQuest(false);
+                        setModalVisible(true);
+                      }}>
+                      <Text style={styles.addButtonText}>
+                        {'서브 퀘스트 추가'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </>
               ) : (
                 renderEmptyState(false)
@@ -592,14 +675,24 @@ const styles = StyleSheet.create({
   },
   rightActionsContainer: {
     flexDirection: 'row',
-    width: 150,
+    width: 180,
     height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingRight: 6,
   },
   actionButton: {
-    width: 75,
-    height: '100%',
+    width: 80,
+    height: '88%',
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 12, // rounded corners
+    marginHorizontal: 4, // spacing between buttons
+    shadowColor: '#000', // subtle shadow/elevation
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.12,
+    shadowRadius: 2,
+    elevation: 2,
   },
   editButton: {
     backgroundColor: '#4e9af1',
@@ -611,6 +704,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     fontSize: 14,
+    marginTop: 4,
   },
   swipeHint: {
     position: 'absolute',
@@ -743,6 +837,31 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 12,
     textAlign: 'center',
+  },
+  filterSegmentContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f1f3f5',
+    padding: 6,
+    borderRadius: 12,
+    marginBottom: 16,
+    alignSelf: 'flex-start',
+  },
+  filterChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+  },
+  filterChipActive: {
+    backgroundColor: '#806a5b',
+  },
+  filterChipText: {
+    fontSize: 14,
+    color: '#495057',
+    fontWeight: '600',
+  },
+  filterChipTextActive: {
+    color: '#fff',
   },
   section: {
     marginBottom: 24,

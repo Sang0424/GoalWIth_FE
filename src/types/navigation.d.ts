@@ -26,19 +26,11 @@ export type BottomTabParamList = {
   TeamNav: undefined;
   PeersDrawer: undefined;
 };
-export type HomeProps = BottomTabNavigationProp<
-  BottomTabParamList,
-  ['Feed', 'MyPage']
->;
-export type FeedProps = BottomTabNavigationProp<BottomTabParamList, 'Feed'>;
-export type MyPageProps = BottomTabNavigationProp<
-  BottomTabParamList,
-  ['Home', 'Feed']
->;
 
 export type HomeNavParamList = {
   Home: undefined;
   QuestFeed: {quest: Quest};
+  CharacterSelection: {currentCharacter: string};
 };
 
 export type QuestFeedProps = NativeStackNavigationProp<
@@ -65,18 +57,23 @@ export type BottomNavParamList = {
 
 export type PeersNavParamList = {
   Peers: undefined;
-  PeerRequest: {
-    peers: Array<User>;
-  };
+  PeerRequest: undefined;
+  PeerListScreen: {type: string};
 };
 
-type NavigationProp = DrawerNavigationProp<any> &
-  NativeStackNavigationProp<PeersNavParamList>;
+export type PeersDrawerParamList = {
+  PeersNav: NavigatorScreenParams<PeersNavParamList>;
+};
+
+export type PeerListProps = NativeStackNavigationProp<
+  PeersNavParamList,
+  'PeerListScreen'
+>;
 
 export type TeamNavParamList = {
   TeamScreen: undefined;
   TeamCreate: {teamToEdit?: Team};
-  TeamFeedScreen: {teamId: string};
+  TeamFeedScreen: {teamId: string; teamName: string; teamQuest: string};
   TeamQuestCreateScreen: {teamName: string; data: string | number};
 };
 export type TeamProps = NativeStackNavigationProp<

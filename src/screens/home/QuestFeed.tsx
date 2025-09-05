@@ -13,6 +13,7 @@ import {
   Animated,
   Pressable,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import {useRef, useEffect, useCallback} from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -36,7 +37,7 @@ import {API_URL} from '@env';
 
 const QuestFeed = ({route}: QuestFeedProps) => {
   const navigation = useNavigation();
-  const {quest} = route.params;
+  const {quest: questParam} = route.params;
   const [newRecordText, setNewRecordText] = useState('');
   const [images, setImages] = useState<Asset[]>([]);
   const [questRecord, setQuestRecord] = useState<QuestRecord[]>([]);
@@ -44,12 +45,24 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const queryClient = useQueryClient();
 
+  const quest = {
+    ...questParam,
+    startDate: questParam.startDate ? new Date(questParam.startDate) : null,
+    endDate: questParam.endDate ? new Date(questParam.endDate) : null,
+  };
+
   const {data, isLoading} = useQuery({
     queryKey: ['QuestRecord', quest.id],
     queryFn: async () => {
       if (API_URL !== '') {
-        const response = await instance.get(`/record/${quest.id}`);
-        return response.data;
+        try {
+          const response = await instance.get(`/record/${quest.id}`);
+          return response.data;
+        } catch (error: any) {
+          console.log(error.response.data.message);
+          Alert.alert(`${error.response.data.message}`);
+          return {records: quest.records || []};
+        }
       }
       return {records: quest.records || []};
     },
@@ -97,12 +110,25 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     onSuccess: () => {
       Alert.alert('성공', '기록이 추가되었습니다!');
     },
-    onError: error => {
-      Alert.alert('오류', '기록 추가 중 오류가 발생했습니다.');
+    onError: (error: any) => {
+      Alert.alert(`오류`, `${error.response.data.message}`);
       console.log(error);
     },
     onSettled: () => {
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
+    },
+  });
+
+  const {data: completeData, mutate: completeQuest} = useMutation({
+    mutationFn: async () => {
+      await instance.put(`/quest/complete/${quest.id}`);
+    },
+    onError: (error: any) => {
+      Alert.alert(`오류`, `${error.response.data.message}`);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
+      queryClient.invalidateQueries({queryKey: ['user']});
     },
   });
 
@@ -122,15 +148,15 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       setImages([]);
       navigation.goBack();
       return;
+    } else {
+      mutate({
+        questId: quest.id,
+        text: newRecordText,
+        images,
+      });
+      setNewRecordText('');
+      setImages([]);
     }
-
-    mutate({
-      questId: quest.id,
-      text: newRecordText,
-      images,
-    });
-    setNewRecordText('');
-    setImages([]);
   }, [newRecordText, images, quest.id, mutate, navigation]);
 
   useEffect(() => {
@@ -185,6 +211,13 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       </View>
     );
   }
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#000" />
+      </SafeAreaView>
+    );
+  }
 
   const handleCompleteQuest = () => {
     Alert.alert('퀘스트 완료', '이 퀘스트를 완료하시겠습니까?', [
@@ -192,8 +225,22 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       {
         text: '완료',
         onPress: () => {
-          useQuestStore.getState().completeQuest(quest.id);
-          navigation.goBack();
+          if (API_URL === '') {
+            useQuestStore.getState().completeQuest(quest.id);
+            navigation.goBack();
+            return;
+          } else {
+            completeQuest(quest.id, {
+              onSuccess: () => {
+                Alert.alert('성공', '퀘스트가 완료되었습니다!');
+                navigation.goBack();
+              },
+              onError: error => {
+                Alert.alert(`${error.response.data.message}`);
+                console.log(error);
+              },
+            });
+          }
         },
       },
     ]);
@@ -371,8 +418,17 @@ const QuestFeed = ({route}: QuestFeedProps) => {
 
         <View style={styles.buttonRow}>
           <TouchableOpacity
-            style={[styles.actionButton, styles.completeButton]}
-            onPress={handleCompleteQuest}>
+            style={
+              new Date(quest.endDate) < new Date()
+                ? [styles.actionButton, styles.completeButton]
+                : [
+                    styles.actionButton,
+                    styles.completeButton,
+                    {backgroundColor: '#ccc'},
+                  ]
+            }
+            onPress={handleCompleteQuest}
+            disabled={new Date(quest.endDate) > new Date()}>
             <Ionicons name="checkmark-circle" size={18} color="white" />
             <Text style={styles.completeButtonText}>완료하기</Text>
           </TouchableOpacity>

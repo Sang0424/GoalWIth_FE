@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  SafeAreaView,
   ListRenderItem,
   Alert,
   TextInput,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -79,7 +79,6 @@ const TeamScreen = () => {
     teams = mockTeams;
   }
 
-  console.log('teams : ', teams);
   const handleDeleteTeam = (teamId: string) => {
     Alert.alert('팀 삭제!', '팀을 삭제하시겠습니까?', [
       {text: '취소', style: 'cancel'},
@@ -96,8 +95,12 @@ const TeamScreen = () => {
   };
 
   // Handle team press to navigate to TeamFeed
-  const handleTeamPress = (teamId: string) => {
-    navigation.navigate('TeamFeedScreen', {teamId});
+  const handleTeamPress = (
+    teamId: string,
+    teamName: string,
+    teamQuest: string,
+  ) => {
+    navigation.navigate('TeamFeedScreen', {teamId, teamName, teamQuest});
   };
 
   // Handle create team button press
@@ -124,6 +127,7 @@ const TeamScreen = () => {
         <View style={styles.rightActionsContainer}>
           <Reanimated.View style={[styles.actionButtonInner, animatedStyles]}>
             <TouchableOpacity
+              activeOpacity={0.85}
               style={[styles.actionButton, styles.editButton]}
               onPress={() => {
                 swipeableRef.current?.close();
@@ -132,6 +136,7 @@ const TeamScreen = () => {
               <Text style={styles.actionText}>수정</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              activeOpacity={0.85}
               style={[styles.actionButton, styles.deleteButton]}
               onPress={() => {
                 swipeableRef.current?.close();
@@ -156,7 +161,9 @@ const TeamScreen = () => {
         onSwipeableWillOpen={() => setShowHint(false)}>
         <TouchableOpacity
           style={[styles.questCard, isLeader && styles.mainQuestCard]}
-          onPress={() => handleTeamPress(item.id)}>
+          onPress={() =>
+            handleTeamPress(item.id, item.name, item.teamQuest.title)
+          }>
           <View style={styles.cardHeader}>
             <View style={styles.titleRow}>
               <Text style={styles.questTitle} numberOfLines={1}>
@@ -228,7 +235,9 @@ const TeamScreen = () => {
     return (
       <TouchableOpacity
         style={[styles.questCard, isLeader && styles.mainQuestCard]}
-        onPress={() => handleTeamPress(item.id)}>
+        onPress={() =>
+          handleTeamPress(item.id, item.name, item.teamQuest.title)
+        }>
         <View style={styles.cardHeader}>
           <View style={styles.titleRow}>
             <Text style={styles.questTitle} numberOfLines={1}>
@@ -560,14 +569,24 @@ const styles = StyleSheet.create({
   },
   rightActionsContainer: {
     flexDirection: 'row',
-    width: 150,
+    width: 180,
     height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingRight: 6,
   },
   actionButton: {
-    width: 75,
-    height: '100%',
+    width: 80,
+    height: '88%',
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 12, // rounded corners
+    marginHorizontal: 4, // spacing between buttons
+    shadowColor: '#000', // subtle shadow/elevation
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.12,
+    shadowRadius: 2,
+    elevation: 2,
   },
   editButton: {
     backgroundColor: '#4e9af1',
@@ -579,6 +598,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     fontSize: 14,
+    marginTop: 4,
   },
   swipeHint: {
     position: 'absolute',
@@ -620,17 +640,21 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'gray',
     backgroundColor: '#f8f8f8',
-    borderRadius: 10,
-    padding: 8,
-    marginTop: 16,
-    height: 48,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
   },
-  searchIcon: {backgroundColor: 'transparent'},
-  searchInput: {flex: 1, paddingLeft: 8},
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    backgroundColor: '#f8f8f8',
+    paddingVertical: 12,
+  },
   searchButton: {
     flexDirection: 'row',
     alignItems: 'center',

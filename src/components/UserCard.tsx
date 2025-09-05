@@ -1,5 +1,5 @@
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {Pressable, StyleSheet, Text, View, Alert} from 'react-native';
 import type {User} from '../types/user.types';
 import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -8,36 +8,39 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import instance from '../utils/axiosInterceptor';
 import CharacterAvatar from './CharacterAvatar';
 
-export default function UserCard({user, from}: {user?: User; from: string}) {
+export default function UserCard({user, from}: {user?: any; from: string}) {
   const navigation = useNavigation();
   const {width} = useWindowDimensions();
   const queryClient = useQueryClient();
 
-  // const {mutate: acceptPeer} = useMutation({
-  //   mutationFn: async () => {
-  //     const response = await instance.post(
-  //       `/users/acceptPeerRequest/${user?.id}`,
-  //     );
-  //     return response.data;
-  //   },
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({queryKey: ['peers']});
-  //     queryClient.invalidateQueries({queryKey: ['requestedPeers']});
-  //   },
-  // });
+  const {mutate: acceptPeer} = useMutation({
+    mutationFn: async () => {
+      const response = await instance.post(`/peer/accept/${user?.item.id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ['peers']});
+      queryClient.invalidateQueries({queryKey: ['requestedPeers']});
+    },
+    onError: (error: any) => {
+      Alert.alert(`오류`, `${error.response.data.message}`);
+    },
+  });
 
-  // const {mutate: rejectPeer} = useMutation({
-  //   mutationFn: async () => {
-  //     const response = await instance.post(
-  //       `/users/rejectPeerRequest/${user?.id}`,
-  //     );
-  //     return response.data;
-  //   },
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({queryKey: ['peers']});
-  //     queryClient.invalidateQueries({queryKey: ['requestedPeers']});
-  //   },
-  // });
+  const {mutate: rejectPeer} = useMutation({
+    mutationFn: async () => {
+      const response = await instance.post(`/peer/reject/${user?.item.id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ['peers']});
+      queryClient.invalidateQueries({queryKey: ['requestedPeers']});
+    },
+    onError: (error: any) => {
+      Alert.alert(`오류`, `${error.response.data.message}`);
+    },
+  });
+
   return (
     <View style={[styles.cardContainer, {width: (width - 48 - 8) / 2}]}>
       <View style={styles.cardTop}></View>
@@ -45,7 +48,9 @@ export default function UserCard({user, from}: {user?: User; from: string}) {
         <CharacterAvatar
           size={80}
           level={user?.level || 1}
-          avatar={user?.avatar || require('../assets/character/pico_base.png')}
+          avatar={
+            user?.character || require('../assets/character/pico_base.png')
+          }
         />
       </View>
       <View style={styles.cardMain}>
@@ -72,28 +77,44 @@ export default function UserCard({user, from}: {user?: User; from: string}) {
               justifyContent: 'space-around',
               width: '100%',
             }}>
-            {/* <Text
-              style={{ color: '#EF4444', fontSize: 16, fontWeight: 'bold' }}
-            >
-              거절하기
-            </Text> */}
-            <Icon
-              name="close"
-              size={32}
-              color="#EF4444"
-              //onPress={() => rejectPeer()}
-            />
-            <Icon
-              name="check"
-              size={32}
-              color="#3B82F6"
-              //onPress={() => acceptPeer()}
-            />
-            {/* <Text
-              style={{ color: '#3B82F6', fontSize: 16, fontWeight: 'bold' }}
-            >
-              수락하기
-            </Text> */}
+            <Pressable
+              style={{flexDirection: 'row', alignItems: 'center'}}
+              onPress={() =>
+                Alert.alert('거절하시겠습니까?', '거절하시겠습니까?', [
+                  {text: '취소', style: 'cancel'},
+                  {
+                    text: '거절',
+                    onPress: () => {
+                      rejectPeer();
+                    },
+                  },
+                ])
+              }>
+              <Icon name="close" size={24} color="#EF4444" />
+              <Text
+                style={{color: '#EF4444', fontSize: 12, fontWeight: 'bold'}}>
+                거절하기
+              </Text>
+            </Pressable>
+            <Pressable
+              style={{flexDirection: 'row', alignItems: 'center'}}
+              onPress={() =>
+                Alert.alert('수락하시겠습니까?', '수락하시겠습니까?', [
+                  {text: '취소', style: 'cancel'},
+                  {
+                    text: '수락',
+                    onPress: () => {
+                      acceptPeer();
+                    },
+                  },
+                ])
+              }>
+              <Icon name="check" size={24} color="#3B82F6" />
+              <Text
+                style={{color: '#3B82F6', fontSize: 12, fontWeight: 'bold'}}>
+                수락하기
+              </Text>
+            </Pressable>
           </View>
         )}
       </View>

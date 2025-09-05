@@ -17,78 +17,101 @@ import instance from './src/utils/axiosInterceptor';
 import SplashScreen from 'react-native-splash-screen';
 import {decodeJwt} from './src/utils/jwtUtils';
 import {API_URL} from '@env';
+import {MenuProvider} from 'react-native-popup-menu';
+import axios from 'axios';
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  console.log(API_URL);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const setAccessToken = tokenStore(state => state.actions.setAccessToken);
+  const accessToken = tokenStore(state => state.accessToken);
+
   if (API_URL == '') {
     const accessToken = 'abc';
     return (
       <QueryClientProvider client={queryClient}>
-        <NavigationContainer>
-          <SafeAreaProvider>
-            <GestureHandlerRootView>
-              {accessToken !== null ? <BottomNav /> : <OnBoardingNav />}
-            </GestureHandlerRootView>
-          </SafeAreaProvider>
-        </NavigationContainer>
+        <MenuProvider>
+          <NavigationContainer>
+            <SafeAreaProvider>
+              <GestureHandlerRootView>
+                {accessToken !== null ? <BottomNav /> : <OnBoardingNav />}
+              </GestureHandlerRootView>
+            </SafeAreaProvider>
+          </NavigationContainer>
+        </MenuProvider>
       </QueryClientProvider>
     );
   } else {
-    const accessToken = tokenStore(state => state.accessToken);
-    // useEffect(() => {
-    //   const initializeApp = async () => {
-    //     try {
-    //       const refreshToken = await AsyncStorage.getItem('refreshToken');
-    //       console.log('refreshToken: ', refreshToken);
-    //       //AsyncStorage.clear();
-    //       //console.log(refreshToken);
-    //       if (refreshToken) {
-    //         const decoded = decodeJwt(refreshToken);
-    //         console.log(decoded);
-    //         if (decoded && decoded.exp && decoded.exp < Date.now() / 1000) {
-    //           await AsyncStorage.removeItem('refreshToken');
-    //           tokenStore.getState().actions.setAccessToken(null);
-    //         }
-    //         if (
-    //           decoded &&
-    //           decoded.exp &&
-    //           decoded.exp - Date.now() / 1000 < 7 * 24 * 60 * 60 &&
-    //           decoded.exp > Date.now() / 1000
-    //         ) {
-    //           const {data} = await instance.post('/user/refresh/refresh', {
-    //             refreshToken: refreshToken,
-    //           });
-    //           await AsyncStorage.setItem('refreshToken', data.refreshToken);
-    //         }
-    //         if (accessToken == null) {
-    //           const {data} = await instance.post('/user/refresh/access', {
-    //             refreshToken: refreshToken,
-    //           });
-    //           tokenStore.getState().actions.setAccessToken(data.accessToken);
-    //           await userStore.getState().loadUser();
-    //         }
-    //         await userStore.getState().loadUser();
-    //       }
-    //     } catch (error) {
-    //       console.error('Failed to initialize app:', error);
-    //     } finally {
-    //       // SplashScreen.hide();
-    //     }
-    //   };
+    useEffect(() => {
+      const checkAuth = async () => {
+        try {
+          const refreshToken = await AsyncStorage.getItem('refreshToken');
+          console.log('refreshToken', refreshToken);
 
-    //   initializeApp();
-    // }, [accessToken]);
+          if (!refreshToken) {
+            setIsAuthenticated(false);
+            return;
+          }
+
+          const decoded = decodeJwt(refreshToken);
+          const currentTime = Date.now() / 1000;
+
+          // If refresh token is expired
+          if (decoded?.exp && decoded.exp < currentTime) {
+            await AsyncStorage.removeItem('refreshToken');
+            setAccessToken(null);
+            setIsAuthenticated(false);
+            return;
+          }
+
+          // If we have a valid refresh token but no access token
+          if (!accessToken) {
+            try {
+              const response = await axios.post(`${API_URL}/user/refresh`, {
+                refreshToken,
+              });
+              const {
+                accessToken: newAccessToken,
+                refreshToken: newRefreshToken,
+              } = response.data;
+              setAccessToken(newAccessToken);
+              await AsyncStorage.setItem('refreshToken', newRefreshToken);
+              setIsAuthenticated(true);
+            } catch (error) {
+              console.error('Token refresh failed:', error);
+              //await AsyncStorage.removeItem('refreshToken');
+              setAccessToken(null);
+              setIsAuthenticated(false);
+            }
+          } else {
+            setIsAuthenticated(true);
+          }
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          setIsAuthenticated(false);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      checkAuth();
+    }, [accessToken, setAccessToken]);
+    // if (isLoading) {
+    //   return <SplashScreen />;
+    // }
     return (
       <QueryClientProvider client={queryClient}>
-        <NavigationContainer>
-          <SafeAreaProvider>
-            <GestureHandlerRootView>
-              {accessToken !== null ? <BottomNav /> : <OnBoardingNav />}
-            </GestureHandlerRootView>
-          </SafeAreaProvider>
-        </NavigationContainer>
+        <MenuProvider>
+          <NavigationContainer>
+            <SafeAreaProvider>
+              <GestureHandlerRootView>
+                {accessToken !== null ? <BottomNav /> : <OnBoardingNav />}
+              </GestureHandlerRootView>
+            </SafeAreaProvider>
+          </NavigationContainer>
+        </MenuProvider>
       </QueryClientProvider>
     );
   }

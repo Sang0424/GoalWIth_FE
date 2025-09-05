@@ -8,10 +8,18 @@ export interface User {
   userType: string;
   level: number;
   actionPoints: number;
-  avatar?: Avatar;
+  character: string;
   badge?: Badge;
   exp: number;
   maxExp: number;
+}
+
+export interface RequestUser {
+  requestser_id: string;
+  requester_nickname: string;
+  requester_userType: string;
+  requester_level: number;
+  requester_character: string;
 }
 
 export interface Avatar {

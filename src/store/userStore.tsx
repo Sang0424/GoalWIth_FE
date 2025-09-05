@@ -5,16 +5,14 @@ import {tokenStore} from './tokenStore';
 interface UserStore {
   user: any;
   loadUser: () => Promise<void>;
+  setUser: (user: any) => void;
 }
 
-export const userStore = create<UserStore>(set => ({
+export const userStore = create<UserStore>((set, get) => ({
   user: null,
 
-  loadUser: async () => {
-    const token = tokenStore.getState().accessToken;
-    if (token) {
-      const decodedUser = decodeJwt(token);
-      set(() => ({user: decodedUser}));
-    }
+  loadUser: () => {
+    return get().user;
   },
+  setUser: user => set(() => ({user})),
 }));

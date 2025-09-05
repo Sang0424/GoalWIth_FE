@@ -73,10 +73,13 @@ export default function Login() {
     mutationFn: async () => {
       const response = await instance.post('/user/login', loginForm);
       const {accessToken, refreshToken} = response.data;
+      await AsyncStorage.setItem('accessToken', accessToken);
+      await AsyncStorage.setItem('refreshToken', refreshToken);
+      return {accessToken, refreshToken};
+    },
+    onSuccess: async ({accessToken, refreshToken}) => {
       setAccessToken(accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);
-    },
-    onSuccess: async () => {
       await loadUser();
       navigation.navigate('BottomNav');
     },

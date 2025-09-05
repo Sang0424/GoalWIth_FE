@@ -1,6 +1,11 @@
 // src/store/mockData.ts
 import {create} from 'zustand';
-import {Quest, QuestRecord, ReactionType} from '../types/quest.types';
+import {
+  Quest,
+  QuestRecord,
+  QuestVerification,
+  ReactionType,
+} from '../types/quest.types';
 import {Team, TeamPost, TeamComment, TeamReaction} from '../types/team.types';
 import {User} from '../types/user.types';
 
@@ -15,7 +20,7 @@ export const initialUser: User[] = [
     exp: 0,
     maxExp: 100,
     actionPoints: 0,
-    avatar: require('../assets/character/pico_complete.png'),
+    character: '/assets/character/pico_complete.png',
   },
   {
     id: 'user2',
@@ -27,7 +32,7 @@ export const initialUser: User[] = [
     exp: 0,
     maxExp: 100,
     actionPoints: 0,
-    avatar: require('../assets/character/pico_rest.png'),
+    character: '/assets/character/pico_rest.png',
   },
   {
     id: 'user3',
@@ -39,7 +44,7 @@ export const initialUser: User[] = [
     exp: 0,
     maxExp: 100,
     actionPoints: 0,
-    avatar: require('../assets/character/pico_start.png'),
+    character: '/assets/character/pico_start.png',
   },
   {
     id: 'user4',
@@ -51,7 +56,7 @@ export const initialUser: User[] = [
     exp: 0,
     maxExp: 100,
     actionPoints: 0,
-    avatar: require('../assets/character/pico_question.png'),
+    character: '/assets/character/pico_question.png',
   },
 ];
 // 초기 mock 데이터
@@ -88,6 +93,246 @@ const initialQuests: Quest[] = [
   },
   {
     id: '3',
+    title: '일주일 5회 운동하기',
+    description: '주 5회 이상 헬스장 가기',
+    isMain: false,
+    startDate: new Date('2025-06-28'),
+    endDate: new Date('2025-07-28'),
+    verificationRequired: true,
+    verificationCount: 1,
+    requiredVerifications: 12,
+    records: [
+      {
+        id: '1',
+        questId: '3',
+        text: 'dkfjdakfjad',
+        createdAt: new Date('2025-06-28'),
+        user: initialUser[0],
+        images: ['https://via.placeholder.com/150'],
+      },
+    ],
+    procedure: 'verify',
+    reactions: [],
+    user: initialUser[2],
+  },
+  {
+    id: '4',
+    title: '일주일 5회 운동하기',
+    description: '주 5회 이상 헬스장 가기',
+    isMain: false,
+    startDate: new Date('2025-06-28'),
+    endDate: new Date('2025-07-28'),
+    verificationRequired: true,
+    verificationCount: 1,
+    requiredVerifications: 12,
+    records: [
+      {
+        id: '1',
+        questId: '3',
+        text: 'dkfjdakfjad',
+        createdAt: new Date('2025-06-28'),
+        user: initialUser[0],
+        images: ['https://via.placeholder.com/150'],
+      },
+    ],
+    procedure: 'verify',
+    reactions: [],
+    user: initialUser[2],
+  },
+  {
+    id: '5',
+    title: '일주일 5회 운동하기',
+    description: '주 5회 이상 헬스장 가기',
+    isMain: false,
+    startDate: new Date('2025-06-28'),
+    endDate: new Date('2025-07-28'),
+    verificationRequired: true,
+    verificationCount: 1,
+    requiredVerifications: 12,
+    records: [
+      {
+        id: '1',
+        questId: '3',
+        text: 'dkfjdakfjad',
+        createdAt: new Date('2025-06-28'),
+        user: initialUser[0],
+        images: ['https://via.placeholder.com/150'],
+      },
+    ],
+    procedure: 'verify',
+    reactions: [],
+    user: initialUser[2],
+  },
+  {
+    id: '6',
+    title: '일주일 5회 운동하기',
+    description: '주 5회 이상 헬스장 가기',
+    isMain: false,
+    startDate: new Date('2025-06-28'),
+    endDate: new Date('2025-07-28'),
+    verificationRequired: true,
+    verificationCount: 1,
+    requiredVerifications: 12,
+    records: [
+      {
+        id: '1',
+        questId: '3',
+        text: 'dkfjdakfjad',
+        createdAt: new Date('2025-06-28'),
+        user: initialUser[0],
+        images: ['https://via.placeholder.com/150'],
+      },
+    ],
+    procedure: 'verify',
+    reactions: [],
+    user: initialUser[2],
+  },
+  {
+    id: '7',
+    title: '일주일 5회 운동하기',
+    description: '주 5회 이상 헬스장 가기',
+    isMain: false,
+    startDate: new Date('2025-06-28'),
+    endDate: new Date('2025-07-28'),
+    verificationRequired: true,
+    verificationCount: 1,
+    requiredVerifications: 12,
+    records: [
+      {
+        id: '1',
+        questId: '3',
+        text: 'dkfjdakfjad',
+        createdAt: new Date('2025-06-28'),
+        user: initialUser[0],
+        images: ['https://via.placeholder.com/150'],
+      },
+    ],
+    procedure: 'verify',
+    reactions: [],
+    user: initialUser[2],
+  },
+  {
+    id: '8',
+    title: '일주일 5회 운동하기',
+    description: '주 5회 이상 헬스장 가기',
+    isMain: false,
+    startDate: new Date('2025-06-28'),
+    endDate: new Date('2025-07-28'),
+    verificationRequired: true,
+    verificationCount: 1,
+    requiredVerifications: 12,
+    records: [
+      {
+        id: '1',
+        questId: '3',
+        text: 'dkfjdakfjad',
+        createdAt: new Date('2025-06-28'),
+        user: initialUser[0],
+        images: ['https://via.placeholder.com/150'],
+      },
+    ],
+    procedure: 'verify',
+    reactions: [],
+    user: initialUser[2],
+  },
+  {
+    id: '9',
+    title: '일주일 5회 운동하기',
+    description: '주 5회 이상 헬스장 가기',
+    isMain: false,
+    startDate: new Date('2025-06-28'),
+    endDate: new Date('2025-07-28'),
+    verificationRequired: true,
+    verificationCount: 1,
+    requiredVerifications: 12,
+    records: [
+      {
+        id: '1',
+        questId: '3',
+        text: 'dkfjdakfjad',
+        createdAt: new Date('2025-06-28'),
+        user: initialUser[0],
+        images: ['https://via.placeholder.com/150'],
+      },
+    ],
+    procedure: 'verify',
+    reactions: [],
+    user: initialUser[2],
+  },
+  {
+    id: '10',
+    title: '일주일 5회 운동하기',
+    description: '주 5회 이상 헬스장 가기',
+    isMain: false,
+    startDate: new Date('2025-06-28'),
+    endDate: new Date('2025-07-28'),
+    verificationRequired: true,
+    verificationCount: 1,
+    requiredVerifications: 12,
+    records: [
+      {
+        id: '1',
+        questId: '3',
+        text: 'dkfjdakfjad',
+        createdAt: new Date('2025-06-28'),
+        user: initialUser[0],
+        images: ['https://via.placeholder.com/150'],
+      },
+    ],
+    procedure: 'verify',
+    reactions: [],
+    user: initialUser[2],
+  },
+  {
+    id: '11',
+    title: '일주일 5회 운동하기',
+    description: '주 5회 이상 헬스장 가기',
+    isMain: false,
+    startDate: new Date('2025-06-28'),
+    endDate: new Date('2025-07-28'),
+    verificationRequired: true,
+    verificationCount: 1,
+    requiredVerifications: 12,
+    records: [
+      {
+        id: '1',
+        questId: '3',
+        text: 'dkfjdakfjad',
+        createdAt: new Date('2025-06-28'),
+        user: initialUser[0],
+        images: ['https://via.placeholder.com/150'],
+      },
+    ],
+    procedure: 'verify',
+    reactions: [],
+    user: initialUser[2],
+  },
+  {
+    id: '12',
+    title: '일주일 5회 운동하기',
+    description: '주 5회 이상 헬스장 가기',
+    isMain: false,
+    startDate: new Date('2025-06-28'),
+    endDate: new Date('2025-07-28'),
+    verificationRequired: true,
+    verificationCount: 1,
+    requiredVerifications: 12,
+    records: [
+      {
+        id: '1',
+        questId: '3',
+        text: 'dkfjdakfjad',
+        createdAt: new Date('2025-06-28'),
+        user: initialUser[0],
+        images: ['https://via.placeholder.com/150'],
+      },
+    ],
+    procedure: 'verify',
+    reactions: [],
+    user: initialUser[2],
+  },
+  {
+    id: '13',
     title: '일주일 5회 운동하기',
     description: '주 5회 이상 헬스장 가기',
     isMain: false,
@@ -339,9 +584,10 @@ export const mockTeams: Team[] = [
           ],
           verifications: [
             {
+              id: 'verification1',
               user: initialUser[1],
               comment: '대단하세요!',
-              createdAt: '2025-07-09T10:30:00Z',
+              createdAt: new Date('2025-07-09T10:30:00Z'),
             },
           ],
           createdAt: new Date('2025-07-09T10:15:00Z'),
@@ -417,14 +663,13 @@ interface TeamStore {
   ) => void;
   addComment: (
     postId: string,
-    comment: Omit<TeamComment, 'id' | 'createdAt' | 'updatedAt' | 'reactions'>,
-  ) => TeamComment;
+    comment: Omit<QuestVerification, 'id' | 'createdAt' | 'updatedAt' | 'user'>,
+  ) => QuestVerification;
   updateComment: (
-    postId: string,
     commentId: string,
-    updates: Partial<Omit<TeamComment, 'id' | 'userId' | 'createdAt'>>,
+    updates: Partial<Omit<QuestVerification, 'id' | 'user' | 'createdAt'>>,
   ) => void;
-  deleteComment: (postId: string, commentId: string) => void;
+  deleteComment: (commentId: string) => void;
 }
 
 // Zustand store for teams
@@ -630,13 +875,13 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   },
   addComment: (
     postId: string,
-    comment: Omit<TeamComment, 'id' | 'createdAt' | 'updatedAt' | 'reactions'>,
+    comment: Omit<QuestVerification, 'id' | 'createdAt' | 'updatedAt' | 'user'>,
   ) => {
-    const newComment: TeamComment = {
+    const newComment: QuestVerification = {
       ...comment,
       id: `comment-${Date.now()}`,
-      reactions: [],
       createdAt: new Date(),
+      user: initialUser[1],
     };
 
     set(state => ({
@@ -661,9 +906,8 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   },
 
   updateComment: (
-    postId: string,
     commentId: string,
-    updates: Partial<Omit<TeamComment, 'id' | 'createdAt' | 'userId'>>,
+    updates: Partial<Omit<QuestVerification, 'id' | 'createdAt' | 'userId'>>,
   ) => {
     set(state => ({
       teams: state.teams.map(team => {
@@ -672,8 +916,6 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
           teamQuest: {
             ...team.teamQuest,
             records: team.teamQuest.records.map(post => {
-              if (post.id !== postId) return post;
-
               return {
                 ...post,
                 verifications: post.verifications.map(comment =>
@@ -693,7 +935,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     }));
   },
 
-  deleteComment: (postId: string, commentId: string) => {
+  deleteComment: (commentId: string) => {
     set(state => ({
       teams: state.teams.map(team => {
         return {
@@ -701,8 +943,6 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
           teamQuest: {
             ...team.teamQuest,
             records: team.teamQuest.records.map(post => {
-              if (post.id !== postId) return post;
-
               return {
                 ...post,
                 verifications: post.verifications.filter(
