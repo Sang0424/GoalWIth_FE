@@ -8,9 +8,9 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  SafeAreaView,
   TextInput,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import Logo from '../../components/Logo';
 import type {Quest} from '../../types/quest.types';
@@ -127,30 +127,6 @@ const VerificationFeedScreen = () => {
   const [error, setError] = useState<string | null>(null);
 
   const quests = useQuestStore(state => state.quests);
-  // const {data, isLoading, refetch} = useQuery({
-  //   queryKey: ['Verification'],
-  //   queryFn: async () => {
-  //     try {
-  //       const response = await instance.get(`/quest/verification`);
-  //       const quests = response.data;
-  //       return quests;
-  //     } catch (e: any) {
-  //       setError(e.message);
-  //       return [];
-  //     }
-  //   },
-  //   enabled: API_URL != '',
-  //   refetchOnWindowFocus: true,
-  // });
-  // const verificationQuests = React.useMemo(() => {
-  //   if (API_URL === '') {
-  //     return quests.filter(
-  //       quest =>
-  //         quest.verificationRequired === true && quest.procedure === 'verify',
-  //     );
-  //   }
-  //   return data || [];
-  // }, [quests, data]);
 
   const {
     data,
@@ -165,15 +141,13 @@ const VerificationFeedScreen = () => {
     initialPageParam: 0,
     queryFn: async ({pageParam = 0}) => {
       try {
-        const response = await instance.get('/quest/verification', {
-          params: {
-            page: pageParam,
-            limit: PAGE_SIZE,
-          },
-        });
+        const response = await instance.get(
+          `/quest/verification?page=${pageParam}&size=${PAGE_SIZE}`,
+        );
         return response.data;
       } catch (e: any) {
-        setError(e.message);
+        setError(e.response.data.message);
+        console.log('verification error', e.response.data.message);
         return {items: [], nextPage: null};
       }
     },
@@ -225,21 +199,6 @@ const VerificationFeedScreen = () => {
     fetchFeed();
   }, [fetchFeed]);
 
-  // const onRefresh = async () => {
-  //   if (API_URL) {
-  //     // API_URL이 있을 때만 refetch 실행
-  //     setRefreshing(true);
-  //     await refetch();
-  //   } else {
-  //     // 로컬 모드에서는 그냥 현재 데이터로 다시 설정
-  //     setRefreshing(true);
-  //     try {
-  //       setFeed(verificationQuests);
-  //     } finally {
-  //       setRefreshing(false);
-  //     }
-  //   }
-  // };
   const onRefresh = async () => {
     setRefreshing(true);
     await refetch();
@@ -317,7 +276,7 @@ const VerificationFeedScreen = () => {
         data={filteredFeed}
         keyExtractor={item => item.id}
         onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
+        onEndReachedThreshold={0.1}
         renderItem={({item}) => (
           <VerificationFeedCard
             item={{
@@ -326,7 +285,7 @@ const VerificationFeedScreen = () => {
                 id: 'user1',
                 nickname: 'user1',
                 level: 1,
-
+                character: '../assets/character/pico_complete.png',
                 name: 'user1',
                 email: 'user1',
                 userType: 'user1',
@@ -336,12 +295,6 @@ const VerificationFeedScreen = () => {
               },
             }}
           />
-          //   <VerificationFeedCard
-          //   item={{
-          //     quest: item,
-          //     user: item.user,
-          //   }}
-          // />
         )}
         ListFooterComponent={
           isFetchingNextPage ? (

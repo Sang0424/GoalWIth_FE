@@ -165,7 +165,7 @@ const useApiData = ({
 
   const fetchTeamFeed = async ({pageParam = 0}) => {
     const response = await instance.get<TeamFeedResponse>(
-      `${API_URL}/record/team/${teamId}?page=${pageParam}&size=${pageSize}`,
+      `/record/team/${teamId}?page=${pageParam}&size=${pageSize}`,
     );
     return {
       records: response.data.content,
@@ -215,11 +215,9 @@ const useApiData = ({
       } else {
         formData.append('images', '[]');
       }
-      const response = await instance.post(
-        `${API_URL}/record/team/${teamId}`,
-        formData,
-        {headers: {'Content-Type': 'multipart/form-data'}},
-      );
+      const response = await instance.post(`/record/team/${teamId}`, formData, {
+        headers: {'Content-Type': 'multipart/form-data'},
+      });
       return response.data;
     },
     ...mutationOptions,
@@ -274,11 +272,9 @@ const useApiData = ({
       //   },
       // );
       // formData.append('data', metadataBlob);
-      const response = await instance.put(
-        `${API_URL}/record/team/${postId}`,
-        formData,
-        {headers: {'Content-Type': 'multipart/form-data'}},
-      );
+      const response = await instance.put(`/record/team/${postId}`, formData, {
+        headers: {'Content-Type': 'multipart/form-data'},
+      });
       return response.data;
     },
     ...mutationOptions,
@@ -292,10 +288,7 @@ const useApiData = ({
 
   const addCommentMutation = useMutation({
     mutationFn: ({recordId, comment}: {recordId: string; comment: any}) =>
-      instance.post(
-        `${API_URL}/record/team/verifications/${recordId}`,
-        comment,
-      ),
+      instance.post(`/record/team/verifications/${recordId}`, comment),
     ...mutationOptions,
     onSuccess: () => {
       mutationOptions.onSuccess();
@@ -305,7 +298,7 @@ const useApiData = ({
 
   const updateCommentMutation = useMutation({
     mutationFn: ({commentId, comment}: {commentId: string; comment: string}) =>
-      instance.put(`${API_URL}/record/team/verification/${commentId}`, {
+      instance.put(`/record/team/verification/${commentId}`, {
         comment: comment,
       }),
     ...mutationOptions,

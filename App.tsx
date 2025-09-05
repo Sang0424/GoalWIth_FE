@@ -48,6 +48,7 @@ const App = () => {
       const checkAuth = async () => {
         try {
           const refreshToken = await AsyncStorage.getItem('refreshToken');
+          console.log('refreshToken', refreshToken);
 
           if (!refreshToken) {
             setIsAuthenticated(false);
@@ -68,7 +69,7 @@ const App = () => {
           // If we have a valid refresh token but no access token
           if (!accessToken) {
             try {
-              const response = await axios.post('/user/refresh', {
+              const response = await axios.post(`${API_URL}/user/refresh`, {
                 refreshToken,
               });
               const {
@@ -80,7 +81,7 @@ const App = () => {
               setIsAuthenticated(true);
             } catch (error) {
               console.error('Token refresh failed:', error);
-              await AsyncStorage.removeItem('refreshToken');
+              //await AsyncStorage.removeItem('refreshToken');
               setAccessToken(null);
               setIsAuthenticated(false);
             }

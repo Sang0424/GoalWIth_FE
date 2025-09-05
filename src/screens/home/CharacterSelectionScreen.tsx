@@ -6,40 +6,63 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {HomeNavParamList} from '../../types/navigation';
 import {Avatar} from '../../types/user.types';
+import {useState} from 'react';
 import {initialUser} from '../../store/mockData';
+import CharacterAvatar from '../../components/CharacterAvatar';
+import {useInfiniteQuery} from '@tanstack/react-query';
+import instance from '../../utils/axiosInterceptor';
+import {userStore} from '../../store/userStore';
 
 type Props = NativeStackScreenProps<HomeNavParamList, 'CharacterSelection'>;
 
 const CharacterSelectionScreen = ({route, navigation}: Props) => {
   const {currentCharacter} = route.params;
+  const [character, setCharacter] = useState(currentCharacter);
+  const user = userStore(state => state.user);
 
+  const {data, isLoading, refetch, isRefetching, hasNextPage, fetchNextPage} =
+    useInfiniteQuery({
+      queryKey: ['characters'],
+      queryFn: async () => {
+        const response = await instance.get(`/characters/${user.id}`);
+        return response.data;
+      },
+      initialPageParam: 0,
+      getNextPageParam: (lastPage, allPages) => {
+        const totalPages = lastPage.totalPages;
+        return totalPages > allPages.length ? allPages.length + 1 : undefined;
+      },
+    });
+
+  if (isLoading) return <ActivityIndicator size="large" color="#000000" />;
+
+  const loadMore = () => {
+    if (hasNextPage && !isRefetching) {
+      fetchNextPage();
+    }
+  };
   // Extract unique characters from mock users
-  const availableCharacters = Array.from(
-    new Map(initialUser.map((user, i) => [i, user?.character])).values(),
-  ) as string[];
+  const availableCharacters = data?.pages.flatMap(page => page.items);
 
   const handleSelectCharacter = (character: string) => {
+    setCharacter(character);
     // TODO: Update user's selected character in the backend
-    navigation.goBack();
   };
 
-  const renderCharacterItem = ({item}: {item: Avatar}) => {
-    const isSelected = item.id === currentCharacter.id;
+  const renderCharacterItem = ({item}: {item: string}) => {
+    const isSelected = item === character;
 
     return (
       <TouchableOpacity
         style={[styles.characterItem, isSelected && styles.selectedCharacter]}
         onPress={() => handleSelectCharacter(item)}>
-        <Image
-          source={{uri: item.image}}
-          style={styles.characterImage}
-          resizeMode="contain"
-        />
-        <Text style={styles.characterName}>{item.name}</Text>
+        <CharacterAvatar avatar={item} size={100} />
+        {/* <Text style={styles.characterName}>{item}</Text> */}
         {isSelected && <Text style={styles.selectedText}>선택됨</Text>}
       </TouchableOpacity>
     );
@@ -51,9 +74,16 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
       <FlatList
         data={availableCharacters}
         renderItem={renderCharacterItem}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item}
         numColumns={2}
         contentContainerStyle={styles.listContainer}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={
+          hasNextPage ? (
+            <ActivityIndicator size="small" color="#000000" />
+          ) : null
+        }
       />
     </View>
   );

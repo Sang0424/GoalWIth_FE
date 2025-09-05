@@ -3,12 +3,12 @@ export interface Quest {
   title: string;
   description?: string;
   isMain: boolean;
-  startDate: string | Date;
-  endDate: string | Date;
+  startDate: Date;
+  endDate: Date;
   procedure: 'progress' | 'complete' | 'failed' | 'verify';
   verificationRequired: boolean;
   verificationCount?: number;
-  requiredVerifications?: number;
+  requiredVerification?: number;
   records: QuestRecord[];
   verifications?: QuestVerification[];
   reactions?: Reaction[];

@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   ViewStyle,
 } from 'react-native';
-import {ImageSourcePropType} from 'react-native';
+import {API_URL} from '@env';
 
 interface CharacterAvatarProps {
   size?: number;
   level?: number;
-  avatar: string | {id: string; name: string; image: string};
+  avatar: string;
   style?: ViewStyle;
   onPress?: () => void;
 }
@@ -36,7 +36,7 @@ const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
   const imageSource =
     typeof avatar === 'string'
       ? {uri: avatar}
-      : require('../assets/character/pico_base.png');
+      : require('../assets/character/pico_question.png');
 
   const content = (
     <View

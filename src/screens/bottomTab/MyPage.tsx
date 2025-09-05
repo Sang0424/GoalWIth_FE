@@ -5,9 +5,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   Image,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -34,7 +34,7 @@ const defaultUser: User = {
   exp: 0,
   maxExp: 100,
   actionPoints: 0,
-  avatar: require('../../assets/character/pico_base.png'),
+  character: require('../../assets/character/pico_base.png'),
   // Note: Removed createdAt and updatedAt as they're not in the User type
 };
 
@@ -100,7 +100,7 @@ export default function MyPage() {
             size={100}
             level={user.level || 1}
             avatar={
-              user.avatar || require('../../assets/character/pico_base.png')
+              user.character || require('../../assets/character/pico_base.png')
             }
           />
           <Text style={styles.userName}>{user.nickname || user.name}</Text>

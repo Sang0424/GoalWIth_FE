@@ -20,7 +20,7 @@ export const initialUser: User[] = [
     exp: 0,
     maxExp: 100,
     actionPoints: 0,
-    character: '../assets/character/pico_complete.png',
+    character: '/assets/character/pico_complete.png',
   },
   {
     id: 'user2',
@@ -32,7 +32,7 @@ export const initialUser: User[] = [
     exp: 0,
     maxExp: 100,
     actionPoints: 0,
-    character: '../assets/character/pico_rest.png',
+    character: '/assets/character/pico_rest.png',
   },
   {
     id: 'user3',
@@ -44,7 +44,7 @@ export const initialUser: User[] = [
     exp: 0,
     maxExp: 100,
     actionPoints: 0,
-    character: '../assets/character/pico_start.png',
+    character: '/assets/character/pico_start.png',
   },
   {
     id: 'user4',
@@ -56,7 +56,7 @@ export const initialUser: User[] = [
     exp: 0,
     maxExp: 100,
     actionPoints: 0,
-    character: '../assets/character/pico_question.png',
+    character: '/assets/character/pico_question.png',
   },
 ];
 // 초기 mock 데이터

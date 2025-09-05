@@ -66,9 +66,8 @@ const BottomSheet = ({
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [verificationRequired, setVerificationRequired] = useState(false);
-  const [requiredVerifications, setRequiredVerifications] = useState(3);
+  const [requiredVerification, setRequiredVerification] = useState(3);
   const queryClient = useQueryClient();
-  console.log('edit:', questToEdit);
 
   useEffect(() => {
     if (questToEdit) {
@@ -77,7 +76,7 @@ const BottomSheet = ({
       setStartDate(new Date(questToEdit.startDate));
       setEndDate(new Date(questToEdit.endDate));
       setVerificationRequired(questToEdit.verificationRequired || false);
-      setRequiredVerifications(questToEdit.requiredVerifications || 3);
+      setRequiredVerification(questToEdit.requiredVerification || 3);
     }
   }, [questToEdit]);
   // Handle date change for date pickers with proper typing
@@ -211,7 +210,7 @@ const BottomSheet = ({
       setStartDate(new Date());
       setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
       setVerificationRequired(false);
-      setRequiredVerifications(3);
+      setRequiredVerification(3);
       setShowStartDatePicker(false);
       setShowEndDatePicker(false);
       closeModalImmediately();
@@ -241,7 +240,7 @@ const BottomSheet = ({
         verificationRequired: verificationRequired,
         // 백엔드 API 스펙에 맞게 키 이름을 통일하는 것이 좋음
         // (requiredVerifications vs requiredVerification)
-        requiredVerifications: requiredVerifications,
+        requiredVerification: requiredVerification,
       };
 
     // mutate 함수에 데이터를 담아 호출하면 mutationFn으로 전달됨
@@ -299,13 +298,13 @@ const BottomSheet = ({
                           styles.headerButton,
                           (!newQuestTitle.trim() ||
                             (verificationRequired &&
-                              requiredVerifications < 1)) && {
+                              requiredVerification < 1)) && {
                             opacity: 0.5,
                           },
                         ]}
                         disabled={
                           !newQuestTitle.trim() ||
-                          (verificationRequired && requiredVerifications < 1)
+                          (verificationRequired && requiredVerification < 1)
                         }>
                         <Text style={styles.doneButtonText}>완료</Text>
                       </TouchableOpacity>
@@ -417,20 +416,20 @@ const BottomSheet = ({
                               <TouchableOpacity
                                 style={styles.counterButton}
                                 onPress={() =>
-                                  setRequiredVerifications(prev =>
+                                  setRequiredVerification(prev =>
                                     Math.max(1, prev - 1),
                                   )
                                 }
-                                disabled={requiredVerifications <= 1}>
+                                disabled={requiredVerification <= 1}>
                                 <Text style={styles.counterButtonText}>-</Text>
                               </TouchableOpacity>
                               <Text style={styles.counterValue}>
-                                {requiredVerifications}
+                                {requiredVerification}
                               </Text>
                               <TouchableOpacity
                                 style={styles.counterButton}
                                 onPress={() =>
-                                  setRequiredVerifications(prev => prev + 1)
+                                  setRequiredVerification(prev => prev + 1)
                                 }>
                                 <Text style={styles.counterButtonText}>+</Text>
                               </TouchableOpacity>
