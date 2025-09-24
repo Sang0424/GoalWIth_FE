@@ -70,7 +70,7 @@ const initialQuests: Quest[] = [
     endDate: new Date('2025-12-31'),
     verificationRequired: true,
     verificationCount: 5,
-    requiredVerifications: 30,
+    requiredVerification: 30,
     records: [],
     procedure: 'progress',
     reactions: [],
@@ -85,7 +85,7 @@ const initialQuests: Quest[] = [
     endDate: new Date('2025-07-28'),
     verificationRequired: true,
     verificationCount: 1,
-    requiredVerifications: 12,
+    requiredVerification: 12,
     records: [],
     procedure: 'progress',
     reactions: [],
@@ -100,7 +100,7 @@ const initialQuests: Quest[] = [
     endDate: new Date('2025-07-28'),
     verificationRequired: true,
     verificationCount: 1,
-    requiredVerifications: 12,
+    requiredVerification: 12,
     records: [
       {
         id: '1',
@@ -124,7 +124,7 @@ const initialQuests: Quest[] = [
     endDate: new Date('2025-07-28'),
     verificationRequired: true,
     verificationCount: 1,
-    requiredVerifications: 12,
+    requiredVerification: 12,
     records: [
       {
         id: '1',
@@ -148,7 +148,7 @@ const initialQuests: Quest[] = [
     endDate: new Date('2025-07-28'),
     verificationRequired: true,
     verificationCount: 1,
-    requiredVerifications: 12,
+    requiredVerification: 12,
     records: [
       {
         id: '1',
@@ -172,7 +172,7 @@ const initialQuests: Quest[] = [
     endDate: new Date('2025-07-28'),
     verificationRequired: true,
     verificationCount: 1,
-    requiredVerifications: 12,
+    requiredVerification: 12,
     records: [
       {
         id: '1',
@@ -196,7 +196,7 @@ const initialQuests: Quest[] = [
     endDate: new Date('2025-07-28'),
     verificationRequired: true,
     verificationCount: 1,
-    requiredVerifications: 12,
+    requiredVerification: 12,
     records: [
       {
         id: '1',
@@ -220,7 +220,7 @@ const initialQuests: Quest[] = [
     endDate: new Date('2025-07-28'),
     verificationRequired: true,
     verificationCount: 1,
-    requiredVerifications: 12,
+    requiredVerification: 12,
     records: [
       {
         id: '1',
@@ -244,7 +244,7 @@ const initialQuests: Quest[] = [
     endDate: new Date('2025-07-28'),
     verificationRequired: true,
     verificationCount: 1,
-    requiredVerifications: 12,
+    requiredVerification: 12,
     records: [
       {
         id: '1',
@@ -268,7 +268,7 @@ const initialQuests: Quest[] = [
     endDate: new Date('2025-07-28'),
     verificationRequired: true,
     verificationCount: 1,
-    requiredVerifications: 12,
+    requiredVerification: 12,
     records: [
       {
         id: '1',
@@ -292,7 +292,7 @@ const initialQuests: Quest[] = [
     endDate: new Date('2025-07-28'),
     verificationRequired: true,
     verificationCount: 1,
-    requiredVerifications: 12,
+    requiredVerification: 12,
     records: [
       {
         id: '1',
@@ -316,7 +316,7 @@ const initialQuests: Quest[] = [
     endDate: new Date('2025-07-28'),
     verificationRequired: true,
     verificationCount: 1,
-    requiredVerifications: 12,
+    requiredVerification: 12,
     records: [
       {
         id: '1',
@@ -340,7 +340,7 @@ const initialQuests: Quest[] = [
     endDate: new Date('2025-07-28'),
     verificationRequired: true,
     verificationCount: 1,
-    requiredVerifications: 12,
+    requiredVerification: 12,
     records: [
       {
         id: '1',
@@ -561,8 +561,8 @@ export const mockTeams: Team[] = [
       // Required TeamQuest properties
       title: '피트니스 마스터 도전',
       procedure: 'progress',
-      startDate: '2025-07-01',
-      endDate: '2025-12-31',
+      startDate: new Date('2025-07-01'),
+      endDate: new Date('2025-12-31'),
       records: [
         {
           id: 'post1',
@@ -606,8 +606,8 @@ export const mockTeams: Team[] = [
       // Required TeamQuest properties
       title: '독서 모임 도전',
       procedure: 'progress',
-      startDate: '2025-07-01',
-      endDate: '2025-12-31',
+      startDate: new Date('2025-07-01'),
+      endDate: new Date('2025-12-31'),
       records: [],
     },
     createdAt: new Date('2025-06-15T00:00:00Z'),
@@ -623,8 +623,8 @@ export const mockTeams: Team[] = [
       // Required TeamQuest properties
       title: '코딩 스터디 도전',
       procedure: 'progress',
-      startDate: '2025-07-01',
-      endDate: '2025-12-31',
+      startDate: new Date('2025-07-01'),
+      endDate: new Date('2025-12-31'),
       records: [],
     },
     createdAt: new Date('2025-07-01T00:00:00Z'),

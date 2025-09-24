@@ -45,7 +45,6 @@ export default function CustomDrawerContent(props: any) {
   const navigation =
     useNavigation<DrawerNavigationProp<PeersDrawerParamList>>();
   const currentRoute = useNavigationState(state => state.routes[state.index]);
-  console.log('현재 스크린 이름:', currentRoute.name);
 
   // const {
   //   data: peersData,

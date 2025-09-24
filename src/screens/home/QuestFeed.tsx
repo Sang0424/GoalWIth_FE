@@ -109,6 +109,8 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     mutationFn: createRecord,
     onSuccess: () => {
       Alert.alert('성공', '기록이 추가되었습니다!');
+      queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
+      queryClient.invalidateQueries({queryKey: ['homeQuests']});
     },
     onError: (error: any) => {
       Alert.alert(`오류`, `${error.response.data.message}`);
@@ -129,6 +131,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     onSettled: () => {
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
       queryClient.invalidateQueries({queryKey: ['user']});
+      queryClient.invalidateQueries({queryKey: ['homeQuests']});
     },
   });
 

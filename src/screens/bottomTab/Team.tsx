@@ -19,7 +19,12 @@ import {Team} from '../../types/team.types';
 import {Quest} from '@/types/quest.types';
 import {TeamNavParamList} from '@/types/navigation';
 import instance from '../../utils/axiosInterceptor';
-import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+} from '@tanstack/react-query';
 import {API_URL} from '@env';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Reanimated, {
@@ -29,6 +34,9 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 import {useRef, useState} from 'react';
+import {useDebounce} from '../../utils/hooks/useDebounce';
+
+const PAGE_SIZE = 10;
 
 const TeamScreen = () => {
   const navigation =
@@ -38,6 +46,7 @@ const TeamScreen = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery.toLowerCase(), 1000);
   const swipeableRef = useRef<any>(null);
   const queryClient = useQueryClient();
   const isMockData = API_URL == '';
@@ -73,7 +82,39 @@ const TeamScreen = () => {
     },
     enabled: !isMockData,
   });
-  let teams = data?.teams || [];
+
+  const {
+    data: searchData,
+    isLoading: searchLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+    refetch: searchRefetch,
+  } = useInfiniteQuery({
+    queryKey: ['searchTeam', debouncedSearchQuery],
+    queryFn: async ({pageParam = 0}) => {
+      const response = await instance.get(
+        `/search/team?search=${debouncedSearchQuery}&page=${pageParam}&size=${PAGE_SIZE}`,
+      );
+      queryClient.invalidateQueries({
+        queryKey: ['searchTeam', debouncedSearchQuery],
+      });
+      return response.data;
+    },
+    getNextPageParam: lastPage => {
+      if (lastPage.number < lastPage.totalPages) {
+        return lastPage.number + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 0,
+    enabled: API_URL !== '' && debouncedSearchQuery !== '',
+  });
+
+  let teams =
+    debouncedSearchQuery !== ''
+      ? searchData?.pages.flatMap(page => page.content) || []
+      : data?.teams || [];
 
   if (isMockData) {
     teams = mockTeams;
@@ -109,13 +150,18 @@ const TeamScreen = () => {
   };
 
   const renderTeamItem: ListRenderItem<Team> = ({item}) => {
+    console.log(
+      'item',
+      item.teamQuest?.records[item.teamQuest.records.length - 1],
+    );
+    console.log('item length', item.teamQuest?.records.length);
     // Format member count and role
     const memberCount = item.members.length;
     const isLeader = item.leaderId === '1';
     const hasRecentActivity =
       item.teamQuest?.records &&
       item.teamQuest?.records.length > 0 &&
-      item.teamQuest?.records[0];
+      item.teamQuest?.records[item.teamQuest.records.length - 1];
 
     const renderRightActions = (progress: any, _dragX: any) => {
       const animatedStyles = useAnimatedStyle(() => {
@@ -162,7 +208,7 @@ const TeamScreen = () => {
         <TouchableOpacity
           style={[styles.questCard, isLeader && styles.mainQuestCard]}
           onPress={() =>
-            handleTeamPress(item.id, item.name, item.teamQuest.title)
+            handleTeamPress(item.id, item.name, item.teamQuest?.title)
           }>
           <View style={styles.cardHeader}>
             <View style={styles.titleRow}>
@@ -177,7 +223,9 @@ const TeamScreen = () => {
               </View>
             </View>
             <Text style={{fontSize: 12, color: '#666'}} numberOfLines={1}>
-              {item?.teamQuest.title}
+              {item.teamQuest?.title
+                ? item.teamQuest.title
+                : '퀘스트를 만들어보세요'}
             </Text>
             {/* Progress Bar */}
             <View style={styles.progressContainer}>
@@ -201,13 +249,22 @@ const TeamScreen = () => {
               <Text style={styles.recentActivityTitle}>최근 활동</Text>
               <View style={styles.recentPost}>
                 <Text style={styles.recentPostText} numberOfLines={2}>
-                  {item.teamQuest?.records[0].text.length > 20
-                    ? item.teamQuest?.records[0].text.slice(0, 20) + '...'
-                    : item.teamQuest?.records[0].text || '내용 없음'}
+                  {item.teamQuest?.records[item.teamQuest.records.length - 1]
+                    .text.length > 20
+                    ? item.teamQuest?.records[
+                        item.teamQuest.records.length - 1
+                      ].text.slice(0, 20) + '...'
+                    : item.teamQuest?.records[item.teamQuest.records.length - 1]
+                        .text || '내용 없음'}
                 </Text>
-                {item.teamQuest?.records[0].images?.[0] && (
+                {item.teamQuest?.records[item.teamQuest.records.length - 1]
+                  .images?.[0] && (
                   <Image
-                    source={{uri: item.teamQuest?.records[0].images[0]}}
+                    source={{
+                      uri: item.teamQuest?.records[
+                        item.teamQuest.records.length - 1
+                      ].images?.[0],
+                    }}
                     style={styles.recentPostImage}
                     resizeMode="cover"
                   />
@@ -236,7 +293,7 @@ const TeamScreen = () => {
       <TouchableOpacity
         style={[styles.questCard, isLeader && styles.mainQuestCard]}
         onPress={() =>
-          handleTeamPress(item.id, item.name, item.teamQuest.title)
+          handleTeamPress(item.id, item.name, item.teamQuest?.title)
         }>
         <View style={styles.cardHeader}>
           <View style={styles.titleRow}>
@@ -251,7 +308,7 @@ const TeamScreen = () => {
             </View>
           </View>
           <Text style={{fontSize: 12, color: '#666'}} numberOfLines={1}>
-            {item.teamQuest.title}
+            {item.teamQuest?.title ? item.teamQuest.title : '퀘스트 없음'}
           </Text>
           {/* Progress Bar */}
           <View style={styles.progressContainer}>
@@ -294,7 +351,7 @@ const TeamScreen = () => {
       return;
     }
     setIsRefreshing(true);
-    await refetch();
+    debouncedSearchQuery !== '' ? await searchRefetch() : await refetch();
     setIsRefreshing(false);
   };
 

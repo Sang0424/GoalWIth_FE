@@ -41,7 +41,6 @@ export default function Login() {
       password: string;
     }>
   >({});
-  const loadUser = userStore(state => state.loadUser);
   const setAccessToken = tokenStore(state => state.actions.setAccessToken);
 
   const validateForm = () => {
@@ -80,7 +79,6 @@ export default function Login() {
     onSuccess: async ({accessToken, refreshToken}) => {
       setAccessToken(accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);
-      await loadUser();
       navigation.navigate('BottomNav');
     },
     onError: error => {

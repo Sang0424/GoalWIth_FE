@@ -20,9 +20,6 @@ export default function HomeNav() {
         component={CharacterSelectionScreen}
         options={{
           presentation: 'card',
-          headerShown: true,
-          headerTitle: '캐릭터 선택',
-          headerTitleAlign: 'center',
         }}
       />
     </Stack.Navigator>

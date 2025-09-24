@@ -25,13 +25,15 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {initialUser} from '../../store/mockData';
 import {API_URL} from '@env';
 import type {RequestedPeers} from '../../types/peers.types.d.ts';
+import {useDebounce} from '../../utils/hooks/useDebounce';
 
 const PAGE_SIZE = 10;
 
 export default function Peers() {
-  const [search, setSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const queryClient = useQueryClient();
+  const debouncedSearchQuery = useDebounce(searchQuery.toLowerCase(), 1000);
 
   // const {data: requestedPeersData, isLoading: requestedPeersLoading} =
   //   useInfiniteQuery<RequestedPeers, Error>({
@@ -52,6 +54,31 @@ export default function Peers() {
   //     enabled: API_URL !== '',
   //   });
 
+  // const {
+  //   data: recommendPeers,
+  //   isLoading: recommendPeersLoading,
+  //   hasNextPage: recommendHasNextPage,
+  //   fetchNextPage: recommendFetchNextPage,
+  //   isFetchingNextPage: recommendIsFetchingNextPage,
+  //   refetch: recommendRefetch,
+  // } = useInfiniteQuery({
+  //   queryKey: ['recommendPeers'],
+  //   queryFn: async ({pageParam = 0}) => {
+  //     const response = await instance.get(
+  //       `/peer/recommend?page=${pageParam}&size=${PAGE_SIZE}`,
+  //     );
+  //     return response.data;
+  //   },
+  //   getNextPageParam: (lastPage, allPages) => {
+  //     if (lastPage.number < lastPage.totalPages) {
+  //       return lastPage.number + 1;
+  //     }
+  //     return undefined;
+  //   },
+  //   initialPageParam: 0,
+  //   enabled: API_URL !== '',
+  // });
+
   const {data: requestedPeersData} = useQuery({
     queryKey: ['requestedPeers'],
     queryFn: async () => {
@@ -71,10 +98,10 @@ export default function Peers() {
     isFetchingNextPage,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ['peers'],
+    queryKey: ['recommendPeers'],
     queryFn: async ({pageParam = 0}) => {
       const response = await instance.get(
-        `/peer?page=${pageParam}&size=${PAGE_SIZE}`,
+        `/peer/recommend?page=${pageParam}&size=${PAGE_SIZE}`,
       );
       queryClient.invalidateQueries({queryKey: ['requestedPeers']});
       return response.data;
@@ -89,9 +116,37 @@ export default function Peers() {
     enabled: API_URL !== '',
   });
 
+  const {
+    data: searchPeersData,
+    isLoading: searchPeersLoading,
+    hasNextPage: searchHasNextPage,
+    fetchNextPage: searchFetchNextPage,
+    isFetchingNextPage: searchIsFetchingNextPage,
+    refetch: searchRefetch,
+  } = useInfiniteQuery({
+    queryKey: ['peers', searchQuery],
+    queryFn: async ({pageParam = 0}) => {
+      const response = await instance.get(
+        `/search/user?search=${debouncedSearchQuery}&page=${pageParam}&size=${PAGE_SIZE}`,
+      );
+      queryClient.invalidateQueries({queryKey: ['searchPeersData']});
+      return response.data;
+    },
+    getNextPageParam: lastPage => {
+      if (lastPage.number < lastPage.totalPages) {
+        return lastPage.number + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 0,
+    enabled: API_URL !== '' && debouncedSearchQuery !== '',
+  });
+
   const users =
     API_URL === ''
       ? initialUser
+      : debouncedSearchQuery !== ''
+      ? searchPeersData?.pages.flatMap(page => page.content) || []
       : peersData?.pages.flatMap(page => page.content) || [];
 
   const requestedPeersCount =
@@ -100,27 +155,27 @@ export default function Peers() {
   const navigation =
     useNavigation<NativeStackNavigationProp<PeersNavParamList>>();
 
-  console.log('peersData', peersData);
-  console.log(
-    'peersData flat content',
-    peersData?.pages.flatMap(page => page.content),
-  );
-  console.log('requestedPeersData', requestedPeersData);
-  console.log('hasNextPage', hasNextPage);
-  console.log('isFetchingNextPage', isFetchingNextPage);
-  console.log('users:', users);
-
   const loadMorePeers = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    if (searchHasNextPage && !searchIsFetchingNextPage) {
+      searchFetchNextPage();
+    }
+  }, [
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    searchHasNextPage,
+    searchIsFetchingNextPage,
+    searchFetchNextPage,
+  ]);
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
-    refetch();
+    debouncedSearchQuery !== '' ? searchRefetch() : refetch();
     setIsRefreshing(false);
-  }, [refetch]);
+  }, [refetch, searchRefetch]);
 
   const renderHeader = useCallback(() => {
     return (
@@ -199,16 +254,16 @@ export default function Peers() {
         <TextInput
           placeholder="검색어를 입력해주세요"
           style={[styles.searchInput]}
-          value={search}
-          onChangeText={setSearch}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
         />
-        {search.length > 0 && (
+        {searchQuery.length > 0 && (
           <Icon
             style={styles.searchIcon}
             name="cancel"
             size={24}
             color="#a1a1a1"
-            onPress={() => setSearch('')}
+            onPress={() => setSearchQuery('')}
           />
         )}
       </View>
@@ -218,7 +273,7 @@ export default function Peers() {
         keyExtractor={item => item.id}
         onRefresh={handleRefresh}
         refreshing={isRefreshing}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={searchQuery.length > 0 ? null : renderHeader}
         contentContainerStyle={[{paddingHorizontal: 16, paddingTop: 8}]}
         showsVerticalScrollIndicator={false}
         onEndReached={loadMorePeers}
@@ -234,7 +289,7 @@ export default function Peers() {
         ListEmptyComponent={
           <Text style={{textAlign: 'center'}}>동료가 없습니다.</Text>
         }
-        extraData={search}
+        extraData={searchQuery}
       />
     </SafeAreaView>
   );

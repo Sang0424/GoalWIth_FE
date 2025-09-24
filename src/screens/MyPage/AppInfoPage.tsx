@@ -7,10 +7,14 @@ import {
   SafeAreaView,
   Linking,
   TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import {Platform} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 const AppInfoPage = () => {
+  const navigation = useNavigation();
   const openLink = async (url: string) => {
     const supported = await Linking.canOpenURL(url);
     if (supported) {
@@ -21,6 +25,17 @@ const AppInfoPage = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={{paddingHorizontal: 24}}>
+          <Icon
+            name={
+              Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back-android'
+            }
+            size={24}
+            color={'#000'}
+          />
+        </Pressable>
         <View style={styles.header}>
           <Text style={styles.title}>GoalWith</Text>
           <Text style={styles.version}>버전 1.0.0</Text>

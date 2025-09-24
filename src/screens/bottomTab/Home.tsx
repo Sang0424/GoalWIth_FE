@@ -100,7 +100,7 @@ export default function Home() {
   if (error) {
     return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
   }
-  const quests = isMockData ? mockQuests : data?.quests;
+  const quests = isMockData ? [] : data?.quests;
 
   const user = isMockData
     ? {
@@ -150,6 +150,30 @@ export default function Home() {
   const filteredSubQuests = subQuests.filter((q: Quest) =>
     filter === 'COMPLETED' ? isQuestCompleted(q) : !isQuestCompleted(q),
   );
+
+  const recommendedQuests = [
+    {
+      id: 'rec1',
+      title: '아침 30분 산책하기',
+      description: '하루를 상쾌하게 시작해보세요!',
+      category: '건강',
+      xp: 50,
+    },
+    {
+      id: 'rec2',
+      title: '책 1챕터 읽기',
+      description: '지식을 쌓는 시간을 가져보세요',
+      category: '자기계발',
+      xp: 70,
+    },
+    {
+      id: 'rec3',
+      title: '물 8잔 마시기',
+      description: '건강한 하루를 위한 필수 미션',
+      category: '건강',
+      xp: 30,
+    },
+  ];
 
   // Render empty state
   const renderEmptyState = (isMain: boolean) => (
