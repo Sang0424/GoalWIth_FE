@@ -44,6 +44,8 @@ import {
   MenuOption,
   MenuTrigger,
 } from 'react-native-popup-menu';
+import {TeamNavParamList} from '@/types/navigation';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 // #region Custom Hooks (Moved outside component)
 
@@ -361,7 +363,8 @@ const useApiData = ({
 // #endregion
 
 const TeamFeedScreen = () => {
-  const navigation = useNavigation<any>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<TeamNavParamList>>();
   const route = useRoute<TeamFeedRouteProps>();
   const {teamId, teamName, teamQuest} = route.params;
   const {keyboardHeight} = useKeyboardHeight();
@@ -486,6 +489,23 @@ const TeamFeedScreen = () => {
     }
   };
 
+  console.log('teamQuest', teamQuest);
+
+  if (teamQuest === undefined) {
+    return (
+      <View style={styles.centerContainer}>
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('TeamQuestCreateScreen', {
+              teamName: teamName,
+              data: teamId,
+            })
+          }>
+          <Text>퀘스트 생성하기</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
@@ -687,36 +707,44 @@ const TeamFeedScreen = () => {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}>
-        <FlatList
-          data={teamPosts}
-          renderItem={renderPost}
-          keyExtractor={item => item.id}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.5}
-          contentContainerStyle={styles.feedContainer}
-          stickyHeaderIndices={[0]}
-          ListHeaderComponent={
-            <View style={styles.header}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => navigation.goBack()}>
-                <Ionicons name="arrow-back" size={24} color="#333" />
-              </TouchableOpacity>
-              <Text
-                style={styles.teamName}>{`${teamName} 팀의 ${teamQuest}`}</Text>
-              <View style={{width: 24}} />
-            </View>
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Ionicons name="newspaper-outline" size={50} color="#ccc" />
-              <Text style={styles.emptyStateText}>팀 피드가 비어있습니다.</Text>
-              <Text style={styles.emptyStateSubtext}>
-                첫 게시물을 작성해보세요!
-              </Text>
-            </View>
-          }
-        />
+        {teamQuest ? (
+          <FlatList
+            data={teamPosts}
+            renderItem={renderPost}
+            keyExtractor={item => item.id}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
+            contentContainerStyle={styles.feedContainer}
+            stickyHeaderIndices={[0]}
+            ListHeaderComponent={
+              <View style={styles.header}>
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => navigation.goBack()}>
+                  <Ionicons name="arrow-back" size={24} color="#333" />
+                </TouchableOpacity>
+                <Text
+                  style={
+                    styles.teamName
+                  }>{`${teamName} 팀의 ${teamQuest}`}</Text>
+                <View style={{width: 24}} />
+              </View>
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons name="newspaper-outline" size={50} color="#ccc" />
+                <Text style={styles.emptyStateText}>
+                  팀 피드가 비어있습니다.
+                </Text>
+                <Text style={styles.emptyStateSubtext}>
+                  첫 게시물을 작성해보세요!
+                </Text>
+              </View>
+            }
+          />
+        ) : (
+          <Text>퀘스트 생성하기</Text>
+        )}
 
         {!isCommenting && (
           <Animated.View

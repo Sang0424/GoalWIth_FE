@@ -41,6 +41,7 @@ const QuestVerification = () => {
   const navigation = useNavigation<QuestVerificationScreenNavigationProp>();
   const route = useRoute();
   const {quest} = route.params as {quest: Quest};
+  console.log('quest verification', quest);
 
   const {addVerification} = useQuestStore();
   const [verificationText, setVerificationText] = useState('');
@@ -133,9 +134,10 @@ const QuestVerification = () => {
     //addVerification(quest.id);
     Alert.alert('성공', '퀘스트 인증이 완료되었습니다!');
     setVerificationText('');
+    navigation.goBack();
   };
 
-  if (!quest || !record) {
+  if (!quest) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <Text>로딩 중...</Text>
@@ -145,7 +147,7 @@ const QuestVerification = () => {
 
   // 모든 인증 메시지(댓글) 리스트 추출
   const allVerifications = quest.verifications?.flatMap(
-    (r: Verification) => r.comment || [],
+    (r: any) => r.text || [],
   );
 
   const formatDate = (dateString: string) => {
@@ -252,7 +254,7 @@ const QuestVerification = () => {
             <View key={record.id} style={styles.recordCard}>
               <View style={styles.recordHeader}>
                 <Text style={styles.recordDate}>
-                  {formatDate(record.date || '')}
+                  {formatDate(record.createdAt.toString() || '')}
                 </Text>
               </View>
               {record.images && (
@@ -283,9 +285,7 @@ const QuestVerification = () => {
           </View>
 
           {allVerifications && allVerifications.length > 0 ? (
-            allVerifications.map(comment => (
-              <Text key={comment}>{comment}</Text>
-            ))
+            allVerifications.map(text => <Text key={text}>{text}</Text>)
           ) : (
             <Text style={styles.noCommentsText}>
               아직 인증된 댓글이 없습니다.

@@ -1,10 +1,32 @@
 import React from 'react';
-import {View, Text, ScrollView, StyleSheet, SafeAreaView} from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  SafeAreaView,
+  Pressable,
+} from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import {Platform} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 const HelpPage = () => {
+  const navigation = useNavigation();
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={{paddingHorizontal: 24}}>
+          <Icon
+            name={
+              Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back-android'
+            }
+            size={24}
+            color={'#000'}
+          />
+        </Pressable>
         <Text style={styles.title}>GoalWith 가이드</Text>
 
         <View style={styles.section}>

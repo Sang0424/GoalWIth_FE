@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Dimensions,
   Pressable,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -19,44 +20,65 @@ import {initialUser} from '../../store/mockData';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {MyPageNavParamList} from '../../types/navigation';
+import {userStore} from '../../store/userStore';
+import CharacterAvatar from '../../components/CharacterAvatar';
+import {useMutation, useQueryClient} from '@tanstack/react-query';
+import instance from '../../utils/axiosInterceptor';
 
 interface EditProfileProps {
-  user: User;
+  nickname: string;
+  userType: string;
+  character: string;
 }
 
 const EditProfile = () => {
+  const user = userStore(state => state.user);
+  const setUser = userStore(state => state.setUser);
   const navigation =
     useNavigation<NativeStackNavigationProp<MyPageNavParamList>>();
-  const [nickname, setNickname] = useState('');
-  const [userType, setUserType] = useState('');
-  const [avatar, setAvatar] = useState('');
+  const [nickname, setNickname] = useState(user?.nickname || '');
+  const [userType, setUserType] = useState(user?.userType || '');
+  const [character, setCharacter] = useState(user?.character || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const {mutate} = useMutation({
+    mutationFn: async ({nickname, userType, character}: EditProfileProps) => {
+      const response = await instance.put(`/user/info/${user.id}`, {
+        nickname,
+        userType,
+        character,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      Alert.alert('프로필 변경!', '프로필을 변경했습니다!');
+      queryClient.invalidateQueries({queryKey: ['user']});
+    },
+    onError: error => {
+      Alert.alert('오류', '프로필 변경 중 오류가 발생했습니다.');
+      console.log(error);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({queryKey: ['user']});
+    },
+  });
 
   const updateProfile = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // TODO: Implement actual API call to update profile
-      // For now, update local store
-      const updateUser = {
+      // Update user store
+      setUser({
         nickname,
         userType,
-        avatar,
-      };
-
-      // Update user store
-      initialUser.map(user => {
-        if (user.id === 'user1') {
-          return updateUser;
-        }
-        return user;
+        character,
       });
-
-      navigation.goBack();
-    } catch (err) {
-      setError('프로필을 업데이트하는 중에 문제가 발생했습니다.');
+      mutate({nickname, userType, character});
+    } catch (err: any) {
+      setError(err?.response?.data?.message);
     } finally {
       setLoading(false);
     }
@@ -81,16 +103,10 @@ const EditProfile = () => {
           </Pressable>
           <View style={styles.avatarContainer}>
             <TouchableOpacity style={styles.avatarWrapper}>
-              <Image
-                source={avatar as any}
-                style={styles.avatar}
-                resizeMode="cover"
-              />
-              <TouchableOpacity style={styles.avatarEditButton}>
-                <Text style={styles.avatarEditButtonText}>
-                  프로필 사진 변경
-                </Text>
-              </TouchableOpacity>
+              <CharacterAvatar avatar={character} size={120} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.avatarEditButton}>
+              <Text style={styles.avatarEditButtonText}>프로필 사진 변경</Text>
             </TouchableOpacity>
           </View>
 
@@ -124,7 +140,7 @@ const EditProfile = () => {
               onPress={updateProfile}
               disabled={loading}>
               <Text style={styles.saveButtonText}>
-                {loading ? '업데이트 중...' : '프로필 저장'}
+                {loading ? '업데이트 중...' : '프로필 변경'}
               </Text>
             </TouchableOpacity>
           </View>

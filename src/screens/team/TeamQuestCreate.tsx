@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Switch,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -44,6 +45,8 @@ const TeamQuestCreateScreen = () => {
   ); // Default to 1 week from now
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [verificationRequired, setVerificationRequired] = useState(false);
+  const [requiredVerification, setRequiredVerification] = useState(3);
 
   // ********* Backend랑 연결 부분 *********
   const fetchData = async () => {
@@ -55,6 +58,8 @@ const TeamQuestCreateScreen = () => {
       endDate: endDate,
       procedure: 'progress',
       team_id: data,
+      verificationRequired: verificationRequired,
+      requiredVerification: requiredVerification,
     });
   };
   const queryClient = useQueryClient();
@@ -70,6 +75,8 @@ const TeamQuestCreateScreen = () => {
       setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
       setShowStartDatePicker(false);
       setShowEndDatePicker(false);
+      setVerificationRequired(false);
+      setRequiredVerification(3);
     },
   });
   const handleSubmit = async (event: GestureResponderEvent) => {
@@ -116,6 +123,10 @@ const TeamQuestCreateScreen = () => {
     }
   };
 
+  const toggleVerification = () => {
+    setVerificationRequired(!verificationRequired);
+  };
+
   // Close all date pickers
   const closeDatePickers = useCallback(() => {
     setShowStartDatePicker(false);
@@ -127,6 +138,7 @@ const TeamQuestCreateScreen = () => {
       Alert.alert('오류', '퀘스트 이름을 입력해주세요.');
       return;
     }
+    mutate();
     Alert.alert('팀 생성 완료', `${teamName} 팀이 성공적으로 생성되었습니다!`);
   };
 
@@ -226,6 +238,41 @@ const TeamQuestCreateScreen = () => {
             textAlignVertical="top"
             maxLength={500}
           />
+          <View style={styles.verificationContainer}>
+            <View style={styles.verificationHeader}>
+              <Text style={styles.inputLabel}>인증 필요</Text>
+              <Switch
+                value={verificationRequired}
+                onValueChange={toggleVerification}
+                trackColor={{false: '#ddd', true: '#4CAF50'}}
+                thumbColor="#fff"
+              />
+            </View>
+
+            {verificationRequired && (
+              <View style={styles.verificationSettings}>
+                <Text style={styles.verificationLabel}>필요 인증 횟수</Text>
+                <View style={styles.counterContainer}>
+                  <TouchableOpacity
+                    style={styles.counterButton}
+                    onPress={() =>
+                      setRequiredVerification(prev => Math.max(1, prev - 1))
+                    }
+                    disabled={requiredVerification <= 1}>
+                    <Text style={styles.counterButtonText}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.counterValue}>
+                    {requiredVerification}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.counterButton}
+                    onPress={() => setRequiredVerification(prev => prev + 1)}>
+                    <Text style={styles.counterButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
         </ScrollView>
 
         <View style={styles.footer}>
@@ -345,6 +392,53 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: 'white',
     fontWeight: '600',
+  },
+  verificationContainer: {
+    marginBottom: 16,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 10,
+    padding: 16,
+  },
+  verificationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  verificationSettings: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  verificationLabel: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 8,
+  },
+  counterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  counterButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  counterButtonText: {
+    fontSize: 20,
+    color: '#555',
+    lineHeight: 24,
+  },
+  counterValue: {
+    width: 40,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
   },
 });
 

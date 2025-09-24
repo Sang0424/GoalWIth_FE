@@ -9,6 +9,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   TextInput,
+  Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import CharacterAvatar from '../../components/CharacterAvatar';
@@ -21,8 +22,13 @@ import {VerificationNavParamList} from '../../types/navigation';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import instance from '../../utils/axiosInterceptor';
-import {useInfiniteQuery, useQuery} from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import {API_URL} from '@env';
+import {useDebounce} from '../../utils/hooks/useDebounce';
 
 const VerificationFeedCard = ({item}: {item: {quest: Quest; user: User}}) => {
   const navigation =
@@ -119,12 +125,15 @@ const TAB_LIST = [
 const VerificationFeedScreen = () => {
   const PAGE_SIZE = 5;
   const [page, setPage] = useState(0);
-  const [feed, setFeed] = useState<Quest[] | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [search, setSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'realtime' | 'peers'>('realtime');
   const [error, setError] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const debouncedSearchQuery = useDebounce(searchQuery, 1000);
+  const queryClient = useQueryClient();
+
+  console.log('verificaton searchquery', debouncedSearchQuery);
 
   const quests = useQuestStore(state => state.quests);
 
@@ -135,7 +144,6 @@ const VerificationFeedScreen = () => {
     fetchNextPage,
     hasNextPage,
     refetch,
-    isRefetching,
   } = useInfiniteQuery({
     queryKey: ['Verification'],
     initialPageParam: 0,
@@ -158,6 +166,46 @@ const VerificationFeedScreen = () => {
     refetchOnWindowFocus: true,
   });
 
+  const {
+    data: searchVerificationData,
+    isLoading: searchVerificationLoading,
+    isFetchingNextPage: searchVerificationIsFetchingNextPage,
+    fetchNextPage: searchVerificationFetchNextPage,
+    hasNextPage: searchVerificationHasNextPage,
+    refetch: searchVerificationRefetch,
+  } = useInfiniteQuery({
+    queryKey: ['searchVerification', debouncedSearchQuery],
+    initialPageParam: 0,
+    queryFn: async ({pageParam = 0}) => {
+      try {
+        const response = await instance.get(
+          `/search/quest/verification?search=${debouncedSearchQuery}&page=${pageParam}&size=${PAGE_SIZE}`,
+        );
+        // queryClient.invalidateQueries({
+        //   queryKey: ['searchVerification', debouncedSearchQuery],
+        // });
+        return response.data;
+      } catch (e: any) {
+        setSearchError(e.response.data.message);
+        console.log('search verification error', e.response.data.message);
+        return {items: [], nextPage: null};
+      }
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.hasNext ? allPages.length : undefined;
+    },
+    enabled: API_URL != '' && debouncedSearchQuery !== '',
+  });
+
+  // const {data: peerId, isLoading: peerIdLoading} = useQuery({
+  //   queryKey: ['peerId'],
+  //   queryFn: async () => {
+  //     const response = await instance.get('/peer/myPeerId');
+  //     return response.data;
+  //   },
+  //   enabled: API_URL != '',
+  // });
+
   const verificationQuests = React.useMemo(() => {
     if (API_URL === '') {
       const filtered = quests.filter(
@@ -166,7 +214,9 @@ const VerificationFeedScreen = () => {
       );
       return filtered.slice(0, (page + 1) * PAGE_SIZE);
     }
-    return data?.pages.flatMap(page => page.items) || [];
+    return debouncedSearchQuery !== ''
+      ? searchVerificationData?.pages.flatMap(page => page.content) || []
+      : data?.pages.flatMap(page => page.content) || [];
   }, [quests, data, page]);
 
   const hasMore = verificationQuests.length < (page + 1) * PAGE_SIZE;
@@ -180,46 +230,39 @@ const VerificationFeedScreen = () => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
+    if (
+      searchVerificationHasNextPage &&
+      !searchVerificationIsFetchingNextPage
+    ) {
+      searchVerificationFetchNextPage();
+    }
   };
 
-  console.log('verificationQuests', verificationQuests);
-
-  const fetchFeed = useCallback(async () => {
-    setLoading(true);
-    try {
-      setFeed(verificationQuests);
-    } catch (error) {
-      console.error('Error fetching feed:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [verificationQuests]);
-
   useEffect(() => {
-    fetchFeed();
-  }, [fetchFeed]);
+    if (error) {
+      Alert.alert(error);
+    }
+    if (searchError) {
+      Alert.alert(searchError);
+    }
+  }, [error, searchError]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await refetch();
+    debouncedSearchQuery !== ''
+      ? await searchVerificationRefetch()
+      : await refetch();
     setRefreshing(false);
   };
 
   // 팔로잉 피드는 userId가 'user1'인 것만 노출 (예시)
   const filteredFeed =
-    activeTab === 'peers' ? feed?.filter(item => item.id === 'user1') : feed;
-  //activeTab === 'peers' ? feed?.filter(item => item.userId.includes('user1')) : feed;
+    activeTab === 'peers'
+      ? verificationQuests?.filter(item => item.id.includes('user1'))
+      : verificationQuests;
 
-  if (loading || isLoading) {
+  if (isLoading || searchVerificationLoading) {
     return <ActivityIndicator style={{flex: 1, marginTop: 100}} size="large" />;
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={{flex: 1, backgroundColor: '#ffffff'}}>
-        <Text>시부럴 에러네 + {error}</Text>
-      </SafeAreaView>
-    );
   }
 
   return (
@@ -239,16 +282,16 @@ const VerificationFeedScreen = () => {
           <TextInput
             placeholder="검색어를 입력해주세요"
             style={[styles.searchInput]}
-            value={search}
-            onChangeText={setSearch}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
-          {search.length > 0 && (
+          {searchQuery.length > 0 && (
             <Icon
               style={styles.searchIcon}
               name="cancel"
               size={24}
               color="#a1a1a1"
-              onPress={() => setSearch('')}
+              onPress={() => setSearchQuery('')}
             />
           )}
         </View>
@@ -297,7 +340,11 @@ const VerificationFeedScreen = () => {
           />
         )}
         ListFooterComponent={
-          isFetchingNextPage ? (
+          searchQuery !== '' ? (
+            searchVerificationIsFetchingNextPage ? (
+              <ActivityIndicator size="small" color="#000" />
+            ) : null
+          ) : isFetchingNextPage ? (
             <ActivityIndicator size="small" color="#000" />
           ) : null
         }

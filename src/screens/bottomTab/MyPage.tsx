@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Image,
+  Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
@@ -17,6 +17,9 @@ import {useTeamStore} from '../../store/mockData';
 import {MyPageNavParamList} from '../../types/navigation';
 import {useState, useEffect} from 'react';
 // Import types
+import {API_URL} from '@env';
+import instance from '../../utils/axiosInterceptor';
+import {userStore} from '../../store/userStore';
 import {Quest} from '../../types/quest.types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {tokenStore} from '../../store/tokenStore';
@@ -42,6 +45,7 @@ export default function MyPage() {
   const navigation =
     useNavigation<NativeStackNavigationProp<MyPageNavParamList>>();
   const setAccessToken = tokenStore(state => state.actions.setAccessToken);
+  const user = userStore(state => state.user) || defaultUser;
   const defaultTeam: Team[] = useTeamStore(state => state.teams);
   const logout = async () => {
     try {
@@ -53,7 +57,6 @@ export default function MyPage() {
   };
   // Navigation types
   const {quests} = useQuestStore();
-  const user = defaultUser;
   const team = defaultTeam;
   // Type-safe filtering
   const completedQuests = quests.filter(
@@ -197,7 +200,7 @@ export default function MyPage() {
           {/* <View style={styles.divider} /> */}
           <TouchableOpacity
             style={styles.settingItem}
-            onPress={() => navigation.navigate('MarketScreen')}>
+            onPress={() => Alert.alert('Coming Soon! 조금만 기다려주세요!')}>
             <View style={styles.settingLeft}>
               <Ionicons name="cart-outline" size={22} color="#666" />
               <Text style={styles.settingText}>상점</Text>
