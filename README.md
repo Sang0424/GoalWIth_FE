@@ -1,97 +1,109 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# GoalWith - for achieving goals with social support
 
-# Getting Started
+![GoalWith Logo](src/assets/images/logo.png) <!-- Add your logo path here -->
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+> **GoalWith** is a mobile application that helps users set and achieve goals with social support. Users can set personal goals, track progress, and share their achievements with friends.
 
-## Step 1: Start Metro
+## Key Features
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+### Goal Management
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- Set personal goals and track progress
+- Visualize progress with charts and graphs
 
-```sh
-# Using npm
-npm start
+### Social Networking
 
-# OR using Yarn
-yarn start
-```
+- Add peers and follow their progress
+- Share goal achievements on social media
+- Interact with peers through comments and reactions
 
-## Step 2: Build and run your app
+### Achievement Sharing
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+- Share goal achievements with badges and rewards
+- Timeline of achievements
+- characters and level system
 
-### Android
+## Prototype Screenshots
 
-```sh
-# Using npm
-npm run android
+|                                                     |                                                            |                |
+| :-------------------------------------------------: | :--------------------------------------------------------: | :------------: |
+| ![Screen 1](/src/assets/screenshot/Home_screen.png) | ![Screen 2](/src/assets/screenshot/Quest_verification.png) | ![Screen 3]()  |
+|                    _Home Screen_                    |                    _Quest Verification_                    | _Quest Detail_ |
 
-# OR using Yarn
-yarn android
-```
+|                                           |                                               |                                               |
+| :---------------------------------------: | :-------------------------------------------: | :-------------------------------------------: |
+| ![Screen 4](/src/screenshots/screen4.png) | ![Screen 5](/src/screenshots/Peer_screen.png) | ![Screen 6](/src/screenshots/Team_screen.png) |
+|             _Profile screen_              |                 _Peer screen_                 |                 _Team screen_                 |
 
-### iOS
+## Technical Stack
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+- **Frontend**: React Native, TypeScript
+- **State Management**: Zustand
+- **Navigation**: React Navigation
+- **Styling**: StyleSheet
+- **API Communication**: Axios
+- **Data Fetching**: React Query
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## Getting Started
 
-```sh
-bundle install
-```
+### Prerequisites
 
-Then, and every time you update your native dependencies, run:
+- Node.js (v16 or higher)
+- npm or Yarn
+- React Native development environment
+- iOS Simulator or Android Emulator
 
-```sh
-bundle exec pod install
-```
+### Installation and Execution
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+1. Clone the repository
 
-```sh
-# Using npm
-npm run ios
+   ```bash
+   git clone https://github.com/Sang0424/GoalWIth_FE.git
+   cd GoalWith
+   ```
 
-# OR using Yarn
-yarn ios
-```
+2. Install dependencies
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+   ```bash
+   # npm
+   npm install
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+   # Yarn
+   yarn install
+   ```
 
-## Step 3: Modify your app
+3. Install iOS dependencies (iOS only)
 
-Now that you have successfully run the app, let's make changes!
+   ```bash
+   cd ios
+   pod install
+   cd ..
+   ```
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+4. Run the app
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+   ```bash
+   # iOS
+   npx react-native run-ios
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+   # Android
+   npx react-native run-android
+   ```
 
-## Congratulations! :tada:
+## License
 
-You've successfully run and modified your React Native App. :partying_face:
+This project is licensed under the [MIT License](LICENSE).
 
-### Now what?
+## Contributing
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+Contributions are welcome! Open an issue or send a pull request.
 
-# Troubleshooting
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a pull request
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+## Contact
 
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+For any questions or issues, please email [lyc2004y@gmail.com](mailto:lyc2004y@gmail.com)

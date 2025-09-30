@@ -50,7 +50,7 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
   const {mutate} = useMutation({
     mutationFn: async (character: string) => {
       const response = await instance.put(`/user/characters/${user.id}`, {
-        character: character,
+        character_id: character,
       });
       return response.data;
     },
@@ -80,6 +80,7 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
 
   const handleSelectCharacter = (character: string) => {
     setCharacter(character);
+    mutate(character);
     // TODO: Update user's selected character in the backend
   };
 
@@ -93,7 +94,7 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
     return (
       <TouchableOpacity
         style={[styles.characterItem, isSelected && styles.selectedCharacter]}
-        onPress={() => handleSelectCharacter(item.character)}>
+        onPress={() => handleSelectCharacter(item.id)}>
         <CharacterAvatar avatar={item.character} size={100} />
         <Text style={styles.characterName}>{item.name}</Text>
         {isSelected && <Text style={styles.selectedText}>선택됨</Text>}
