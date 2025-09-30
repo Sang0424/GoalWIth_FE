@@ -1,6 +1,6 @@
 # GoalWith - for achieving goals with social support
 
-![GoalWith Logo](src/assets/images/logo.png) <!-- Add your logo path here -->
+![GoalWith Logo](src/assets/images/Logo.png) <!-- Add your logo path here -->
 
 > **GoalWith** is a mobile application that helps users set and achieve goals with social support. Users can set personal goals, track progress, and share their achievements with friends.
 
@@ -25,15 +25,15 @@
 
 ## Prototype Screenshots
 
-|                                                     |                                                            |                |
-| :-------------------------------------------------: | :--------------------------------------------------------: | :------------: |
-| ![Screen 1](/src/assets/screenshot/Home_screen.png) | ![Screen 2](/src/assets/screenshot/Quest_verification.png) | ![Screen 3]()  |
-|                    _Home Screen_                    |                    _Quest Verification_                    | _Quest Detail_ |
+|                                                     |                                                            |     |
+| :-------------------------------------------------: | :--------------------------------------------------------: | :-: |
+| ![Screen 1](/src/assets/screenshot/Home_screen.png) | ![Screen 2](/src/assets/screenshot/Quest_verification.png) |
+|                    _Home Screen_                    |                    _Quest Verification_                    |
 
-|                                           |                                               |                                               |
-| :---------------------------------------: | :-------------------------------------------: | :-------------------------------------------: |
-| ![Screen 4](/src/screenshots/screen4.png) | ![Screen 5](/src/screenshots/Peer_screen.png) | ![Screen 6](/src/screenshots/Team_screen.png) |
-|             _Profile screen_              |                 _Peer screen_                 |                 _Team screen_                 |
+|                                                     |                                                     |     |
+| :-------------------------------------------------: | :-------------------------------------------------: | :-: |
+| ![Screen 5](/src/assets/screenshot/Peer_screen.png) | ![Screen 6](/src/assets/screenshot/Team_screen.png) |
+|                    _Peer screen_                    |                    _Team screen_                    |
 
 ## Technical Stack
 
