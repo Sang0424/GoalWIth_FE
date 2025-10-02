@@ -1,0 +1,4 @@
+// …
+
+// ⬇️ Add this import
+#import <GoogleSignIn/GoogleSignIn.h>

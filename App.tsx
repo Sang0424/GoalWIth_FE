@@ -19,6 +19,7 @@ import {decodeJwt} from './src/utils/jwtUtils';
 import {API_URL} from '@env';
 import {MenuProvider} from 'react-native-popup-menu';
 import axios from 'axios';
+import {configureGoogleSignIn} from './src/services/api/auth';
 
 const queryClient = new QueryClient();
 
@@ -29,14 +30,17 @@ const App = () => {
   const accessToken = tokenStore(state => state.accessToken);
 
   if (API_URL == '') {
-    const accessToken = 'abc';
+    const accessToken = '';
+    useEffect(() => {
+      configureGoogleSignIn();
+    }, []);
     return (
       <QueryClientProvider client={queryClient}>
         <MenuProvider>
           <NavigationContainer>
             <SafeAreaProvider>
               <GestureHandlerRootView>
-                {accessToken !== null ? <BottomNav /> : <OnBoardingNav />}
+                {accessToken !== '' ? <BottomNav /> : <OnBoardingNav />}
               </GestureHandlerRootView>
             </SafeAreaProvider>
           </NavigationContainer>
@@ -45,6 +49,7 @@ const App = () => {
     );
   } else {
     useEffect(() => {
+      configureGoogleSignIn();
       const checkAuth = async () => {
         try {
           const refreshToken = await AsyncStorage.getItem('refreshToken');
@@ -93,14 +98,15 @@ const App = () => {
           setIsAuthenticated(false);
         } finally {
           setIsLoading(false);
+          SplashScreen.hide();
         }
       };
 
       checkAuth();
     }, [accessToken, setAccessToken]);
-    // if (isLoading) {
-    //   return <SplashScreen />;
-    // }
+    if (isLoading) {
+      SplashScreen.show();
+    }
     return (
       <QueryClientProvider client={queryClient}>
         <MenuProvider>

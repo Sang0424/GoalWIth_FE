@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "894440980863",
+    "project_id": "goalwith-2b520",
+    "storage_bucket": "goalwith-2b520.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:894440980863:android:4cfb28ffac0ea6361a1a4a",
+        "android_client_info": {
+          "package_name": "com.goalwith"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD78iqe4XOGX2bDFgYrqJQsO6GCgPT1yZ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
