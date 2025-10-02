@@ -14,7 +14,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import Logo from '../../components/Logo';
-import type {Quest} from '../../types/quest.types';
+import type {Quest, ReactionType} from '../../types/quest.types';
 import type {User} from '../../types/user.types';
 import {useQuestStore} from '../../store/mockData';
 import {useNavigation} from '@react-navigation/native';
@@ -29,10 +29,35 @@ import {
 } from '@tanstack/react-query';
 import {API_URL} from '@env';
 import {useDebounce} from '../../utils/hooks/useDebounce';
+import ReactionButton from '../../components/ReactionButton';
+
+const getReactionData = (
+  quest: Quest,
+  reactionType: ReactionType,
+  currentUserId?: string,
+) => {
+  const reactions = quest.reactions || [];
+  const count = reactions.filter(r => r.reactionType === reactionType).length;
+  const myReaction = reactions.find(
+    r => r.reactionType === reactionType && r.user.id === currentUserId,
+  );
+  return {
+    count,
+    myReaction: myReaction
+      ? {id: myReaction.id, type: myReaction.reactionType}
+      : null,
+  };
+};
 
 const VerificationFeedCard = ({item}: {item: {quest: Quest; user: User}}) => {
   const navigation =
     useNavigation<NativeStackNavigationProp<VerificationNavParamList>>();
+
+  const supportData = getReactionData(item.quest, 'support', item.user.id);
+  const amazingData = getReactionData(item.quest, 'amazing', item.user.id);
+  const togetherData = getReactionData(item.quest, 'together', item.user.id);
+  const perfectData = getReactionData(item.quest, 'perfect', item.user.id);
+
   const handleGoQuest = () => {
     navigation.navigate('QuestVerification', {quest: item.quest});
   };
@@ -75,10 +100,34 @@ const VerificationFeedCard = ({item}: {item: {quest: Quest; user: User}}) => {
       )}
       <Text style={styles.contentText}>{item.quest.description}</Text>
       <View style={styles.reactionsRow}>
-        <ReactionButton type="support" count={11} />
-        <ReactionButton type="amazing" count={2} />
-        <ReactionButton type="together" count={0} />
-        <ReactionButton type="perfect" count={2} />
+        <ReactionButton
+          targetType="quest"
+          targetId={item.quest.id}
+          reactionType="support"
+          myReaction={supportData.myReaction}
+          count={supportData.count}
+        />
+        <ReactionButton
+          targetType="quest"
+          targetId={item.quest.id}
+          reactionType="amazing"
+          myReaction={amazingData.myReaction}
+          count={amazingData.count}
+        />
+        <ReactionButton
+          targetType="quest"
+          targetId={item.quest.id}
+          reactionType="together"
+          myReaction={togetherData.myReaction}
+          count={togetherData.count}
+        />
+        <ReactionButton
+          targetType="quest"
+          targetId={item.quest.id}
+          reactionType="perfect"
+          myReaction={perfectData.myReaction}
+          count={perfectData.count}
+        />
       </View>
       {/* 인증자 수 표시 */}
       <Text style={{color: '#4CAF50', fontWeight: 'bold', marginTop: 6}}>
@@ -91,28 +140,6 @@ const VerificationFeedCard = ({item}: {item: {quest: Quest; user: User}}) => {
         activeOpacity={0.85}>
         <Text style={styles.verifyBtnText}>인증하기</Text>
       </TouchableOpacity>
-    </TouchableOpacity>
-  );
-};
-
-const ReactionButton = ({type, count}: {type: string; count: number}) => {
-  const emojiMap: Record<string, string> = {
-    support: '💪',
-    amazing: '👏',
-    together: '🤝',
-    perfect: '🌟',
-  };
-  const labelMap: Record<string, string> = {
-    support: '응원',
-    amazing: '대단',
-    together: '함께',
-    perfect: '완벽',
-  };
-  return (
-    <TouchableOpacity style={styles.reactionBtn}>
-      <Text style={styles.reactionEmoji}>{emojiMap[type]}</Text>
-      <Text style={styles.reactionLabel}>{labelMap[type]}</Text>
-      <Text style={styles.reactionCount}>{count}</Text>
     </TouchableOpacity>
   );
 };
@@ -493,33 +520,6 @@ const styles = StyleSheet.create({
     color: '#222',
     marginBottom: 8,
     marginTop: 8,
-  },
-  reactionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 15,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    minWidth: 0, // Allow the button to shrink if needed
-    flex: 1, // Distribute space equally
-    marginHorizontal: 0, // Remove any horizontal margin that might cause overflow
-    maxWidth: '24%', // Ensure 4 buttons fit within the row with gaps
-  },
-  reactionEmoji: {
-    fontSize: 17,
-    marginRight: 3,
-  },
-  reactionLabel: {
-    fontSize: 13,
-    color: '#444',
-    marginRight: 2,
-  },
-  reactionCount: {
-    fontSize: 13,
-    color: '#888',
-    fontWeight: 'bold',
   },
   verifyBtn: {
     backgroundColor: '#5b807d',
