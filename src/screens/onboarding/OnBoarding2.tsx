@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -12,15 +12,16 @@ import {
   Platform,
 } from 'react-native';
 import BigLogo from '../../components/Logo';
-import { useNavigation } from '@react-navigation/native';
-import type { OnBoardingStackParamList } from '../../types/navigation';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useRef, useState } from 'react';
+import {useNavigation} from '@react-navigation/native';
+import type {OnBoardingStackParamList} from '../../types/navigation';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {useRef, useState} from 'react';
 import React from 'react';
-import { isFormFilled } from '../../utils/isFormFilled';
+import {isFormFilled} from '../../utils/isFormFilled';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export default function OnBoarding2() {
-  const { width } = useWindowDimensions();
+  const {width} = useWindowDimensions();
   const navigation =
     useNavigation<NativeStackNavigationProp<OnBoardingStackParamList>>();
   const emailRef = useRef<TextInput>(null);
@@ -85,24 +86,48 @@ export default function OnBoarding2() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <SafeAreaView style={styles.container}>
-        <View style={{ flex: 1, justifyContent: 'center' }}>
-          <BigLogo />
+        <View
+          style={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 16,
+            justifyContent: 'flex-start',
+          }}>
+          <BigLogo
+            resizeMode="contain"
+            imageStyle={{width: 80, height: 80, marginRight: 24}}
+          />
+          <Text
+            style={{
+              fontSize: 40,
+              lineHeight: 40,
+              fontWeight: 'bold',
+              color: '#806A5B',
+              textAlign: 'center',
+            }}>
+            GoalWith
+          </Text>
         </View>
+        <Pressable
+          style={styles.closeButton}
+          onPress={() => navigation.goBack()}>
+          <Icon name="close" size={32} color="#000" />
+        </Pressable>
         <KeyboardAvoidingView
-          style={{ flex: 3, justifyContent: 'flex-start' }}
+          style={{flex: 3, justifyContent: 'flex-start'}}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-        >
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
           <TextInput
             value={registerForm.name}
             placeholder="이름"
             enterKeyHint="next"
             autoCapitalize="none"
             autoCorrect={false}
-            style={[styles.input, { width: width - 70, height: 40 }]}
+            style={[styles.input, {width: width - 70, height: 40}]}
             onSubmitEditing={() => emailRef.current?.focus()}
             onChangeText={text =>
-              setRegisterForm({ ...registerForm, name: text })
+              setRegisterForm({...registerForm, name: text})
             }
           />
           {error.name && <Text style={styles.errorMsg}>{error.name}</Text>}
@@ -114,10 +139,10 @@ export default function OnBoarding2() {
             autoCapitalize="none"
             autoCorrect={false}
             enterKeyHint="next"
-            style={[styles.input, { width: width - 70, height: 40 }]}
+            style={[styles.input, {width: width - 70, height: 40}]}
             onSubmitEditing={() => passwordRef.current?.focus()}
             onChangeText={text => {
-              setRegisterForm({ ...registerForm, email: text });
+              setRegisterForm({...registerForm, email: text});
             }}
           />
           {error.email && <Text style={styles.errorMsg}>{error.email}</Text>}
@@ -130,10 +155,10 @@ export default function OnBoarding2() {
             autoCorrect={false}
             autoCapitalize="none"
             autoComplete="off"
-            style={[styles.input, { width: width - 70, height: 40 }]}
+            style={[styles.input, {width: width - 70, height: 40}]}
             onSubmitEditing={() => passwordConfirmRef.current?.focus()}
             onChangeText={text =>
-              setRegisterForm({ ...registerForm, password: text })
+              setRegisterForm({...registerForm, password: text})
             }
           />
           {error.password && (
@@ -148,7 +173,7 @@ export default function OnBoarding2() {
             autoCorrect={false}
             autoCapitalize="none"
             secureTextEntry={true}
-            style={[styles.input, { width: width - 70, height: 40 }]}
+            style={[styles.input, {width: width - 70, height: 40}]}
             onChangeText={text => setPasswordConfirm(text)}
           />
           {error.passwordConfirm && (
@@ -159,7 +184,7 @@ export default function OnBoarding2() {
               isFormFilled(registerForm)
                 ? styles.nextBtn
                 : styles.nextBtnDisabled,
-              { width: width - 54, height: 64 },
+              {width: width - 54, height: 64},
             ]}
             onPress={() => {
               validateForm();
@@ -167,22 +192,17 @@ export default function OnBoarding2() {
                 navigation.push('OnBoarding3', {
                   registerForm,
                 });
-            }}
-          >
+            }}>
             <Text
               style={{
                 textAlign: 'center',
                 fontSize: 24,
                 fontWeight: 'bold',
-              }}
-            >
+              }}>
               다음
             </Text>
           </Pressable>
         </KeyboardAvoidingView>
-        <Pressable onPress={() => navigation.goBack()}>
-          <Text>뒤로</Text>
-        </Pressable>
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -190,9 +210,16 @@ export default function OnBoarding2() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FCFAF8',
     alignItems: 'center',
     justifyContent: 'flex-start',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 72,
+    right: 32,
+    padding: 16,
+    zIndex: 10,
   },
   input: {
     borderBottomColor: '#a1a1a1',
@@ -202,14 +229,14 @@ const styles = StyleSheet.create({
   },
   nextBtn: {
     borderRadius: 10,
-    backgroundColor: '#F2F0E6',
+    backgroundColor: '#D1C7BC',
     justifyContent: 'center',
     marginTop: 8,
     alignItems: 'center',
   },
   nextBtnDisabled: {
     borderRadius: 10,
-    backgroundColor: '#F2F0E6',
+    backgroundColor: '#D1C7BC',
     justifyContent: 'center',
     marginTop: 8,
     alignItems: 'center',

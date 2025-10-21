@@ -132,12 +132,12 @@ const BottomSheet = ({
     settodoModalVisible(false);
 
     // 그 다음 애니메이션 실행
-    translateY.value = withSpring(screenHeight, {damping: 50});
+    translateY.value = withSpring(screenHeight, {damping: 1000});
   }, []);
 
   useEffect(() => {
     if (todoModalVisible) {
-      translateY.value = withSpring(0, {damping: 50});
+      translateY.value = withSpring(0, {damping: 1000});
       closeDatePickers();
     }
   }, [todoModalVisible]);

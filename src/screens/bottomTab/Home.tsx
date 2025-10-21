@@ -56,7 +56,7 @@ export default function Home() {
   const queryClient = useQueryClient();
 
   const {mutate} = useMutation({
-    mutationFn: async (questId: string) => {
+    mutationFn: async (questId: number) => {
       if (API_URL === '') {
         useQuestStore.getState().deleteQuest(questId);
         return;
@@ -94,17 +94,10 @@ export default function Home() {
     },
     enabled: !isMockData,
   });
-  if (isLoading) {
-    return <Text>로딩중</Text>;
-  }
-  if (error) {
-    return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
-  }
-  const quests = isMockData ? [] : data?.quests;
 
   const user = isMockData
     ? {
-        id: '0',
+        id: 0,
         name: 'User',
         email: 'user@example.com',
         nickname: 'User',
@@ -114,14 +107,25 @@ export default function Home() {
         maxExp: 100,
         actionPoints: 100,
         avatar: '../../assets/character/pico_base.png',
-        // Note: Removed createdAt and updatedAt as they're not in the User type
       }
     : userData;
-  // ********* Backend랑 연결 부분 *********
 
-  setUser(user);
-  const currentExp = (user as User).exp;
-  const maxExp = (user as User).level * 100;
+  useEffect(() => {
+    if (user) {
+      setUser(user);
+    }
+  }, [user, setUser]);
+
+  if (isLoading) {
+    return <Text>로딩중</Text>;
+  }
+  if (error) {
+    return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
+  }
+  const quests = isMockData ? [] : data?.quests;
+
+  const currentExp = user?.exp || 0;
+  const maxExp = user?.level ? user.level * 100 : 100;
   const progress = Math.min((currentExp / Math.max(maxExp, 1)) * 100, 100);
 
   const mainQuest =
@@ -153,21 +157,21 @@ export default function Home() {
 
   const recommendedQuests = [
     {
-      id: 'rec1',
+      id: 1,
       title: '아침 30분 산책하기',
       description: '하루를 상쾌하게 시작해보세요!',
       category: '건강',
       xp: 50,
     },
     {
-      id: 'rec2',
+      id: 2,
       title: '책 1챕터 읽기',
       description: '지식을 쌓는 시간을 가져보세요',
       category: '자기계발',
       xp: 70,
     },
     {
-      id: 'rec3',
+      id: 3,
       title: '물 8잔 마시기',
       description: '건강한 하루를 위한 필수 미션',
       category: '건강',
@@ -220,7 +224,7 @@ export default function Home() {
     onEdit,
   }: {
     quest: Quest;
-    onDelete: (id: string) => void;
+    onDelete: (id: number) => void;
     onEdit: (quest: Quest) => void;
   }) => {
     if (!quest) return null;
@@ -339,14 +343,6 @@ export default function Home() {
         : []),
     ];
 
-    const handleCompleteQuest = (quest: Quest) => {
-      if (quest.verificationRequired) {
-        Alert.alert('인증 필요!', '인증을 완료해주세요!');
-      } else {
-        Alert.alert('퀘스트 완료!', '퀘스트를 완료했습니다!');
-      }
-    };
-
     return (
       <ReanimatedSwipeable
         ref={swipeableRef}
@@ -430,7 +426,7 @@ export default function Home() {
     );
   };
 
-  const handleDeleteQuest = (questId: string) => {
+  const handleDeleteQuest = (questId: number) => {
     Alert.alert('퀘스트 삭제!', '퀘스트를 삭제하시겠습니까?', [
       {text: '취소', style: 'cancel'},
       {
@@ -471,10 +467,21 @@ export default function Home() {
               <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
             }>
             {/* Character and Stats Section */}
-            <Logo
-              resizeMode="contain"
-              style={{width: 150, height: 45, marginBottom: 16}}
-            />
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+              <Logo
+                resizeMode="contain"
+                imageStyle={{
+                  width: 56,
+                  height: 56,
+                  marginBottom: 8,
+                  marginRight: 16,
+                }}
+              />
+              <Text
+                style={{fontSize: 24, fontWeight: 'bold', color: '#806A5B'}}>
+                GoalWith
+              </Text>
+            </View>
             <TouchableOpacity
               style={styles.characterContainer}
               onPress={() => {

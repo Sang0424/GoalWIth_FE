@@ -1,5 +1,12 @@
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Pressable, StyleSheet, Text, View, Alert} from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  Alert,
+  TouchableOpacity,
+} from 'react-native';
 import type {User} from '../types/user.types';
 import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -7,15 +14,24 @@ import {useWindowDimensions} from 'react-native';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import instance from '../utils/axiosInterceptor';
 import CharacterAvatar from './CharacterAvatar';
+import ProfileBottomSheet from './ProfileBottomSheet';
+import {useState} from 'react';
 
 export default function UserCard({user, from}: {user?: any; from: string}) {
   const navigation = useNavigation();
   const {width} = useWindowDimensions();
   const queryClient = useQueryClient();
+  const [isProfileVisible, setProfileVisible] = useState(false);
+  const [selecteUser, setSelectUser] = useState<number | undefined>(undefined);
+
+  console.log('userCardUser', user);
+
+  console.log('selecteUser', selecteUser);
+  console.log('user.item', user);
 
   const {mutate: acceptPeer} = useMutation({
     mutationFn: async () => {
-      const response = await instance.post(`/peer/accept/${user?.item.id}`);
+      const response = await instance.post(`/peer/accept/${user?.id}`);
       return response.data;
     },
     onSuccess: () => {
@@ -29,7 +45,7 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
 
   const {mutate: rejectPeer} = useMutation({
     mutationFn: async () => {
-      const response = await instance.post(`/peer/reject/${user?.item.id}`);
+      const response = await instance.post(`/peer/reject/${user?.id}`);
       return response.data;
     },
     onSuccess: () => {
@@ -42,83 +58,106 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
   });
 
   return (
-    <View style={[styles.cardContainer, {width: (width - 48 - 8) / 2}]}>
-      <View style={styles.cardTop}></View>
-      <View style={styles.avatarContainer}>
-        <CharacterAvatar
-          size={80}
-          level={user?.level || 1}
-          avatar={
-            user?.character || require('../assets/character/pico_base.png')
-          }
-        />
-      </View>
-      <View style={styles.cardMain}>
-        <View>
-          <Text style={{fontSize: 16, textAlign: 'center'}}>
-            {user?.nickname || 'UserNickname'}
-          </Text>
+    <TouchableOpacity
+      onPress={() => {
+        setSelectUser(user?.id);
+        setProfileVisible(true);
+      }}>
+      <View style={[styles.cardContainer, {width: (width - 48 - 8) / 2}]}>
+        <View style={styles.cardTop}></View>
+        <View style={styles.avatarContainer}>
+          <CharacterAvatar
+            size={80}
+            level={user?.level || 1}
+            avatar={
+              user?.character || require('../assets/character/pico_base.png')
+            }
+          />
         </View>
-        <View>
-          <Text style={{fontSize: 12}}>{user?.userType || 'UserType'}</Text>
-        </View>
-        {from == 'peers' ? (
-          <Pressable style={{flexDirection: 'row', alignItems: 'center'}}>
-            <Icon name="add" size={24} color="#806a5b" />
-            <Text style={{color: '#806a5b', fontSize: 16, fontWeight: 'bold'}}>
-              피어링
+        <View style={styles.cardMain}>
+          <View>
+            <Text
+              style={{
+                fontSize: 12,
+                textAlign: 'center',
+                fontWeight: 'bold',
+                marginBottom: 12,
+              }}>
+              Lv. {user?.level}
             </Text>
-          </Pressable>
-        ) : (
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-around',
-              width: '100%',
-            }}>
-            <Pressable
-              style={{flexDirection: 'row', alignItems: 'center'}}
-              onPress={() =>
-                Alert.alert('거절하시겠습니까?', '거절하시겠습니까?', [
-                  {text: '취소', style: 'cancel'},
-                  {
-                    text: '거절',
-                    onPress: () => {
-                      rejectPeer();
-                    },
-                  },
-                ])
-              }>
-              <Icon name="close" size={24} color="#EF4444" />
-              <Text
-                style={{color: '#EF4444', fontSize: 12, fontWeight: 'bold'}}>
-                거절하기
-              </Text>
-            </Pressable>
-            <Pressable
-              style={{flexDirection: 'row', alignItems: 'center'}}
-              onPress={() =>
-                Alert.alert('수락하시겠습니까?', '수락하시겠습니까?', [
-                  {text: '취소', style: 'cancel'},
-                  {
-                    text: '수락',
-                    onPress: () => {
-                      acceptPeer();
-                    },
-                  },
-                ])
-              }>
-              <Icon name="check" size={24} color="#3B82F6" />
-              <Text
-                style={{color: '#3B82F6', fontSize: 12, fontWeight: 'bold'}}>
-                수락하기
-              </Text>
-            </Pressable>
+            <Text style={{fontSize: 16, textAlign: 'center'}}>
+              {user?.nickname || 'UserNickname'}
+            </Text>
           </View>
-        )}
+          <View>
+            <Text style={{fontSize: 12, textAlign: 'center'}}>
+              {user?.userType || 'UserType'}
+            </Text>
+          </View>
+          {from == 'peers' ? (
+            <Pressable style={{flexDirection: 'row', alignItems: 'center'}}>
+              <Icon name="add" size={24} color="#806a5b" />
+              <Text
+                style={{color: '#806a5b', fontSize: 16, fontWeight: 'bold'}}>
+                피어링
+              </Text>
+            </Pressable>
+          ) : (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-around',
+                width: '100%',
+              }}>
+              <Pressable
+                style={{flexDirection: 'row', alignItems: 'center'}}
+                onPress={() =>
+                  Alert.alert('거절하시겠습니까?', '거절하시겠습니까?', [
+                    {text: '취소', style: 'cancel'},
+                    {
+                      text: '거절',
+                      onPress: () => {
+                        rejectPeer();
+                      },
+                    },
+                  ])
+                }>
+                <Icon name="close" size={24} color="#EF4444" />
+                <Text
+                  style={{color: '#EF4444', fontSize: 12, fontWeight: 'bold'}}>
+                  거절하기
+                </Text>
+              </Pressable>
+              <Pressable
+                style={{flexDirection: 'row', alignItems: 'center'}}
+                onPress={() =>
+                  Alert.alert('수락하시겠습니까?', '수락하시겠습니까?', [
+                    {text: '취소', style: 'cancel'},
+                    {
+                      text: '수락',
+                      onPress: () => {
+                        acceptPeer();
+                      },
+                    },
+                  ])
+                }>
+                <Icon name="check" size={24} color="#3B82F6" />
+                <Text
+                  style={{color: '#3B82F6', fontSize: 12, fontWeight: 'bold'}}>
+                  수락하기
+                </Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
       </View>
-    </View>
+      <ProfileBottomSheet
+        visible={isProfileVisible}
+        onClose={() => setProfileVisible(false)}
+        userId={selecteUser}
+      />
+    </TouchableOpacity>
   );
 }
 

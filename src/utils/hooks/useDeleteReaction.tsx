@@ -21,9 +21,9 @@ export const useDeleteReaction = (
   return useMutation({
     // 이 뮤테이션은 취소할 '리액션의 ID'를 인자로 받을 수 있습니다.
     // API 설계에 따라 (reactionId: number | string) 등이 될 수 있습니다.
-    mutationFn: (reactionId: number | string) => {
+    mutationFn: (reactionType: string) => {
       // API 엔드포인트는 리액션 자체를 가리키는 것이 일반적입니다.
-      const url = `/${targetType}/reaction/${targetId}/${reactionId}`;
+      const url = `/${targetType}/${targetId}/reaction/${reactionType}`;
       return instance.delete(url);
     },
 
@@ -62,6 +62,8 @@ export const useDeleteReaction = (
     // 6. 성공/실패 여부와 관계없이, 마지막에 서버와 상태 동기화
     onSettled: () => {
       queryClient.invalidateQueries({queryKey});
+      queryClient.invalidateQueries({queryKey: ['reactions', targetId]});
+      queryClient.invalidateQueries({queryKey: ['recordReactions', targetId]});
     },
   });
 };

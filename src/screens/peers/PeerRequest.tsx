@@ -23,7 +23,7 @@ import BackArrow from '../../components/BackArrow';
 import type {RequestedPeers} from '../../types/peers.types.d.ts';
 import {API_URL} from '@env';
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 export default function PeerRequest() {
   const {
@@ -50,6 +50,11 @@ export default function PeerRequest() {
     enabled: API_URL !== '',
   });
 
+  const requestedPeers =
+    requestedPeersData?.pages.flatMap(page => page.content) || [];
+
+  console.log('requestedPeers', requestedPeers);
+
   const loadMorePeers = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
@@ -74,18 +79,7 @@ export default function PeerRequest() {
       </View>
       <View style={styles.main}>
         <FlatList
-          data={
-            requestedPeersData?.pages.flatMap(page => page.content) || [
-              {
-                id: 0,
-                nickname: 'UserNickname',
-                userType: 'UserType',
-                character: 'UserCharacter',
-                level: 1,
-                avatar: 'UserAvatar',
-              },
-            ]
-          }
+          data={requestedPeers}
           renderItem={({item}: {item: any}) => (
             <UserCard user={item} from="requestedPeers" />
           )}
@@ -97,7 +91,7 @@ export default function PeerRequest() {
             marginBottom: 16,
           }}
           onEndReached={loadMorePeers}
-          onEndReachedThreshold={0.5}
+          onEndReachedThreshold={0.1}
           ListFooterComponent={
             !hasNextPage ? <View style={{height: 80}}></View> : null
           }

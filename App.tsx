@@ -25,102 +25,84 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const setAccessToken = tokenStore(state => state.actions.setAccessToken);
   const accessToken = tokenStore(state => state.accessToken);
 
-  if (API_URL == '') {
-    const accessToken = '';
-    useEffect(() => {
-      configureGoogleSignIn();
-    }, []);
-    return (
-      <QueryClientProvider client={queryClient}>
-        <MenuProvider>
-          <NavigationContainer>
-            <SafeAreaProvider>
-              <GestureHandlerRootView>
-                {accessToken !== '' ? <BottomNav /> : <OnBoardingNav />}
-              </GestureHandlerRootView>
-            </SafeAreaProvider>
-          </NavigationContainer>
-        </MenuProvider>
-      </QueryClientProvider>
-    );
-  } else {
-    useEffect(() => {
-      configureGoogleSignIn();
-      const checkAuth = async () => {
-        try {
-          const refreshToken = await AsyncStorage.getItem('refreshToken');
-          console.log('refreshToken', refreshToken);
+  useEffect(() => {
+    configureGoogleSignIn();
 
-          if (!refreshToken) {
-            setIsAuthenticated(false);
-            return;
-          }
+    const checkAuth = async () => {
+      if (API_URL === '') {
+        // API_URL이 없는 개발 환경에서는 인증 과정을 생략합니다.
+        setIsLoading(false);
+        return;
+      }
 
-          const decoded = decodeJwt(refreshToken);
-          const currentTime = Date.now() / 1000;
-
-          // If refresh token is expired
-          if (decoded?.exp && decoded.exp < currentTime) {
-            await AsyncStorage.removeItem('refreshToken');
-            setAccessToken(null);
-            setIsAuthenticated(false);
-            return;
-          }
-
-          // If we have a valid refresh token but no access token
-          if (!accessToken) {
-            try {
-              const response = await axios.post(`${API_URL}/user/refresh`, {
-                refreshToken,
-              });
-              const {
-                accessToken: newAccessToken,
-                refreshToken: newRefreshToken,
-              } = response.data;
-              setAccessToken(newAccessToken);
-              await AsyncStorage.setItem('refreshToken', newRefreshToken);
-              setIsAuthenticated(true);
-            } catch (error) {
-              console.error('Token refresh failed:', error);
-              //await AsyncStorage.removeItem('refreshToken');
-              setAccessToken(null);
-              setIsAuthenticated(false);
-            }
-          } else {
-            setIsAuthenticated(true);
-          }
-        } catch (error) {
-          console.error('Auth check failed:', error);
-          setIsAuthenticated(false);
-        } finally {
-          setIsLoading(false);
-          SplashScreen.hide();
+      try {
+        const refreshToken = await AsyncStorage.getItem('refreshToken');
+        if (!refreshToken) {
+          setAccessToken(null);
+          return;
         }
-      };
 
-      checkAuth();
-    }, [accessToken, setAccessToken]);
-    if (isLoading) {
-      SplashScreen.show();
-    }
-    return (
-      <QueryClientProvider client={queryClient}>
-        <MenuProvider>
-          <NavigationContainer>
-            <SafeAreaProvider>
-              <GestureHandlerRootView>
-                {accessToken !== null ? <BottomNav /> : <OnBoardingNav />}
-              </GestureHandlerRootView>
-            </SafeAreaProvider>
-          </NavigationContainer>
-        </MenuProvider>
-      </QueryClientProvider>
-    );
-  }
+        const decoded = decodeJwt(refreshToken);
+        const currentTime = Date.now() / 1000;
+
+        if (decoded?.exp && decoded.exp < currentTime) {
+          await AsyncStorage.removeItem('refreshToken');
+          setAccessToken(null);
+          return;
+        }
+
+        try {
+          const response = await axios.post(`${API_URL}/user/refresh`, {
+            refreshToken,
+          });
+          const {accessToken: newAccessToken, refreshToken: newRefreshToken} =
+            response.data;
+          setAccessToken(newAccessToken);
+          await AsyncStorage.setItem('refreshToken', newRefreshToken);
+        } catch (error) {
+          console.error('Token refresh failed:', error);
+          await AsyncStorage.removeItem('refreshToken');
+          setAccessToken(null);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        setAccessToken(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [setAccessToken]);
+
+  // useEffect(() => {
+  //   if (!isLoading) {
+  //     SplashScreen.hide();
+  //   } else {
+  //     SplashScreen.show();
+  //   }
+  // }, [isLoading]);
+
+  // if (isLoading) {
+  //   return null; // 로딩 중에는 스플래시 스크린만 표시
+  // }
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <MenuProvider>
+        <NavigationContainer>
+          <SafeAreaProvider>
+            <GestureHandlerRootView style={{flex: 1}}>
+              {accessToken ? <BottomNav /> : <OnBoardingNav />}
+            </GestureHandlerRootView>
+          </SafeAreaProvider>
+        </NavigationContainer>
+      </MenuProvider>
+    </QueryClientProvider>
+  );
 };
 
 export default App;

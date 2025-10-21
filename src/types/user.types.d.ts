@@ -1,7 +1,7 @@
 import {ImageSourcePropType} from 'react-native';
 
 export interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
   nickname: string;
@@ -15,7 +15,7 @@ export interface User {
 }
 
 export interface RequestUser {
-  requestser_id: string;
+  requestser_id: number;
   requester_nickname: string;
   requester_userType: string;
   requester_level: number;
@@ -23,13 +23,13 @@ export interface RequestUser {
 }
 
 export interface Avatar {
-  id: string;
+  id: number;
   name: string;
   image: string;
 }
 
 export interface Badge {
-  id: string;
+  id: number;
   name: string;
   image: string;
 }

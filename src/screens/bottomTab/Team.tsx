@@ -53,7 +53,7 @@ const TeamScreen = () => {
   const mockTeams = useTeamStore(state => state.teams);
 
   const {mutate} = useMutation({
-    mutationFn: async (teamId: string) => {
+    mutationFn: async (teamId: number) => {
       if (API_URL === '') {
         useTeamStore.getState().deleteTeam(teamId);
         return;
@@ -111,16 +111,45 @@ const TeamScreen = () => {
     enabled: API_URL !== '' && debouncedSearchQuery !== '',
   });
 
+  const {
+    data: recommendedTeam,
+    isLoading: recommendedTeamLoading,
+    hasNextPage: recommendedHasNextPage,
+    fetchNextPage: recommendedFetchNextPage,
+    isFetchingNextPage: recommendedIsFetchingNextPage,
+    refetch: recommendedTeamRefetch,
+  } = useInfiniteQuery({
+    queryKey: ['recommendedTeam'],
+    queryFn: async ({pageParam = 0}) => {
+      const response = await instance.get(`/team/recommended`);
+      queryClient.invalidateQueries({
+        queryKey: ['recommendedTeam'],
+      });
+      return response.data;
+    },
+    getNextPageParam: lastPage => {
+      if (lastPage.number < lastPage.totalPages) {
+        return lastPage.number + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 0,
+    enabled: API_URL !== '',
+  });
+
   let teams =
     debouncedSearchQuery !== ''
       ? searchData?.pages.flatMap(page => page.content) || []
       : data?.teams || [];
 
+  let recommendedTeams =
+    recommendedTeam?.pages.flatMap(page => page.content) || [];
+
   if (isMockData) {
     teams = mockTeams;
   }
 
-  const handleDeleteTeam = (teamId: string) => {
+  const handleDeleteTeam = (teamId: number) => {
     Alert.alert('팀 삭제!', '팀을 삭제하시겠습니까?', [
       {text: '취소', style: 'cancel'},
       {
@@ -137,7 +166,7 @@ const TeamScreen = () => {
 
   // Handle team press to navigate to TeamFeed
   const handleTeamPress = (
-    teamId: string,
+    teamId: number,
     teamName: string,
     teamQuest: string,
   ) => {
@@ -150,11 +179,6 @@ const TeamScreen = () => {
   };
 
   const renderTeamItem: ListRenderItem<Team> = ({item}) => {
-    console.log(
-      'item',
-      item.teamQuest?.records[item.teamQuest.records.length - 1],
-    );
-    console.log('item length', item.teamQuest?.records.length);
     // Format member count and role
     const memberCount = item.members.length;
     const isLeader = item.leaderId === '1';
@@ -361,7 +385,7 @@ const TeamScreen = () => {
         <FlatList
           data={teams}
           renderItem={renderTeamItem}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.teamList}
           onRefresh={onRefresh}
           refreshing={isRefreshing}
@@ -421,13 +445,13 @@ const TeamScreen = () => {
             </View>
           }
           ListFooterComponent={
-            teams && teams?.length > 0 ? (
+            recommendedTeams && recommendedTeams?.length > 0 ? (
               <View style={styles.otherTeamsSection}>
                 <Text style={styles.sectionTitle}>추천 팀</Text>
                 <FlatList
-                  data={teams}
+                  data={recommendedTeams}
                   renderItem={renderRecommendTeamItem}
-                  keyExtractor={item => item.id}
+                  keyExtractor={item => item.id.toString()}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.otherTeamsList}

@@ -46,8 +46,39 @@ import {
 } from 'react-native-popup-menu';
 import {TeamNavParamList} from '@/types/navigation';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import ReactionButton from '../../components/ReactionButton';
+import type {Quest, ReactionType} from '../../types/quest.types';
+import {useQuery} from '@tanstack/react-query';
+import {useMemo} from 'react';
 
 // #region Custom Hooks (Moved outside component)
+
+const useReactionData = (recordId: number | string) => {
+  // 1. useQuery로 데이터를 불러옵니다.
+  const {data: response, isLoading} = useQuery({
+    queryKey: ['recordReactions', recordId],
+    queryFn: async () => {
+      const {data} = await instance.get(`/record/${recordId}/reactions`);
+      return data;
+    },
+  });
+
+  // 2. useMemo를 사용해 응답 데이터를 UI에 필요한 형태로 가공합니다.
+  //    (데이터가 변경될 때만 재계산되어 성능에 유리합니다.)
+  const processedData = useMemo(() => {
+    // 데이터가 없으면 기본값 반환
+    if (!response) {
+      return {};
+    }
+
+    return {
+      counts: response,
+    };
+  }, [response]);
+
+  // 3. 가공된 데이터와 로딩 상태를 반환합니다.
+  return {...processedData, isLoading};
+};
 
 const useMockData = ({
   teamId,
@@ -91,7 +122,7 @@ const useMockData = ({
   };
 
   const handleAddComment = (
-    postId: string,
+    postId: number,
     comment: Omit<QuestVerification, 'id' | 'createdAt' | 'updatedAt' | 'user'>,
   ) => {
     if (!commentText.trim()) return;
@@ -99,7 +130,7 @@ const useMockData = ({
     setCommentText('');
   };
 
-  const handleUpdatePost = (postId: string, updates: Partial<TeamPost>) => {
+  const handleUpdatePost = (postId: number, updates: Partial<TeamPost>) => {
     const currentPost = team?.teamQuest?.records.find(
       post => post.id === postId,
     );
@@ -113,7 +144,7 @@ const useMockData = ({
     updateTeamPost(teamId, postId, updates);
   };
 
-  const handleUpdateComment = (commentId: string | null, comment: string) => {
+  const handleUpdateComment = (commentId: number | null, comment: string) => {
     if (!commentId) return;
     const currentComment = team?.teamQuest?.records.find(
       post => post.id === commentId,
@@ -122,11 +153,11 @@ const useMockData = ({
     updateComment(commentId, {comment});
   };
 
-  const handleDeletePost = (postId: string) => {
+  const handleDeletePost = (postId: number) => {
     deleteTeamPost(teamId, postId);
   };
 
-  const handleDeleteComment = (commentId: string | null) => {
+  const handleDeleteComment = (commentId: number | null) => {
     if (!commentId) return;
     deleteComment(commentId);
   };
@@ -236,7 +267,7 @@ const useApiData = ({
       postId,
       updates,
     }: {
-      postId: string;
+      postId: number;
       updates: Partial<TeamPost>;
     }) => {
       const formData = new FormData();
@@ -283,13 +314,13 @@ const useApiData = ({
   });
 
   const deletePostMutation = useMutation({
-    mutationFn: (postId: string) =>
+    mutationFn: (postId: number) =>
       instance.delete(`${API_URL}/record/team/${postId}`),
     ...mutationOptions,
   });
 
   const addCommentMutation = useMutation({
-    mutationFn: ({recordId, comment}: {recordId: string; comment: any}) =>
+    mutationFn: ({recordId, comment}: {recordId: number; comment: any}) =>
       instance.post(`/record/team/verifications/${recordId}`, comment),
     ...mutationOptions,
     onSuccess: () => {
@@ -299,7 +330,7 @@ const useApiData = ({
   });
 
   const updateCommentMutation = useMutation({
-    mutationFn: ({commentId, comment}: {commentId: string; comment: string}) =>
+    mutationFn: ({commentId, comment}: {commentId: number; comment: string}) =>
       instance.put(`/record/team/verification/${commentId}`, {
         comment: comment,
       }),
@@ -311,7 +342,7 @@ const useApiData = ({
   });
 
   const deleteCommentMutation = useMutation({
-    mutationFn: ({commentId}: {commentId: string}) =>
+    mutationFn: ({commentId}: {commentId: number}) =>
       instance.delete(`${API_URL}/record/team/verification/${commentId}`),
     ...mutationOptions,
   });
@@ -333,7 +364,7 @@ const useApiData = ({
     });
   };
 
-  const handleAddComment = (recordId: string, comment: any) => {
+  const handleAddComment = (recordId: number, comment: any) => {
     if (!commentText.trim()) return;
     addCommentMutation.mutate({recordId, comment});
   };
@@ -349,12 +380,12 @@ const useApiData = ({
     isLoading,
     handleAddRecord,
     handleAddComment,
-    handleUpdatePost: (postId: string, updates: Partial<TeamPost>) =>
+    handleUpdatePost: (postId: number, updates: Partial<TeamPost>) =>
       updatePostMutation.mutate({postId, updates}),
-    handleUpdateComment: (commentId: string, comment: string) =>
+    handleUpdateComment: (commentId: number, comment: string) =>
       updateCommentMutation.mutate({commentId, comment}),
     handleDeletePost: deletePostMutation.mutate,
-    handleDeleteComment: (commentId: string) =>
+    handleDeleteComment: (commentId: number) =>
       deleteCommentMutation.mutate({commentId}),
     loadMore,
   };
@@ -371,9 +402,9 @@ const TeamFeedScreen = () => {
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
   const [newPostText, setNewPostText] = useState('');
-  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [commentText, setCommentText] = useState('');
-  const [commentId, setCommentId] = useState<string | null>(null);
+  const [commentId, setCommentId] = useState<number | null>(null);
   const [isCommenting, setIsCommenting] = useState(false);
   const [images, setImages] = useState<Asset[]>([]);
   const [existingImages, setExistingImages] = useState<Asset[]>([]);
@@ -479,7 +510,7 @@ const TeamFeedScreen = () => {
     )}:${String(date.getMinutes()).padStart(2, '0')}`;
   };
 
-  const toggleComments = (postId: string) => {
+  const toggleComments = (postId: number) => {
     if (isCommenting && selectedPostId === postId) {
       setIsCommenting(false);
       setSelectedPostId(null);
@@ -522,182 +553,219 @@ const TeamFeedScreen = () => {
     );
   }
 
-  const renderPost = ({item: post}: {item: TeamPost}) => (
-    <View style={styles.postCard}>
-      <View style={styles.postHeader}>
-        <View style={styles.postUserInfo}>
-          <View style={styles.avatar}>
-            <CharacterAvatar size={40} avatar={post.user.character} />
-          </View>
-          <View>
-            <Text style={styles.userName}>{post.user.nickname}</Text>
-            <Text style={styles.postTime}>{formatDate(post.createdAt)}</Text>
-          </View>
-        </View>
-        <Menu style={styles.menuContainer}>
-          <MenuTrigger>
-            <View>
-              <Ionicons name="ellipsis-horizontal" size={20} color="#888" />
+  const renderPost = ({item: post}: {item: TeamPost}) => {
+    const reactions = useReactionData(post.id);
+
+    return (
+      <View style={styles.postCard}>
+        <View style={styles.postHeader}>
+          <View style={styles.postUserInfo}>
+            <View style={styles.avatar}>
+              <CharacterAvatar size={40} avatar={post.user.character} />
             </View>
-          </MenuTrigger>
-          <MenuOptions optionsContainerStyle={styles.menuOptions}>
-            <MenuOption
-              onSelect={() => {
-                setNewPostText(post.text);
-                const existings = (post.images || []).map(image => ({
-                  uri: image,
-                }));
-                setExistingImages(existings);
-                setImages(existings);
-                setSelectedPostId(post.id);
-                setIsUpdate(true);
-              }}
-              style={styles.menuOption}>
-              <Text>수정</Text>
-            </MenuOption>
-            <MenuOption
-              onSelect={() => {
-                Alert.alert('삭제', '정말로 삭제하시겠습니까?', [
-                  {
-                    text: '취소',
-                    onPress: () => {},
-                  },
-                  {
-                    text: '삭제',
-                    onPress: () => {
-                      handleDeletePost(post.id);
-                      setSelectedPostId(null);
-                    },
-                  },
-                ]);
-              }}
-              style={[styles.menuOption, styles.deleteOption]}>
-              <Text style={styles.deleteText}>삭제</Text>
-            </MenuOption>
-            <MenuOption
-              onSelect={() => Alert.alert('공유')}
-              style={styles.menuOption}>
-              <Text>공유</Text>
-            </MenuOption>
-          </MenuOptions>
-        </Menu>
-      </View>
-
-      <Text style={styles.postContent}>{post.text}</Text>
-
-      {post.images && post.images.length > 0 && (
-        <ImageCarousel images={post.images.map(img => img.uri || img)} />
-      )}
-
-      <View style={styles.postActions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => toggleComments(post.id)}>
-          <Ionicons
-            name={
-              isCommenting && selectedPostId === post.id
-                ? 'chatbubble'
-                : 'chatbubble-outline'
-            }
-            size={20}
-            color={
-              isCommenting && selectedPostId === post.id ? '#806a5b' : '#666'
-            }
-          />
-          <Text style={styles.actionText}>{post.verifications.length}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {isCommenting && selectedPostId === post.id && (
-        <View style={styles.commentsSection}>
-          {post.verifications.length > 0 ? (
-            post.verifications.map((verification: any) => (
-              <View key={verification.id} style={styles.comment}>
-                <View style={styles.commentAvatar}>
-                  <CharacterAvatar size={40} avatar={verification.character} />
-                </View>
-                <View style={styles.commentContent}>
-                  <Text style={styles.commentUserName}>
-                    {verification.username}
-                  </Text>
-                  <Text style={styles.commentText}>{verification.text}</Text>
-                </View>
-                <Text style={styles.commentTime}>
-                  {formatDate(verification.createdAt)}
-                </Text>
-                <View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setCommentText(verification.text);
-                      setIsCommentUpdate(true);
-                      setCommentId(verification.id);
-                    }}>
-                    <Text>수정</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      Alert.alert('삭제', '정말로 삭제하시겠습니까?', [
-                        {
-                          text: '취소',
-                          onPress: () => {},
-                        },
-                        {
-                          text: '삭제',
-                          onPress: () => {
-                            handleDeleteComment(verification.id);
-                          },
-                        },
-                      ]);
-                    }}>
-                    <Text>삭제</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.noCommentsText}>아직 댓글이 없습니다.</Text>
-          )}
-
-          <View style={styles.commentInputContainer}>
-            <TextInput
-              style={styles.commentInput}
-              placeholder="댓글을 입력하세요..."
-              value={commentText}
-              onChangeText={setCommentText}
-              // onSubmitEditing={() =>
-              //   handleAddComment(post.id, {
-              //     comment: commentText,
-              //   })
-              // }
-            />
-            <TouchableOpacity
-              style={
-                commentText.trim()
-                  ? styles.commentButton
-                  : styles.commentButtonDisabled
-              }
-              onPress={() => {
-                if (isCommentUpdate) {
-                  if (commentId) {
-                    handleUpdateComment(commentId, commentText);
-                    setIsCommentUpdate(false);
-                    setCommentId(null);
-                  }
-                } else {
-                  handleAddComment(selectedPostId, {
-                    comment: commentText,
-                  });
-                  setCommentText('');
-                }
-              }}
-              disabled={!commentText.trim()}>
-              <Ionicons name="send" size={20} color="white" />
-            </TouchableOpacity>
+            <View>
+              <Text style={styles.userName}>{post.user.nickname}</Text>
+              <Text style={styles.postTime}>{formatDate(post.createdAt)}</Text>
+            </View>
           </View>
+          <Menu style={styles.menuContainer}>
+            <MenuTrigger>
+              <View>
+                <Ionicons name="ellipsis-horizontal" size={20} color="#888" />
+              </View>
+            </MenuTrigger>
+            <MenuOptions optionsContainerStyle={styles.menuOptions}>
+              <MenuOption
+                onSelect={() => {
+                  setNewPostText(post.text);
+                  const existings = (post.images || []).map(image => ({
+                    uri: image,
+                  }));
+                  setExistingImages(existings);
+                  setImages(existings);
+                  setSelectedPostId(post.id);
+                  setIsUpdate(true);
+                }}
+                style={styles.menuOption}>
+                <Text>수정</Text>
+              </MenuOption>
+              <MenuOption
+                onSelect={() => {
+                  Alert.alert('삭제', '정말로 삭제하시겠습니까?', [
+                    {
+                      text: '취소',
+                      onPress: () => {},
+                    },
+                    {
+                      text: '삭제',
+                      onPress: () => {
+                        handleDeletePost(post.id);
+                        setSelectedPostId(null);
+                      },
+                    },
+                  ]);
+                }}
+                style={[styles.menuOption, styles.deleteOption]}>
+                <Text style={styles.deleteText}>삭제</Text>
+              </MenuOption>
+              <MenuOption
+                onSelect={() => Alert.alert('공유')}
+                style={styles.menuOption}>
+                <Text>공유</Text>
+              </MenuOption>
+            </MenuOptions>
+          </Menu>
         </View>
-      )}
-    </View>
-  );
+
+        <Text style={styles.postContent}>{post.text}</Text>
+
+        {post.images && post.images.length > 0 && (
+          <ImageCarousel images={post.images.map(img => img.uri || img)} />
+        )}
+
+        <View style={styles.postActions}>
+          <View style={styles.reactionsRow}>
+            <ReactionButton
+              targetType="record"
+              targetId={post.id}
+              reactionType="support"
+              //myReaction={supportData.myReaction}
+              count={reactions.counts?.support}
+            />
+            <ReactionButton
+              targetType="record"
+              targetId={post.id}
+              reactionType="amazing"
+              //myReaction={amazingData.myReaction}
+              count={reactions.counts?.amazing}
+            />
+            <ReactionButton
+              targetType="record"
+              targetId={post.id}
+              reactionType="together"
+              //myReaction={togetherData.myReaction}
+              count={reactions.counts?.together}
+            />
+            <ReactionButton
+              targetType="record"
+              targetId={post.id}
+              reactionType="perfect"
+              //myReaction={perfectData.myReaction}
+              count={reactions.counts?.perfect}
+            />
+          </View>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => toggleComments(post.id)}>
+            <Ionicons
+              name={
+                isCommenting && selectedPostId === post.id
+                  ? 'chatbubble'
+                  : 'chatbubble-outline'
+              }
+              size={20}
+              color={
+                isCommenting && selectedPostId === post.id ? '#806a5b' : '#666'
+              }
+            />
+            <Text style={styles.actionText}>{post.verifications.length}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {isCommenting && selectedPostId === post.id && (
+          <View style={styles.commentsSection}>
+            {post.verifications.length > 0 ? (
+              post.verifications.map((verification: any) => (
+                <View key={verification.id} style={styles.comment}>
+                  <View style={styles.commentAvatar}>
+                    <CharacterAvatar
+                      size={40}
+                      avatar={verification.character}
+                    />
+                  </View>
+                  <View style={styles.commentContent}>
+                    <Text style={styles.commentUserName}>
+                      {verification.username}
+                    </Text>
+                    <Text style={styles.commentText}>{verification.text}</Text>
+                  </View>
+                  <Text style={styles.commentTime}>
+                    {formatDate(verification.createdAt)}
+                  </Text>
+                  <View>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setCommentText(verification.text);
+                        setIsCommentUpdate(true);
+                        setCommentId(verification.id);
+                      }}>
+                      <Text>수정</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        Alert.alert('삭제', '정말로 삭제하시겠습니까?', [
+                          {
+                            text: '취소',
+                            onPress: () => {},
+                          },
+                          {
+                            text: '삭제',
+                            onPress: () => {
+                              handleDeleteComment(verification.id);
+                            },
+                          },
+                        ]);
+                      }}>
+                      <Text>삭제</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noCommentsText}>아직 댓글이 없습니다.</Text>
+            )}
+
+            <View style={styles.commentInputContainer}>
+              <TextInput
+                style={styles.commentInput}
+                placeholder="댓글을 입력하세요..."
+                value={commentText}
+                onChangeText={setCommentText}
+                // onSubmitEditing={() =>
+                //   handleAddComment(post.id, {
+                //     comment: commentText,
+                //   })
+                // }
+              />
+              <TouchableOpacity
+                style={
+                  commentText.trim()
+                    ? styles.commentButton
+                    : styles.commentButtonDisabled
+                }
+                onPress={() => {
+                  if (isCommentUpdate) {
+                    if (commentId) {
+                      handleUpdateComment(commentId, commentText);
+                      setIsCommentUpdate(false);
+                      setCommentId(null);
+                    }
+                  } else {
+                    handleAddComment(selectedPostId, {
+                      comment: commentText,
+                    });
+                    setCommentText('');
+                  }
+                }}
+                disabled={!commentText.trim()}>
+                <Ionicons name="send" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView
@@ -711,7 +779,7 @@ const TeamFeedScreen = () => {
           <FlatList
             data={teamPosts}
             renderItem={renderPost}
-            keyExtractor={item => item.id}
+            keyExtractor={item => String(item.id)}
             onEndReached={loadMore}
             onEndReachedThreshold={0.5}
             contentContainerStyle={styles.feedContainer}
@@ -933,6 +1001,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#f0f0f0',
     paddingTop: 10,
     marginTop: 10,
+    justifyContent: 'space-between',
   },
   actionButton: {
     flexDirection: 'row',
@@ -1155,6 +1224,11 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     color: 'red',
+  },
+  reactionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    flex: 1,
   },
 });
 

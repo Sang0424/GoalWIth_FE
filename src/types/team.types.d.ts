@@ -21,7 +21,7 @@ interface TeamQuest
 }
 
 export interface Team {
-  id: string;
+  id: number;
   name: string;
   description?: string;
   members: User[];
@@ -32,7 +32,7 @@ export interface Team {
 }
 
 export interface TeamPost {
-  id: string;
+  id: number;
   user: User;
   text: string;
   images?: Asset[];
@@ -42,7 +42,7 @@ export interface TeamPost {
 }
 
 export interface TeamComment {
-  id: string;
+  id: number;
   user: User;
   content: string;
   reactions: TeamReaction[];
@@ -68,7 +68,7 @@ type TeamCreationResponse = {
 };
 
 interface TeamPostResponse {
-  id: string;
+  id: number;
   text: string;
   images: string[];
   createdAt: string;
@@ -108,15 +108,15 @@ interface ApiDataReturnType {
   // Add other methods that useApiData returns
   handleAddRecord: () => void;
   handleAddComment: (
-    postId: string,
+    postId: number,
     commentData: Omit<
       QuestVerification,
       'id' | 'createdAt' | 'updatedAt' | 'user'
     >,
   ) => void;
-  handleUpdatePost: (postId: string, updates: Partial<TeamPost>) => void;
-  handleUpdateComment: (commentId: string, comment: string) => void;
-  handleDeletePost: (postId: string) => void;
-  handleDeleteComment: (commentId: string) => void;
+  handleUpdatePost: (postId: number, updates: Partial<TeamPost>) => void;
+  handleUpdateComment: (commentId: number, comment: string) => void;
+  handleDeletePost: (postId: number) => void;
+  handleDeleteComment: (commentId: number) => void;
   loadMore: () => void;
 }
