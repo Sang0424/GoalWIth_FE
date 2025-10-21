@@ -22,6 +22,7 @@ import {useMutation} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
 import {tokenStore} from '../../store/tokenStore';
 import {userStore} from '../../store/userStore';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login() {
@@ -91,8 +92,33 @@ export default function Login() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <SafeAreaView style={styles.container}>
-        <View style={{flex: 1, justifyContent: 'center'}}>
-          <Logo />
+        <Pressable
+          style={styles.closeButton}
+          onPress={() => navigation.goBack()}>
+          <Icon name="close" size={32} color="#000" />
+        </Pressable>
+        <View
+          style={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 16,
+            justifyContent: 'flex-start',
+          }}>
+          <Logo
+            resizeMode="contain"
+            imageStyle={{width: 80, height: 80, marginRight: 24}}
+          />
+          <Text
+            style={{
+              fontSize: 40,
+              lineHeight: 40,
+              fontWeight: 'bold',
+              color: '#806A5B',
+              textAlign: 'center',
+            }}>
+            GoalWith
+          </Text>
         </View>
         <KeyboardAvoidingView
           style={{flex: 3, justifyContent: 'flex-start'}}
@@ -144,9 +170,6 @@ export default function Login() {
             </Text>
           </Pressable>
         </KeyboardAvoidingView>
-        <Pressable onPress={() => navigation.goBack()}>
-          <Text>뒤로</Text>
-        </Pressable>
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -154,9 +177,16 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FCFAF8',
     alignItems: 'center',
     justifyContent: 'flex-start',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 72,
+    right: 32,
+    padding: 16,
+    zIndex: 10,
   },
   input: {
     borderBottomColor: '#a1a1a1',
@@ -166,14 +196,14 @@ const styles = StyleSheet.create({
   },
   nextBtn: {
     borderRadius: 10,
-    backgroundColor: '#F2F0E6',
+    backgroundColor: '#D1C7BC',
     justifyContent: 'center',
     marginTop: 8,
     alignItems: 'center',
   },
   nextBtnDisabled: {
     borderRadius: 10,
-    backgroundColor: '#F2F0E6',
+    backgroundColor: '#D1C7BC',
     justifyContent: 'center',
     marginTop: 8,
     alignItems: 'center',

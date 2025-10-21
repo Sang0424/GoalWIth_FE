@@ -80,7 +80,7 @@ export default function Peers() {
   // });
 
   const {data: requestedPeersData} = useQuery({
-    queryKey: ['requestedPeers'],
+    queryKey: ['requestedPeersCount'],
     queryFn: async () => {
       const response = await instance.get<RequestedPeers>(
         `/peer/requested?page=0&size=${PAGE_SIZE}`,
@@ -216,6 +216,7 @@ export default function Peers() {
   }, [requestedPeersCount, navigation]);
 
   const renderItems = useCallback((item: any) => {
+    console.log('userCard', item);
     return (
       <View
         style={{marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>

@@ -1,20 +1,27 @@
-import { View, Text, StyleSheet, Image, ImageResizeMode } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {View, Text, StyleSheet, Image, ImageResizeMode} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 export default function BigLogo({
   resizeMode,
-  style,
+  imageStyle,
 }: {
   resizeMode?: ImageResizeMode;
-  style?: object;
+  imageStyle?: object;
 }) {
   return (
-    <Image
-      source={require('../assets/images/Logo.png')}
-      alt="Logo Image"
-      resizeMode={resizeMode}
-      style={style}
-    />
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+      }}>
+      <Image
+        source={require('../assets/images/Logo.png')}
+        alt="Logo Image"
+        resizeMode={resizeMode}
+        style={[imageStyle, {margin: 0, padding: 0}]}
+      />
+    </View>
   );
 }
 

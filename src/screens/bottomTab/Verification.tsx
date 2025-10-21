@@ -11,6 +11,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
+import {useMemo} from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import Logo from '../../components/Logo';
@@ -31,42 +32,75 @@ import {API_URL} from '@env';
 import {useDebounce} from '../../utils/hooks/useDebounce';
 import ReactionButton from '../../components/ReactionButton';
 
-const getReactionData = (
-  quest: Quest,
-  reactionType: ReactionType,
-  currentUserId?: string,
-) => {
-  const reactions = quest.reactions || [];
-  const count = reactions.filter(r => r.reactionType === reactionType).length;
-  const myReaction = reactions.find(
-    r => r.reactionType === reactionType && r.user.id === currentUserId,
-  );
-  return {
-    count,
-    myReaction: myReaction
-      ? {id: myReaction.id, type: myReaction.reactionType}
-      : null,
-  };
+// const getReactionData = (
+//   quest: Quest,
+//   reactionType: ReactionType,
+//   currentUserId?: number,
+// ) => {
+//   const {data: reactions} = useQuery({
+//     queryKey: ['reactions', quest.id],
+//     queryFn: () => instance.get(`/quest/${quest.id}/reactions`),
+//   });
+//   console.log('reactionsCount', reactions?.data);
+//   const count = reactions?.data.filter((r: any) => r.key === reactionType);
+//   const myReaction = reactions?.data.find(
+//     (r: any) => r.key === reactionType && r.user.id === currentUserId,
+//   );
+//   return {
+//     count,
+//     myReaction: myReaction
+//       ? {id: myReaction.id, type: myReaction.reactionType}
+//       : null,
+//   };
+// };
+const useReactionData = (questId: number | string) => {
+  // 1. useQuery로 데이터를 불러옵니다.
+  const {data: response, isLoading} = useQuery({
+    queryKey: ['reactions', questId],
+    queryFn: async () => {
+      const {data} = await instance.get(`/quest/${questId}/reactions`);
+      return data;
+    },
+  });
+
+  // 2. useMemo를 사용해 응답 데이터를 UI에 필요한 형태로 가공합니다.
+  //    (데이터가 변경될 때만 재계산되어 성능에 유리합니다.)
+  const processedData = useMemo(() => {
+    // 데이터가 없으면 기본값 반환
+    if (!response) {
+      return;
+    }
+
+    return {
+      counts: response,
+    };
+  }, [response]);
+
+  // 3. 가공된 데이터와 로딩 상태를 반환합니다.
+  return {...processedData, isLoading};
 };
 
-const VerificationFeedCard = ({item}: {item: {quest: Quest; user: User}}) => {
+const VerificationFeedCard = ({item}: {item: any}) => {
   const navigation =
     useNavigation<NativeStackNavigationProp<VerificationNavParamList>>();
+  const [isProfileVisible, setProfileVisible] = useState(false);
+  const [selecteUser, setSelectUser] = useState<number | undefined>(undefined);
 
-  const supportData = getReactionData(item.quest, 'support', item.user.id);
-  const amazingData = getReactionData(item.quest, 'amazing', item.user.id);
-  const togetherData = getReactionData(item.quest, 'together', item.user.id);
-  const perfectData = getReactionData(item.quest, 'perfect', item.user.id);
+  const reactions = useReactionData(item.id);
 
+  console.log('reactions', reactions);
   const handleGoQuest = () => {
-    navigation.navigate('QuestVerification', {quest: item.quest});
+    navigation.navigate('QuestVerification', {quest: item});
   };
   return (
     <TouchableOpacity
       style={styles.card}
       activeOpacity={0.88}
-      onPress={handleGoQuest}>
-      <View style={styles.cardHeader}>
+      onPress={() => {
+        setSelectUser(item.user.id);
+        setProfileVisible(true);
+      }}>
+      <TouchableOpacity style={styles.cardHeader}>
         <CharacterAvatar
           size={40}
           level={item.user.level}
@@ -79,15 +113,15 @@ const VerificationFeedCard = ({item}: {item: {quest: Quest; user: User}}) => {
           {/* <Text style={styles.badge}>{item.user.badge}</Text> */}
         </View>
         <Text style={styles.timestamp}>
-          {new Date(item.quest.startDate).toLocaleString('ko-KR')}
+          {new Date(item.startDate).toLocaleString('ko-KR')}
         </Text>
-      </View>
+      </TouchableOpacity>
       <View style={styles.questInfo}>
-        <Text style={styles.questTitle}>{item.quest.title}</Text>
+        <Text style={styles.questTitle}>{item.title}</Text>
       </View>
-      {item.quest.records && item.quest.records.length > 0 && (
+      {item.records && item.records.length > 0 && (
         <View style={styles.imageGrid}>
-          {item.quest.records.map((record, index) => (
+          {item.records.map((record: any, index: any) => (
             <View key={record.id} style={styles.gridItem}>
               <Image
                 source={{uri: record.images?.[0]}}
@@ -98,40 +132,40 @@ const VerificationFeedCard = ({item}: {item: {quest: Quest; user: User}}) => {
           ))}
         </View>
       )}
-      <Text style={styles.contentText}>{item.quest.description}</Text>
+      <Text style={styles.contentText}>{item.description}</Text>
       <View style={styles.reactionsRow}>
         <ReactionButton
           targetType="quest"
-          targetId={item.quest.id}
+          targetId={item.id}
+          myReaction={reactions.counts?.myReaction}
           reactionType="support"
-          myReaction={supportData.myReaction}
-          count={supportData.count}
+          count={reactions.counts?.support}
         />
         <ReactionButton
           targetType="quest"
-          targetId={item.quest.id}
+          targetId={item.id}
           reactionType="amazing"
-          myReaction={amazingData.myReaction}
-          count={amazingData.count}
+          myReaction={reactions.counts?.myReaction}
+          count={reactions.counts?.amazing}
         />
         <ReactionButton
           targetType="quest"
-          targetId={item.quest.id}
+          targetId={item.id}
           reactionType="together"
-          myReaction={togetherData.myReaction}
-          count={togetherData.count}
+          myReaction={reactions.counts?.myReaction}
+          count={reactions.counts?.together}
         />
         <ReactionButton
           targetType="quest"
-          targetId={item.quest.id}
+          targetId={item.id}
           reactionType="perfect"
-          myReaction={perfectData.myReaction}
-          count={perfectData.count}
+          myReaction={reactions.counts?.myReaction}
+          count={reactions.counts?.perfect}
         />
       </View>
       {/* 인증자 수 표시 */}
       <Text style={{color: '#4CAF50', fontWeight: 'bold', marginTop: 6}}>
-        현재 {item.quest.verificationCount}
+        현재 {item.verificationCount}
         명이 인증했습니다.
       </Text>
       <TouchableOpacity
@@ -159,9 +193,6 @@ const VerificationFeedScreen = () => {
   const [searchError, setSearchError] = useState<string | null>(null);
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
   const queryClient = useQueryClient();
-
-  console.log('verificaton searchquery', debouncedSearchQuery);
-
   const quests = useQuestStore(state => state.quests);
 
   const {
@@ -224,6 +255,35 @@ const VerificationFeedScreen = () => {
     enabled: API_URL != '' && debouncedSearchQuery !== '',
   });
 
+  const {
+    data: peersVerificationData,
+    isLoading: peersVerificationLoading,
+    isFetchingNextPage: peersVerificationIsFetchingNextPage,
+    fetchNextPage: peersVerificationFetchNextPage,
+    hasNextPage: peersVerificationHasNextPage,
+    refetch: peersVerificationRefetch,
+  } = useInfiniteQuery({
+    queryKey: ['PeersVerification'],
+    initialPageParam: 0,
+    queryFn: async ({pageParam = 0}) => {
+      try {
+        const response = await instance.get(
+          `/quest/verification/peers?page=${pageParam}&size=${PAGE_SIZE}`,
+        );
+        return response.data;
+      } catch (e: any) {
+        setError(e.response.data.message);
+        console.log('verification error', e.response.data.message);
+        return {items: [], nextPage: null};
+      }
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.hasNext ? allPages.length : undefined;
+    },
+    enabled: API_URL != '',
+    refetchOnWindowFocus: true,
+  });
+
   // const {data: peerId, isLoading: peerIdLoading} = useQuery({
   //   queryKey: ['peerId'],
   //   queryFn: async () => {
@@ -246,7 +306,23 @@ const VerificationFeedScreen = () => {
       : data?.pages.flatMap(page => page.content) || [];
   }, [quests, data, page]);
 
-  const hasMore = verificationQuests.length < (page + 1) * PAGE_SIZE;
+  const peersVerificationQuests = React.useMemo(() => {
+    if (API_URL === '') {
+      const filtered = quests.filter(
+        quest =>
+          quest.verificationRequired === true && quest.procedure === 'verify',
+      );
+      return filtered.slice(0, (page + 1) * PAGE_SIZE);
+    }
+    return debouncedSearchQuery !== ''
+      ? searchVerificationData?.pages.flatMap(page => page.content) || []
+      : peersVerificationData?.pages.flatMap(page => page.content) || [];
+  }, [quests, peersVerificationData, page]);
+
+  const hasMore =
+    activeTab === 'realtime'
+      ? verificationQuests.length < (page + 1) * PAGE_SIZE
+      : peersVerificationQuests.length < (page + 1) * PAGE_SIZE;
 
   const handleLoadMore = () => {
     if (API_URL == '') {
@@ -254,8 +330,18 @@ const VerificationFeedScreen = () => {
         setPage(page => page + 1);
       }
     }
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+    if (activeTab === 'realtime') {
+      if (hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    }
+    if (activeTab === 'peers') {
+      if (
+        peersVerificationHasNextPage &&
+        !peersVerificationIsFetchingNextPage
+      ) {
+        peersVerificationFetchNextPage();
+      }
     }
     if (
       searchVerificationHasNextPage &&
@@ -278,27 +364,37 @@ const VerificationFeedScreen = () => {
     setRefreshing(true);
     debouncedSearchQuery !== ''
       ? await searchVerificationRefetch()
-      : await refetch();
+      : activeTab === 'realtime'
+      ? await refetch()
+      : await peersVerificationRefetch();
     setRefreshing(false);
   };
 
   // 팔로잉 피드는 userId가 'user1'인 것만 노출 (예시)
   const filteredFeed =
-    activeTab === 'peers'
-      ? verificationQuests?.filter(item => item.id.includes('user1'))
-      : verificationQuests;
+    activeTab === 'peers' ? peersVerificationQuests : verificationQuests;
 
-  if (isLoading || searchVerificationLoading) {
+  if (isLoading || searchVerificationLoading || peersVerificationLoading) {
     return <ActivityIndicator style={{flex: 1, marginTop: 100}} size="large" />;
   }
 
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: '#ffffff'}}>
       <View style={{paddingHorizontal: 16}}>
-        <Logo
-          resizeMode="contain"
-          style={{width: 150, height: 45, marginBottom: 16}}
-        />
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <Logo
+            resizeMode="contain"
+            imageStyle={{
+              width: 56,
+              height: 56,
+              marginBottom: 8,
+              marginRight: 16,
+            }}
+          />
+          <Text style={{fontSize: 24, fontWeight: 'bold', color: '#806A5B'}}>
+            GoalWith
+          </Text>
+        </View>
         <View style={styles.searchContainer}>
           <Icon
             name="search"
@@ -347,25 +443,7 @@ const VerificationFeedScreen = () => {
         keyExtractor={item => item.id}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
-        renderItem={({item}) => (
-          <VerificationFeedCard
-            item={{
-              quest: item,
-              user: {
-                id: 'user1',
-                nickname: 'user1',
-                level: 1,
-                character: '../assets/character/pico_complete.png',
-                name: 'user1',
-                email: 'user1',
-                userType: 'user1',
-                actionPoints: 1,
-                exp: 1,
-                maxExp: 1,
-              },
-            }}
-          />
-        )}
+        renderItem={({item}) => <VerificationFeedCard item={item} />}
         ListFooterComponent={
           searchQuery !== '' ? (
             searchVerificationIsFetchingNextPage ? (

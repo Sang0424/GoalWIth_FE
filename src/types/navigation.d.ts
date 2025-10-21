@@ -5,11 +5,12 @@ export type OnBoardingStackParamList = {
   OnBoarding1: any;
   OnBoarding2: undefined;
   OnBoarding3: {
-    registerForm: {
+    registerForm?: {
       name: string;
       email: string;
-      password: string;
+      password?: string; // 소셜 로그인의 경우 비밀번호가 없음
     };
+    isSocial?: boolean; // 소셜 로그인 여부 플래그
   };
   Login: undefined;
   BottomNav: undefined;
@@ -73,7 +74,7 @@ export type PeerListProps = NativeStackNavigationProp<
 export type TeamNavParamList = {
   TeamScreen: undefined;
   TeamCreate: {teamToEdit?: Team};
-  TeamFeedScreen: {teamId: string; teamName: string; teamQuest: string};
+  TeamFeedScreen: {teamId: number; teamName: string; teamQuest: string};
   TeamQuestCreateScreen: {teamName: string; data: string | number};
 };
 export type TeamProps = NativeStackNavigationProp<

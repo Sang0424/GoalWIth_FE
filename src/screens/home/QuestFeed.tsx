@@ -69,8 +69,6 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     enabled: API_URL !== '', // Only run the query if API_URL is not empty
   });
 
-  console.log('QuestRecord:', data);
-
   // Set questRecord when data changes
   useEffect(() => {
     if (data) {
@@ -80,6 +78,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     }
   }, [data, quest.records]);
 
+  //console.log('QuestRecord:', data);
   const createRecord = useCallback(
     async ({questId, text, images: recordImages}: any) => {
       if (API_URL === '') {
@@ -104,7 +103,6 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     },
     [],
   );
-
   const {mutate} = useMutation({
     mutationFn: createRecord,
     onSuccess: () => {

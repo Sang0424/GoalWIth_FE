@@ -28,7 +28,7 @@ import {User} from '../../types/user.types';
 import {Team} from '../../types/team.types';
 
 const defaultUser: User = {
-  id: '',
+  id: 0,
   name: 'User',
   email: '',
   nickname: 'User',
@@ -93,10 +93,20 @@ export default function MyPage() {
       <ScrollView>
         {/* Profile Header */}
         <View style={{marginLeft: 16}}>
-          <Logo
-            resizeMode="contain"
-            style={{width: 150, height: 45, marginBottom: 16}}
-          />
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <Logo
+              resizeMode="contain"
+              imageStyle={{
+                width: 56,
+                height: 56,
+                marginBottom: 8,
+                marginRight: 16,
+              }}
+            />
+            <Text style={{fontSize: 24, fontWeight: 'bold', color: '#806A5B'}}>
+              GoalWith
+            </Text>
+          </View>
         </View>
         <View style={styles.header}>
           <CharacterAvatar

@@ -20,7 +20,7 @@ export const useAddReaction = (
 
   return useMutation({
     mutationFn: (reactionType: string) => {
-      const url = `/${targetType}/reaction/${targetId}`;
+      const url = `/${targetType}/${targetId}/reaction`;
       return instance.post(url, {reactionType});
     },
 
@@ -59,6 +59,8 @@ export const useAddReaction = (
     // 6. 뮤테이션이 성공하든 실패하든, 마지막에는 항상 서버와 상태를 동기화합니다.
     onSettled: () => {
       queryClient.invalidateQueries({queryKey});
+      queryClient.invalidateQueries({queryKey: ['recordReactions', targetId]});
+      queryClient.invalidateQueries({queryKey: ['reactions', targetId]});
     },
   });
 };

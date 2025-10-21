@@ -29,17 +29,28 @@ export default function Onboarding1() {
   const {setAccessToken} = tokenStore(state => state.actions);
   const {mutate: gogoleLoginMutate} = useMutation({
     mutationFn: async (idToken: string) => {
-      const reponse = await instance.post('/user/google-login', {
+      const response = await instance.post('/user/google-login', {
         token: idToken,
       });
-      const {accessToken, refreshToken} = reponse.data;
-      await AsyncStorage.setItem('refreshToken', refreshToken);
-      return {accessToken, refreshToken};
+      return response.data; // { isNewUser, accessToken?, refreshToken?, email?, name? }
     },
-    onSuccess: async ({accessToken, refreshToken}) => {
-      setAccessToken(accessToken);
-      await AsyncStorage.setItem('refreshToken', refreshToken);
-      navigation.navigate('BottomNav');
+    onSuccess: async data => {
+      if (data.isNewUser) {
+        // 신규 유저
+        navigation.navigate('OnBoarding3', {
+          isSocial: true,
+          registerForm: {
+            email: data.email,
+            name: data.name,
+          },
+        });
+      } else {
+        // 기존 유저
+        const {accessToken, refreshToken} = data;
+        setAccessToken(accessToken);
+        await AsyncStorage.setItem('refreshToken', refreshToken);
+        navigation.navigate('BottomNav');
+      }
     },
     onError: error => {
       console.error(error);
@@ -75,8 +86,29 @@ export default function Onboarding1() {
   // };
   return (
     <SafeAreaView style={styles.container}>
-      <View style={{flex: 1, marginBottom: 16, justifyContent: 'center'}}>
-        <BigLogo />
+      <View
+        style={{
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 16,
+          justifyContent: 'center',
+          marginTop: 72,
+        }}>
+        <BigLogo
+          resizeMode="contain"
+          imageStyle={{width: 80, height: 80, marginRight: 24}}
+        />
+        <Text
+          style={{
+            fontSize: 40,
+            lineHeight: 40,
+            fontWeight: 'bold',
+            color: '#806A5B',
+            textAlign: 'center',
+          }}>
+          GoalWith
+        </Text>
       </View>
       <View style={styles.registers}>
         <Pressable style={styles.oauthBtn} onPress={() => handleGoogleLogin()}>
@@ -126,7 +158,7 @@ export default function Onboarding1() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FCFAF8',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -141,7 +173,7 @@ const styles = StyleSheet.create({
   },
   registerBtnWrapper: {
     borderRadius: 10,
-    backgroundColor: '#F2F0E6',
+    backgroundColor: '#D1C7BC',
     justifyContent: 'center',
     marginBottom: 24,
     alignItems: 'center',

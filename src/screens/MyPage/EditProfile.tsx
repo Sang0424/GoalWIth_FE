@@ -24,12 +24,39 @@ import {userStore} from '../../store/userStore';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
+import {Dropdown} from 'react-native-element-dropdown';
 
 interface EditProfileProps {
   nickname: string;
   userType: string;
-  character: string;
 }
+
+const User_Types = [
+  {
+    value: '학생',
+    label: '학생',
+  },
+  {
+    value: '대학생',
+    label: '대학생',
+  },
+  {
+    value: '직장인',
+    label: '직장인',
+  },
+  {
+    value: '프리랜서',
+    label: '프리랜서',
+  },
+  {
+    value: '취업준비생',
+    label: '취업준비생',
+  },
+  {
+    value: '기타',
+    label: '기타',
+  },
+];
 
 const EditProfile = () => {
   const user = userStore(state => state.user);
@@ -38,17 +65,15 @@ const EditProfile = () => {
     useNavigation<NativeStackNavigationProp<MyPageNavParamList>>();
   const [nickname, setNickname] = useState(user?.nickname || '');
   const [userType, setUserType] = useState(user?.userType || '');
-  const [character, setCharacter] = useState(user?.character || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const {mutate} = useMutation({
-    mutationFn: async ({nickname, userType, character}: EditProfileProps) => {
-      const response = await instance.put(`/user/info/${user.id}`, {
+    mutationFn: async ({nickname, userType}: EditProfileProps) => {
+      const response = await instance.put(`/user/info`, {
         nickname,
         userType,
-        character,
       });
       return response.data;
     },
@@ -74,9 +99,8 @@ const EditProfile = () => {
       setUser({
         nickname,
         userType,
-        character,
       });
-      mutate({nickname, userType, character});
+      mutate({nickname, userType});
     } catch (err: any) {
       setError(err?.response?.data?.message);
     } finally {
@@ -103,7 +127,7 @@ const EditProfile = () => {
           </Pressable>
           <View style={styles.avatarContainer}>
             <TouchableOpacity style={styles.avatarWrapper}>
-              <CharacterAvatar avatar={character} size={120} />
+              <CharacterAvatar avatar={user.character} size={120} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.avatarEditButton}>
               <Text style={styles.avatarEditButtonText}>프로필 사진 변경</Text>
@@ -124,12 +148,20 @@ const EditProfile = () => {
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>유저 타입</Text>
-              <TextInput
+              {/* <TextInput
                 style={styles.input}
                 value={userType}
                 onChangeText={setUserType}
                 placeholder="학생/교사"
-                editable={false}
+                editable={true}
+              /> */}
+              <Dropdown
+                style={styles.input}
+                data={User_Types}
+                value={userType}
+                onChange={item => setUserType(item.value)}
+                labelField="label"
+                valueField="value"
               />
             </View>
 

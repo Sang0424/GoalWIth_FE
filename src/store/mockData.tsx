@@ -11,7 +11,7 @@ import {User} from '../types/user.types';
 
 export const initialUser: User[] = [
   {
-    id: 'user1',
+    id: 1,
     name: 'User 1',
     email: 'user1@example.com',
     nickname: 'User 1',
@@ -23,7 +23,7 @@ export const initialUser: User[] = [
     character: '/assets/character/pico_complete.png',
   },
   {
-    id: 'user2',
+    id: 2,
     name: 'User 2',
     email: 'user2@example.com',
     nickname: 'User 2',
@@ -35,7 +35,7 @@ export const initialUser: User[] = [
     character: '/assets/character/pico_rest.png',
   },
   {
-    id: 'user3',
+    id: 3,
     name: 'User 3',
     email: 'user3@example.com',
     nickname: 'User 3',
@@ -47,7 +47,7 @@ export const initialUser: User[] = [
     character: '/assets/character/pico_start.png',
   },
   {
-    id: 'user4',
+    id: 4,
     name: 'User 4',
     email: 'user4@example.com',
     nickname: 'User 4',
@@ -62,7 +62,7 @@ export const initialUser: User[] = [
 // 초기 mock 데이터
 const initialQuests: Quest[] = [
   {
-    id: '1',
+    id: 1,
     title: '매일 30분 독서하기',
     description: '하루에 최소 30분 이상 책 읽기',
     isMain: true,
@@ -77,7 +77,7 @@ const initialQuests: Quest[] = [
     user: initialUser[0],
   },
   {
-    id: '2',
+    id: 2,
     title: '일주일 3회 운동하기',
     description: '주 3회 이상 헬스장 가기',
     isMain: false,
@@ -92,7 +92,7 @@ const initialQuests: Quest[] = [
     user: initialUser[1],
   },
   {
-    id: '3',
+    id: 3,
     title: '일주일 5회 운동하기',
     description: '주 5회 이상 헬스장 가기',
     isMain: false,
@@ -103,8 +103,8 @@ const initialQuests: Quest[] = [
     requiredVerification: 12,
     records: [
       {
-        id: '1',
-        questId: '3',
+        id: 1,
+        questId: 3,
         text: 'dkfjdakfjad',
         createdAt: new Date('2025-06-28'),
         user: initialUser[0],
@@ -116,7 +116,7 @@ const initialQuests: Quest[] = [
     user: initialUser[2],
   },
   {
-    id: '4',
+    id: 4,
     title: '일주일 5회 운동하기',
     description: '주 5회 이상 헬스장 가기',
     isMain: false,
@@ -127,8 +127,8 @@ const initialQuests: Quest[] = [
     requiredVerification: 12,
     records: [
       {
-        id: '1',
-        questId: '3',
+        id: 1,
+        questId: 3,
         text: 'dkfjdakfjad',
         createdAt: new Date('2025-06-28'),
         user: initialUser[0],
@@ -140,7 +140,7 @@ const initialQuests: Quest[] = [
     user: initialUser[2],
   },
   {
-    id: '5',
+    id: 5,
     title: '일주일 5회 운동하기',
     description: '주 5회 이상 헬스장 가기',
     isMain: false,
@@ -151,8 +151,8 @@ const initialQuests: Quest[] = [
     requiredVerification: 12,
     records: [
       {
-        id: '1',
-        questId: '3',
+        id: 1,
+        questId: 3,
         text: 'dkfjdakfjad',
         createdAt: new Date('2025-06-28'),
         user: initialUser[0],
@@ -164,7 +164,7 @@ const initialQuests: Quest[] = [
     user: initialUser[2],
   },
   {
-    id: '6',
+    id: 6,
     title: '일주일 5회 운동하기',
     description: '주 5회 이상 헬스장 가기',
     isMain: false,
@@ -175,8 +175,8 @@ const initialQuests: Quest[] = [
     requiredVerification: 12,
     records: [
       {
-        id: '1',
-        questId: '3',
+        id: 1,
+        questId: 3,
         text: 'dkfjdakfjad',
         createdAt: new Date('2025-06-28'),
         user: initialUser[0],
@@ -188,7 +188,7 @@ const initialQuests: Quest[] = [
     user: initialUser[2],
   },
   {
-    id: '7',
+    id: 7,
     title: '일주일 5회 운동하기',
     description: '주 5회 이상 헬스장 가기',
     isMain: false,
@@ -199,8 +199,8 @@ const initialQuests: Quest[] = [
     requiredVerification: 12,
     records: [
       {
-        id: '1',
-        questId: '3',
+        id: 1,
+        questId: 3,
         text: 'dkfjdakfjad',
         createdAt: new Date('2025-06-28'),
         user: initialUser[0],
@@ -212,7 +212,7 @@ const initialQuests: Quest[] = [
     user: initialUser[2],
   },
   {
-    id: '8',
+    id: 8,
     title: '일주일 5회 운동하기',
     description: '주 5회 이상 헬스장 가기',
     isMain: false,
@@ -223,8 +223,8 @@ const initialQuests: Quest[] = [
     requiredVerification: 12,
     records: [
       {
-        id: '1',
-        questId: '3',
+        id: 1,
+        questId: 3,
         text: 'dkfjdakfjad',
         createdAt: new Date('2025-06-28'),
         user: initialUser[0],
@@ -236,7 +236,7 @@ const initialQuests: Quest[] = [
     user: initialUser[2],
   },
   {
-    id: '9',
+    id: 9,
     title: '일주일 5회 운동하기',
     description: '주 5회 이상 헬스장 가기',
     isMain: false,
@@ -247,8 +247,8 @@ const initialQuests: Quest[] = [
     requiredVerification: 12,
     records: [
       {
-        id: '1',
-        questId: '3',
+        id: 1,
+        questId: 3,
         text: 'dkfjdakfjad',
         createdAt: new Date('2025-06-28'),
         user: initialUser[0],
@@ -260,7 +260,7 @@ const initialQuests: Quest[] = [
     user: initialUser[2],
   },
   {
-    id: '10',
+    id: 10,
     title: '일주일 5회 운동하기',
     description: '주 5회 이상 헬스장 가기',
     isMain: false,
@@ -271,8 +271,8 @@ const initialQuests: Quest[] = [
     requiredVerification: 12,
     records: [
       {
-        id: '1',
-        questId: '3',
+        id: 1,
+        questId: 3,
         text: 'dkfjdakfjad',
         createdAt: new Date('2025-06-28'),
         user: initialUser[0],
@@ -284,7 +284,7 @@ const initialQuests: Quest[] = [
     user: initialUser[2],
   },
   {
-    id: '11',
+    id: 11,
     title: '일주일 5회 운동하기',
     description: '주 5회 이상 헬스장 가기',
     isMain: false,
@@ -295,8 +295,8 @@ const initialQuests: Quest[] = [
     requiredVerification: 12,
     records: [
       {
-        id: '1',
-        questId: '3',
+        id: 1,
+        questId: 3,
         text: 'dkfjdakfjad',
         createdAt: new Date('2025-06-28'),
         user: initialUser[0],
@@ -308,7 +308,7 @@ const initialQuests: Quest[] = [
     user: initialUser[2],
   },
   {
-    id: '12',
+    id: 12,
     title: '일주일 5회 운동하기',
     description: '주 5회 이상 헬스장 가기',
     isMain: false,
@@ -319,8 +319,8 @@ const initialQuests: Quest[] = [
     requiredVerification: 12,
     records: [
       {
-        id: '1',
-        questId: '3',
+        id: 1,
+        questId: 3,
         text: 'dkfjdakfjad',
         createdAt: new Date('2025-06-28'),
         user: initialUser[0],
@@ -332,7 +332,7 @@ const initialQuests: Quest[] = [
     user: initialUser[2],
   },
   {
-    id: '13',
+    id: 13,
     title: '일주일 5회 운동하기',
     description: '주 5회 이상 헬스장 가기',
     isMain: false,
@@ -343,8 +343,8 @@ const initialQuests: Quest[] = [
     requiredVerification: 12,
     records: [
       {
-        id: '1',
-        questId: '3',
+        id: 1,
+        questId: 3,
         text: 'dkfjdakfjad',
         createdAt: new Date('2025-06-28'),
         user: initialUser[0],
@@ -361,27 +361,16 @@ const initialQuests: Quest[] = [
 interface QuestStore {
   quests: Quest[];
   addQuest: (quest: Omit<Quest, 'id' | 'records'>) => void;
-  updateQuest: (id: string, updates: Partial<Quest>) => void;
-  deleteQuest: (id: string) => void;
-  completeQuest: (id: string) => void;
-  addQuestRecord: (questId: string, record: any) => void;
-  addVerification: (questId: string) => void;
-  getQuestById: (id: string) => Quest | undefined;
+  updateQuest: (id: number, updates: Partial<Quest>) => void;
+  deleteQuest: (id: number) => void;
+  completeQuest: (id: number) => void;
+  addQuestRecord: (questId: number, record: any) => void;
+  addVerification: (questId: number) => void;
+  getQuestById: (id: number) => Quest | undefined;
   getMainQuest: () => Quest | undefined;
   getSubQuests: () => Quest[];
   getVerificationFeed: () => Quest[];
 }
-
-// 랜덤 아이디 값
-const randomId = () => {
-  const characters =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 16; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return result;
-};
 
 // Zustand 스토어 생성
 export const useQuestStore = create<QuestStore>((set, get) => ({
@@ -390,7 +379,10 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
   // 퀘스트 추가
   addQuest: quest =>
     set(state => ({
-      quests: [...state.quests, {...quest, id: randomId(), records: []}],
+      quests: [
+        ...state.quests,
+        {...quest, id: state.quests.length + 1, records: []},
+      ],
     })),
 
   // 퀘스트 업데이트
@@ -420,12 +412,12 @@ export const useQuestStore = create<QuestStore>((set, get) => ({
     })),
 
   addQuestRecord: (
-    questId: string,
+    questId: number,
     record: Omit<QuestRecord, 'id' | 'createdAt'>,
   ) => {
     const newRecord: QuestRecord = {
       ...record,
-      id: randomId(), // or your preferred ID generation method
+      id: get().quests.length + 1,
       createdAt: new Date(),
     };
 
@@ -502,7 +494,7 @@ export const useQuestQueries = () => {
   return {
     // 쿼리
     useQuests: () => ({data: quests, isLoading: false, error: null}),
-    useQuest: (id: string) => ({
+    useQuest: (id: number) => ({
       data: getQuestById(id),
       isLoading: false,
       error: null,
@@ -550,7 +542,7 @@ export const useQuestQueries = () => {
 // Mock data for teams
 export const mockTeams: Team[] = [
   {
-    id: 'team1',
+    id: 1,
     name: '피트니스 마스터',
     description:
       '함께 운동 목표를 달성하는 팀입니다. 주 3회 이상 운동 인증을 목표로 합니다!',
@@ -565,18 +557,18 @@ export const mockTeams: Team[] = [
       endDate: new Date('2025-12-31'),
       records: [
         {
-          id: 'post1',
+          id: 1,
           user: initialUser[0],
           text: '오늘도 열심히 운동했어요! 다들 화이팅입니다 💪',
           reactions: [
             {
-              id: 'reaction1',
+              id: 1,
               user: initialUser[1],
               reactionType: 'amazing',
               createdAt: new Date('2025-07-09T10:20:00Z'),
             },
             {
-              id: 'reaction2',
+              id: 2,
               user: initialUser[2],
               reactionType: 'support',
               createdAt: new Date('2025-07-09T10:21:00Z'),
@@ -584,7 +576,7 @@ export const mockTeams: Team[] = [
           ],
           verifications: [
             {
-              id: 'verification1',
+              id: 1,
               user: initialUser[1],
               comment: '대단하세요!',
               createdAt: new Date('2025-07-09T10:30:00Z'),
@@ -596,7 +588,7 @@ export const mockTeams: Team[] = [
     },
   },
   {
-    id: 'team2',
+    id: 2,
     name: '독서 모임',
     description: '매주 한 권씩 책을 읽고 서로 의견을 나누는 모임입니다.',
     members: ['user4', 'user5', 'user6'],
@@ -613,7 +605,7 @@ export const mockTeams: Team[] = [
     createdAt: new Date('2025-06-15T00:00:00Z'),
   },
   {
-    id: 'team3',
+    id: 3,
     name: '코딩 스터디',
     description: '주 3일 알고리즘 문제 풀이 및 코드 리뷰를 진행합니다.',
     members: ['user7', 'user8'],
@@ -637,39 +629,39 @@ interface TeamStore {
   createTeam: (
     team: Omit<Team, 'id' | 'createdAt' | 'updatedAt' | 'feed' | 'members'>,
   ) => Team;
-  deleteTeam: (teamId: string) => void;
-  updateTeam: (teamId: string, team: Partial<Team>) => void;
-  getTeamById: (id: string) => Team | undefined;
-  addTeamMember: (teamId: string, userId: string) => void;
-  removeTeamMember: (teamId: string, userId: string) => void;
+  deleteTeam: (teamId: number) => void;
+  updateTeam: (teamId: number, team: Partial<Team>) => void;
+  getTeamById: (id: number) => Team | undefined;
+  addTeamMember: (teamId: number, userId: string) => void;
+  removeTeamMember: (teamId: number, userId: string) => void;
   createTeamPost: (
-    teamId: string,
+    teamId: number,
     post: Omit<
       TeamPost,
       'id' | 'createdAt' | 'updatedAt' | 'reactions' | 'comments'
     >,
   ) => TeamPost;
   updateTeamPost: (
-    teamId: string,
-    postId: string,
+    teamId: number,
+    postId: number,
     updates: Partial<Omit<TeamPost, 'id' | 'userId' | 'createdAt'>>,
   ) => void;
-  deleteTeamPost: (teamId: string, postId: string) => void;
-  addReaction: (postId: string, user: User, reactionType: ReactionType) => void;
+  deleteTeamPost: (teamId: number, postId: number) => void;
+  addReaction: (postId: number, user: User, reactionType: ReactionType) => void;
   removeReaction: (
-    postId: string,
+    postId: number,
     user: User,
     reactionType: ReactionType,
   ) => void;
   addComment: (
-    postId: string,
+    postId: number,
     comment: Omit<QuestVerification, 'id' | 'createdAt' | 'updatedAt' | 'user'>,
   ) => QuestVerification;
   updateComment: (
-    commentId: string,
+    commentId: number,
     updates: Partial<Omit<QuestVerification, 'id' | 'user' | 'createdAt'>>,
   ) => void;
-  deleteComment: (commentId: string) => void;
+  deleteComment: (commentId: number) => void;
 }
 
 // Zustand store for teams
@@ -679,7 +671,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   createTeam: team => {
     const newTeam: Team = {
       ...team,
-      id: `team${Date.now()}`,
+      id: get().teams.length + 1,
       members: [team.leaderId],
       createdAt: new Date(),
     };
@@ -694,7 +686,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
       teams: state.teams.filter(team => team.id !== teamId),
     }));
   },
-  updateTeam: (teamId: string, updates: Partial<Team>) => {
+  updateTeam: (teamId: number, updates: Partial<Team>) => {
     set(state => ({
       teams: state.teams.map(team =>
         team.id === teamId
@@ -707,7 +699,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     return get().teams.find(team => team.id === id);
   },
 
-  addTeamMember: (teamId: string, userId: string) => {
+  addTeamMember: (teamId: number, userId: string) => {
     set(state => ({
       teams: state.teams.map(team =>
         team.id === teamId && !team.members.includes(userId)
@@ -721,7 +713,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     }));
   },
 
-  removeTeamMember: (teamId: string, userId: string) => {
+  removeTeamMember: (teamId: number, userId: string) => {
     set(state => ({
       teams: state.teams.map(team =>
         team.id === teamId
@@ -736,7 +728,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   },
 
   createTeamPost: (
-    teamId: string,
+    teamId: number,
     post: Omit<
       TeamPost,
       'id' | 'createdAt' | 'updatedAt' | 'reactions' | 'comments'
@@ -744,7 +736,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   ) => {
     const newPost: TeamPost = {
       ...post,
-      id: `post${Date.now()}`,
+      id: get().teams.length + 1,
       reactions: [],
       verifications: [],
       createdAt: new Date(),
@@ -769,8 +761,8 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   },
 
   updateTeamPost: (
-    teamId: string,
-    postId: string,
+    teamId: number,
+    postId: number,
     updates: Partial<Omit<TeamPost, 'id' | 'userId' | 'createdAt'>>,
   ) => {
     set(state => ({
@@ -797,7 +789,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     }));
   },
 
-  deleteTeamPost: (teamId: string, postId: string) => {
+  deleteTeamPost: (teamId: number, postId: number) => {
     set(state => ({
       teams: state.teams.map(team =>
         team.id === teamId
@@ -816,7 +808,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     }));
   },
 
-  addReaction: (postId: string, user: User, reactionType: ReactionType) => {
+  addReaction: (postId: number, user: User, reactionType: ReactionType) => {
     set(state => ({
       teams: state.teams.map(team => ({
         ...team,
@@ -835,7 +827,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
               reactions: [
                 ...filteredReactions,
                 {
-                  id: `react-${Date.now()}`,
+                  id: get().teams.length + 1,
                   user,
                   reactionType,
                   createdAt: new Date(),
@@ -849,7 +841,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     }));
   },
 
-  removeReaction: (postId: string, user: User) => {
+  removeReaction: (postId: number, user: User) => {
     set(state => ({
       teams: state.teams.map(team => ({
         ...team,
@@ -874,12 +866,12 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     }));
   },
   addComment: (
-    postId: string,
+    postId: number,
     comment: Omit<QuestVerification, 'id' | 'createdAt' | 'updatedAt' | 'user'>,
   ) => {
     const newComment: QuestVerification = {
       ...comment,
-      id: `comment-${Date.now()}`,
+      id: get().teams.length + 1,
       createdAt: new Date(),
       user: initialUser[1],
     };
@@ -906,8 +898,8 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   },
 
   updateComment: (
-    commentId: string,
-    updates: Partial<Omit<QuestVerification, 'id' | 'createdAt' | 'userId'>>,
+    commentId: number,
+    updates: Partial<Omit<QuestVerification, 'id' | 'createdAt' | 'user'>>,
   ) => {
     set(state => ({
       teams: state.teams.map(team => {
@@ -935,7 +927,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
     }));
   },
 
-  deleteComment: (commentId: string) => {
+  deleteComment: (commentId: number) => {
     set(state => ({
       teams: state.teams.map(team => {
         return {

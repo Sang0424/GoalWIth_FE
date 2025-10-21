@@ -1,5 +1,5 @@
 export interface Quest {
-  id: string;
+  id: number;
   title: string;
   description?: string;
   isMain: boolean;
@@ -17,31 +17,32 @@ export interface Quest {
 }
 
 export interface QuestRecord {
-  id: string;
+  id: number;
   text?: string;
   images?: Asset[];
-  questId: string;
+  questId: number;
   createdAt: Date;
   user: User;
 }
 
 export interface QuestVerification {
-  id: string;
-  user: User;
-  comment: string;
+  id: number;
+  username: string;
+  text: string;
+  character: string;
   createdAt: Date;
 }
 
 export interface RouteParams {
-  questId: string;
+  questId: number;
   isMain?: boolean;
 }
 
 export type ReactionType = 'support' | 'amazing' | 'together' | 'perfect';
 
 export interface Reaction {
-  id: string;
-  questId: string;
+  id: number;
+  questId: number;
   user: User;
   reactionType: ReactionType;
   createdAt: Date;

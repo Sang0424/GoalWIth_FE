@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  SafeAreaView,
   ScrollView,
   Animated,
   Pressable,
@@ -16,6 +15,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
@@ -31,6 +31,7 @@ import ImageCarousel from '../../components/Carousel';
 import {useQueryClient} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
 import {useMutation} from '@tanstack/react-query';
+import CharacterAvatar from '../../components/CharacterAvatar';
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<
   QuestVerificationProps,
@@ -146,9 +147,8 @@ const QuestVerification = () => {
   }
 
   // 모든 인증 메시지(댓글) 리스트 추출
-  const allVerifications = quest.verifications?.flatMap(
-    (r: any) => r.text || [],
-  );
+  const allVerifications = quest.verifications;
+  console.log('allVerifications', allVerifications);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -257,14 +257,7 @@ const QuestVerification = () => {
                   {formatDate(record.createdAt.toString() || '')}
                 </Text>
               </View>
-              {record.images && (
-                <ImageCarousel images={record.images} />
-                // <Image
-                //   source={{uri: record.images[0]}}
-                //   style={styles.recordImage}
-                //   resizeMode="cover"
-                // />
-              )}
+              {record.images && <ImageCarousel images={record.images} />}
               <Text style={styles.recordText}>{record.text}</Text>
             </View>
           ))}
@@ -285,7 +278,22 @@ const QuestVerification = () => {
           </View>
 
           {allVerifications && allVerifications.length > 0 ? (
-            allVerifications.map(text => <Text key={text}>{text}</Text>)
+            allVerifications.map((verification: Verification) => (
+              <View key={verification.id} style={styles.commentCard}>
+                <View style={styles.commentHeader}>
+                  <CharacterAvatar
+                    avatar={verification.character}
+                    size={40}
+                    onPress={() => {}}
+                  />
+                  <Text style={{marginLeft: 8}}>{verification.username}</Text>
+                </View>
+                <Text style={styles.commentText}>{verification.text}</Text>
+                <Text style={styles.commentDate}>
+                  {formatDate(verification.createdAt.toString() || '')}
+                </Text>
+              </View>
+            ))
           ) : (
             <Text style={styles.noCommentsText}>
               아직 인증된 댓글이 없습니다.
@@ -536,6 +544,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#999',
     marginVertical: 20,
+  },
+  commentCard: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  commentText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#333',
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  commentDate: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 12,
   },
 });
 
