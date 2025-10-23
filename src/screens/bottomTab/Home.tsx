@@ -28,7 +28,6 @@ import {userStore} from '../../store/userStore';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import type {Quest} from '../../types/quest.types';
 import type {User} from '../../types/user.types';
-import {useQuestStore} from '../../store/mockData';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMutation} from '@tanstack/react-query';
 import {API_URL} from '@env';
@@ -39,6 +38,7 @@ import Reanimated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import {colors} from '../../styles/theme';
 
 export default function Home() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -48,8 +48,6 @@ export default function Home() {
   const [filter, setFilter] = useState<'ONGOING' | 'COMPLETED'>('ONGOING');
   const navigation =
     useNavigation<NativeStackNavigationProp<HomeNavParamList>>();
-  const isMockData = API_URL == '';
-  const mockQuests = useQuestStore(state => state.quests);
   const swipeableRef = useRef<any>(null);
   const [showHint, setShowHint] = useState(true);
   const setUser = userStore(state => state.setUser);
@@ -57,10 +55,6 @@ export default function Home() {
 
   const {mutate} = useMutation({
     mutationFn: async (questId: number) => {
-      if (API_URL === '') {
-        useQuestStore.getState().deleteQuest(questId);
-        return;
-      }
       await instance.delete(`/quest/${questId}`);
     },
     onSuccess: () => {
@@ -83,7 +77,7 @@ export default function Home() {
       const quests = response.data;
       return quests;
     },
-    enabled: !isMockData,
+    enabled: true,
   });
   const {data: userData} = useQuery({
     queryKey: ['user'],
@@ -92,23 +86,10 @@ export default function Home() {
       const user = response.data;
       return user;
     },
-    enabled: !isMockData,
+    enabled: true,
   });
 
-  const user = isMockData
-    ? {
-        id: 0,
-        name: 'User',
-        email: 'user@example.com',
-        nickname: 'User',
-        userType: 'student',
-        level: 10,
-        exp: 0,
-        maxExp: 100,
-        actionPoints: 100,
-        avatar: '../../assets/character/pico_base.png',
-      }
-    : userData;
+  const user = userData;
 
   useEffect(() => {
     if (user) {
@@ -116,13 +97,7 @@ export default function Home() {
     }
   }, [user, setUser]);
 
-  if (isLoading) {
-    return <Text>로딩중</Text>;
-  }
-  if (error) {
-    return <Text>ㅅㅂ 에러네 + {error.message}</Text>;
-  }
-  const quests = isMockData ? [] : data?.quests;
+  const quests = data?.quests;
 
   const currentExp = user?.exp || 0;
   const maxExp = user?.level ? user.level * 100 : 100;
@@ -141,7 +116,8 @@ export default function Home() {
     return (
       quest.procedure === 'complete' ||
       (quest.requiredVerification &&
-        (quest.verificationCount ?? 0) >= quest.requiredVerification)
+        quest.verificationCount &&
+        quest.verificationCount >= quest.requiredVerification)
     );
   };
   const filteredMainQuest =
@@ -155,29 +131,28 @@ export default function Home() {
     filter === 'COMPLETED' ? isQuestCompleted(q) : !isQuestCompleted(q),
   );
 
-  const recommendedQuests = [
-    {
-      id: 1,
-      title: '아침 30분 산책하기',
-      description: '하루를 상쾌하게 시작해보세요!',
-      category: '건강',
-      xp: 50,
-    },
-    {
-      id: 2,
-      title: '책 1챕터 읽기',
-      description: '지식을 쌓는 시간을 가져보세요',
-      category: '자기계발',
-      xp: 70,
-    },
-    {
-      id: 3,
-      title: '물 8잔 마시기',
-      description: '건강한 하루를 위한 필수 미션',
-      category: '건강',
-      xp: 30,
-    },
-  ];
+  // const recommendedQuests = [
+  //   {
+  //     id: 1,
+  //     title: '아침 30분 산책하기',
+  //     description: '하루를 상쾌하게 시작해보세요!',
+  //     xp: 50,
+  //   },
+  //   {
+  //     id: 2,
+  //     title: '책 1챕터 읽기',
+  //     description: '지식을 쌓는 시간을 가져보세요',
+  //     category: '자기계발',
+  //     xp: 70,
+  //   },
+  //   {
+  //     id: 3,
+  //     title: '물 8잔 마시기',
+  //     description: '건강한 하루를 위한 필수 미션',
+  //     category: '건강',
+  //     xp: 30,
+  //   },
+  // ];
 
   // Render empty state
   const renderEmptyState = (isMain: boolean) => (
@@ -185,7 +160,7 @@ export default function Home() {
       <Icon
         name={isMain ? 'emoji-events' : 'check-circle-outline'}
         size={48}
-        color="#adb5bd"
+        color={colors.gray}
         style={styles.emptyStateIcon}
       />
       <Text style={styles.emptyStateText}>
@@ -272,6 +247,7 @@ export default function Home() {
 
     // New date calculations
     const now = new Date();
+    const startDateObj = quest.startDate ? new Date(quest.startDate) : null;
     const endDateObj = quest.endDate ? new Date(quest.endDate) : null;
     const timeDiff = endDateObj ? endDateObj.getTime() - now.getTime() : 0;
     const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
@@ -306,12 +282,30 @@ export default function Home() {
     // Reward calculation
     const calculateReward = () => {
       const baseExp = 50;
-      const timelineBonus = (quest.records?.length || 0) * 10;
+      const recordBonus = (quest.records?.length || 0) * 5;
       const verificationBonus = quest.verificationRequired
-        ? (quest.verificationCount || 0) * 10
+        ? (quest.verificationCount || 0) * 10 + 50
         : 0;
+      const timelineBonus =
+        endDateObj && startDateObj
+          ? (endDateObj.getTime() - startDateObj.getTime()) * 3
+          : 0;
+      const overVerificationBonus =
+        quest.verificationRequired &&
+        quest.verificationCount &&
+        quest.requiredVerification &&
+        quest.verificationCount > quest.requiredVerification
+          ? quest.requiredVerification * 5 +
+            (quest.verificationCount - quest.requiredVerification) * 10
+          : 0;
 
-      return baseExp + timelineBonus + verificationBonus;
+      return (
+        baseExp +
+        recordBonus +
+        verificationBonus +
+        timelineBonus +
+        overVerificationBonus
+      );
     };
 
     // Format date range
@@ -400,7 +394,7 @@ export default function Home() {
                   String(quest.startDate),
                   String(quest.endDate),
                 )}
-                {isDeadlineClose && (
+                {quest.procedure === 'progress' && isDeadlineClose && (
                   <Text style={styles.deadlineText}>
                     ·{' '}
                     {daysRemaining === 0 ? '오늘 마감!' : `D-${daysRemaining}`}
@@ -414,7 +408,7 @@ export default function Home() {
               <Text style={styles.rewardText}>
                 보상: {calculateReward()} EXP
               </Text>
-              {showHint && (
+              {quest.procedure === 'progress' && showHint && (
                 <Text style={styles.hintText}>
                   {'<<< '}스와이프하여 수정/삭제
                 </Text>
@@ -1038,10 +1032,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 4,
     textAlign: 'center',
+    color: colors.font,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#6c757d',
+    color: colors.gray,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -1082,6 +1077,6 @@ const styles = StyleSheet.create({
   },
   emptyStateIcon: {
     fontSize: 48,
-    color: '#adb5bd',
+    color: colors.gray,
   },
 });

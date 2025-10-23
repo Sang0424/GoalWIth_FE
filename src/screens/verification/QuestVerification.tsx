@@ -42,7 +42,6 @@ const QuestVerification = () => {
   const navigation = useNavigation<QuestVerificationScreenNavigationProp>();
   const route = useRoute();
   const {quest} = route.params as {quest: Quest};
-  console.log('quest verification', quest);
 
   const {addVerification} = useQuestStore();
   const [verificationText, setVerificationText] = useState('');
@@ -132,7 +131,6 @@ const QuestVerification = () => {
       return;
     }
     mutate();
-    //addVerification(quest.id);
     Alert.alert('성공', '퀘스트 인증이 완료되었습니다!');
     setVerificationText('');
     navigation.goBack();
@@ -148,7 +146,6 @@ const QuestVerification = () => {
 
   // 모든 인증 메시지(댓글) 리스트 추출
   const allVerifications = quest.verifications;
-  console.log('allVerifications', allVerifications);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -221,8 +218,8 @@ const QuestVerification = () => {
               <View style={{width: 40}} />
             </View>
             <Text style={styles.questDate}>
-              {new Date(quest.startDate).toLocaleDateString()} -{' '}
-              {new Date(quest.endDate).toLocaleDateString()}
+              {formatDate(quest.startDate.toString())} -{' '}
+              {formatDate(quest.endDate.toString())}
             </Text>
             <View style={styles.progressContainer}>
               <View style={styles.progressBar}>

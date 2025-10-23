@@ -14,12 +14,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {tokenStore} from './src/store/tokenStore';
 import {userStore} from './src/store/userStore';
 import instance from './src/utils/axiosInterceptor';
-import SplashScreen from 'react-native-splash-screen';
 import {decodeJwt} from './src/utils/jwtUtils';
 import {API_URL} from '@env';
 import {MenuProvider} from 'react-native-popup-menu';
 import axios from 'axios';
 import {configureGoogleSignIn} from './src/services/api/auth';
+import BootSplash from 'react-native-bootsplash';
 
 const queryClient = new QueryClient();
 
@@ -78,13 +78,11 @@ const App = () => {
     checkAuth();
   }, [setAccessToken]);
 
-  // useEffect(() => {
-  //   if (!isLoading) {
-  //     SplashScreen.hide();
-  //   } else {
-  //     SplashScreen.show();
-  //   }
-  // }, [isLoading]);
+  useEffect(() => {
+    if (!isLoading) {
+      BootSplash.hide();
+    }
+  }, [isLoading]);
 
   // if (isLoading) {
   //   return null; // 로딩 중에는 스플래시 스크린만 표시

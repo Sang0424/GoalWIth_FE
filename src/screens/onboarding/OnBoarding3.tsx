@@ -23,7 +23,7 @@ import React from 'react';
 import {isFormFilled} from '../../utils/isFormFilled';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import instance from '../../utils/axiosInterceptor';
-import {useMutation} from '@tanstack/react-query';
+import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {tokenStore} from '../../store/tokenStore';
 import {userStore} from '../../store/userStore';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -40,12 +40,13 @@ const UserTypes = [
 export default function OnBoarding3({route}: OnBoarding3Props) {
   const [selectedUserType, setSelectedUserType] = useState<string | null>(null);
 
-  const {registerForm, isSocial} = route.params;
+  const {registerForm, isSocial, accessToken, refreshToken} = route.params;
   const {width} = useWindowDimensions();
   const navigation =
     useNavigation<NativeStackNavigationProp<OnBoardingStackParamList>>();
   const roleRef = useRef<TextInput>(null);
   const {setAccessToken} = tokenStore(state => state.actions);
+  const queryClient = useQueryClient();
   const loadUser = userStore(state => state.loadUser);
   const [userInfo, setUserInfo] = useState({
     nickname: '',
@@ -71,20 +72,24 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
       isValid = false;
     }
     if (!userInfo.userType) {
-      errorMsg.userType = '직업을 선택해주세요.';
+      errorMsg.userType = '유형을 선택해주세요.';
       isValid = false;
     }
     setError(errorMsg);
     return isValid;
   };
   const register = async () => {
-    let response;
     if (isSocial) {
+      setAccessToken(accessToken);
+      await AsyncStorage.setItem('refreshToken', refreshToken);
+      await loadUser();
       // 소셜 로그인 추가 정보 입력
-      response = await instance.post('/user/social-register', {
-        email: registerForm?.email,
+      await instance.put('/user/info', {
         nickname: userInfo.nickname,
         userType: userInfo.userType,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['user'],
       });
     } else {
       // 일반 이메일 회원가입
@@ -92,14 +97,16 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
         ...userInfo,
         ...registerForm,
       };
-      response = await instance.post(`/user/register`, userData);
+      const response = await instance.post(`/user/register`, userData);
+      const {accessToken, refreshToken} = response.data;
+      setAccessToken(accessToken);
+      await AsyncStorage.setItem('refreshToken', refreshToken);
+      await loadUser();
+      queryClient.invalidateQueries({
+        queryKey: ['user'],
+      });
     }
-    const {accessToken, refreshToken} = response.data;
-    setAccessToken(accessToken);
-    await AsyncStorage.setItem('refreshToken', refreshToken);
-    await loadUser();
   };
-  console.log(userInfo);
   const {mutate} = useMutation({
     mutationFn: register,
     onSuccess: () => {

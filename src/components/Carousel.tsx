@@ -9,6 +9,7 @@ import {
 import {Asset} from 'react-native-image-picker';
 // import {API_URL} from '@env';
 import {FlatList} from 'react-native-gesture-handler';
+import {colors} from '../styles/theme';
 
 const ImageCarousel = ({images}: {images: string[]}) => {
   console.log('feed image: ', images);
@@ -91,7 +92,7 @@ const ImageCarousel = ({images}: {images: string[]}) => {
                   width: 8,
                   height: 8,
                   borderRadius: 4,
-                  backgroundColor: '#a1a1a1',
+                  backgroundColor: colors.gray,
                   margin: 5,
                   opacity,
                 }}
