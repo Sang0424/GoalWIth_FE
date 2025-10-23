@@ -26,6 +26,7 @@ import {initialUser} from '../../store/mockData';
 import {API_URL} from '@env';
 import type {RequestedPeers} from '../../types/peers.types.d.ts';
 import {useDebounce} from '../../utils/hooks/useDebounce';
+import {colors} from '../../styles/theme';
 
 const PAGE_SIZE = 10;
 
@@ -141,7 +142,7 @@ export default function Peers() {
     initialPageParam: 0,
     enabled: API_URL !== '' && debouncedSearchQuery !== '',
   });
-
+  console.log('hasNextPage', hasNextPage);
   const users =
     API_URL === ''
       ? initialUser
@@ -216,7 +217,6 @@ export default function Peers() {
   }, [requestedPeersCount, navigation]);
 
   const renderItems = useCallback((item: any) => {
-    console.log('userCard', item);
     return (
       <View
         style={{marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>

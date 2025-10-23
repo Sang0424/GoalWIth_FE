@@ -11,6 +11,8 @@ export type OnBoardingStackParamList = {
       password?: string; // 소셜 로그인의 경우 비밀번호가 없음
     };
     isSocial?: boolean; // 소셜 로그인 여부 플래그
+    accessToken?: string;
+    refreshToken?: string;
   };
   Login: undefined;
   BottomNav: undefined;

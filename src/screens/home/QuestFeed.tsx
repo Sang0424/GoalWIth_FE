@@ -81,15 +81,6 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   //console.log('QuestRecord:', data);
   const createRecord = useCallback(
     async ({questId, text, images: recordImages}: any) => {
-      if (API_URL === '') {
-        useQuestStore.getState().addQuestRecord(questId, {
-          text,
-          images: recordImages,
-          user: 'user',
-        });
-        return;
-      }
-
       const formData = new FormData();
       formData.append('text', text);
       recordImages.forEach((image: Asset) => {
@@ -119,7 +110,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     },
   });
 
-  const {data: completeData, mutate: completeQuest} = useMutation({
+  const {mutate: completeQuest} = useMutation({
     mutationFn: async () => {
       await instance.put(`/quest/complete/${quest.id}`);
     },
@@ -138,27 +129,14 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       Alert.alert('오류', '기록할 내용을 입력해주세요.');
       return;
     }
-
-    if (API_URL === '') {
-      useQuestStore.getState().addQuestRecord(quest.id, {
-        text: newRecordText,
-        images,
-        user: 'user1',
-      });
-      setNewRecordText('');
-      setImages([]);
-      navigation.goBack();
-      return;
-    } else {
-      mutate({
-        questId: quest.id,
-        text: newRecordText,
-        images,
-      });
-      setNewRecordText('');
-      setImages([]);
-    }
-  }, [newRecordText, images, quest.id, mutate, navigation]);
+    mutate({
+      questId: quest.id,
+      text: newRecordText,
+      images,
+    });
+    setNewRecordText('');
+    setImages([]);
+  }, [newRecordText, images, quest.id, mutate]);
 
   useEffect(() => {
     if (questRecord?.length) {
@@ -226,22 +204,16 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       {
         text: '완료',
         onPress: () => {
-          if (API_URL === '') {
-            useQuestStore.getState().completeQuest(quest.id);
-            navigation.goBack();
-            return;
-          } else {
-            completeQuest(quest.id, {
-              onSuccess: () => {
-                Alert.alert('성공', '퀘스트가 완료되었습니다!');
-                navigation.goBack();
-              },
-              onError: error => {
-                Alert.alert(`${error.response.data.message}`);
-                console.log(error);
-              },
-            });
-          }
+          completeQuest(quest.id, {
+            onSuccess: () => {
+              Alert.alert('성공', '퀘스트가 완료되었습니다!');
+              navigation.goBack();
+            },
+            onError: error => {
+              Alert.alert(`${error.response.data.message}`);
+              console.log(error);
+            },
+          });
         },
       },
     ]);
@@ -328,8 +300,8 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               <View style={{width: 40}} />
             </View>
             <Text style={styles.questDate}>
-              {new Date(quest.startDate).toLocaleDateString()} -{' '}
-              {new Date(quest.endDate).toLocaleDateString()}
+              {formatDate(quest.startDate.toString())} -{' '}
+              {formatDate(quest.endDate.toString())}
             </Text>
             <View style={styles.progressContainer}>
               <View style={styles.progressBar}>
@@ -429,7 +401,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                   ]
             }
             onPress={handleCompleteQuest}
-            disabled={new Date(quest.endDate) > new Date()}>
+            disabled={
+              quest.record.length === 0 || new Date(quest.endDate) > new Date()
+            }>
             <Ionicons name="checkmark-circle" size={18} color="white" />
             <Text style={styles.completeButtonText}>완료하기</Text>
           </TouchableOpacity>

@@ -36,6 +36,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type {Quest} from '../types/quest.types';
 import {useQuestStore} from '../store/mockData';
+import {colors} from '../styles/theme';
 
 interface BottomSheetProps {
   todoModalVisible: boolean;
@@ -201,9 +202,7 @@ const BottomSheet = ({
     },
     onSuccess: () => {
       // 성공 시 공통 로직
-      if (API_URL !== '') {
-        queryClient.invalidateQueries({queryKey: ['homeQuests']});
-      }
+      queryClient.invalidateQueries({queryKey: ['homeQuests']});
       // 상태 초기화 및 모달 닫기
       setNewQuestTitle('');
       setNewQuestDescription('');
@@ -264,12 +263,6 @@ const BottomSheet = ({
         <View style={styles.overlay}>
           <SafeAreaView>
             <GestureDetector gesture={panGesture}>
-              {/* <Animated.View
-                style={{
-                  ...styles.bottomSheetContainer,
-                  transform: [{translateY: translateY}],
-                }}
-                {...panResponders.panHandlers}> */}
               <Animated.View
                 style={[
                   styles.bottomSheetContainer,
@@ -437,15 +430,6 @@ const BottomSheet = ({
                           </View>
                         )}
                       </View>
-                      {/* <Pressable style={styles.doneBtn} onPress={handleSubmit}>
-                      <Text
-                        style={{
-                          color: '#ffffff',
-                          fontSize: 16,
-                        }}>
-                        완료
-                      </Text>
-                    </Pressable> */}
                     </ScrollView>
                   </KeyboardAvoidingView>
                 </TouchableWithoutFeedback>
@@ -471,33 +455,15 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f1f1f1',
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-  },
-  addWhat: {
-    flex: 1,
-    width: '100%',
-    height: 60,
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'baseline',
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
   addTodo: {
     flex: 1,
     width: '100%',
     padding: 16,
     justifyContent: 'flex-start',
-    alignItems: 'center',
-  },
-  doneBtn: {
-    backgroundColor: '#806a6b',
-    borderRadius: 100,
-    width: 72,
-    height: 40,
-    marginTop: 8,
-    justifyContent: 'center',
     alignItems: 'center',
   },
   header: {
@@ -507,7 +473,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    // borderBottomColor: '#f0f0f0',
     marginBottom: 16,
   },
   headerButton: {
@@ -522,28 +488,28 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#666',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'regular',
   },
   doneButtonText: {
-    color: '#4A80F5',
+    color: colors.done,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'regular',
     textAlign: 'center',
   },
   inputLabel: {
     fontSize: 14,
-    color: '#333',
+    color: colors.font,
     marginBottom: 8,
-    fontWeight: '500',
+    fontWeight: 'regular',
   },
   input: {
-    backgroundColor: '#f8f8f8',
-    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
     padding: 14,
-    fontSize: 16,
-    color: '#333',
+    fontSize: 14,
+    color: colors.gray,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.gray,
     marginBottom: 16,
   },
   dateRangeContainer: {
@@ -557,18 +523,18 @@ const styles = StyleSheet.create({
   dateInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.gray,
   },
   dateIcon: {
     marginRight: 8,
   },
   dateText: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 14,
+    color: colors.font,
   },
   multilineInput: {
     minHeight: 100,
@@ -577,8 +543,8 @@ const styles = StyleSheet.create({
   },
   verificationContainer: {
     marginBottom: 16,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
     padding: 16,
   },
   verificationHeader: {
@@ -591,11 +557,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: colors.gray,
   },
   verificationLabel: {
     fontSize: 14,
-    color: '#555',
+    color: colors.font,
     marginBottom: 8,
   },
   counterContainer: {
@@ -606,21 +572,21 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.gray,
     justifyContent: 'center',
     alignItems: 'center',
   },
   counterButtonText: {
     fontSize: 20,
-    color: '#555',
+    color: colors.font,
     lineHeight: 24,
   },
   counterValue: {
     width: 40,
     textAlign: 'center',
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.font,
   },
 });
 

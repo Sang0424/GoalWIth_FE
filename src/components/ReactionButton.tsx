@@ -4,6 +4,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useAddReaction} from '../utils/hooks/useAddReaction';
 import {useDeleteReaction} from '../utils/hooks/useDeleteReaction';
 import {Text} from 'react-native';
+import {colors} from '../styles/theme';
 
 type ReactionButtonProps = {
   targetType: 'quest' | 'record';
@@ -94,9 +95,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.switchBG,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.gray,
     borderRadius: 15,
     paddingVertical: 4,
     paddingHorizontal: 10,
@@ -114,12 +115,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   reactionEmoji: {
-    fontSize: 16,
+    fontSize: 20,
     marginRight: 3,
   },
   reactionLabel: {
     fontSize: 12,
-    color: '#444',
+    color: colors.font,
     marginRight: 2,
   },
   reactionCount: {
@@ -131,9 +132,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#6A805B',
+    backgroundColor: colors.accent,
     borderWidth: 1,
-    borderColor: '#5A704D',
+    borderColor: colors.gray,
     borderRadius: 15,
     paddingVertical: 4,
     paddingHorizontal: 10,
@@ -154,19 +155,19 @@ const styles = StyleSheet.create({
     borderLeftWidth: 0,
   },
   reactionEmojiActive: {
-    fontSize: 16,
+    fontSize: 20,
     marginRight: 3,
-    color: '#FCFAF8',
+    color: colors.btnFont,
   },
   reactionLabelActive: {
     fontSize: 12,
-    color: '#FCFAF8',
+    color: colors.btnFont,
     marginRight: 2,
     fontWeight: 'bold',
   },
   reactionCountActive: {
     fontSize: 12,
-    color: '#FCFAF8',
+    color: colors.btnFont,
     fontWeight: 'bold',
   },
 });

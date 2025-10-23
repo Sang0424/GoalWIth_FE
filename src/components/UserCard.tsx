@@ -16,6 +16,7 @@ import instance from '../utils/axiosInterceptor';
 import CharacterAvatar from './CharacterAvatar';
 import ProfileBottomSheet from './ProfileBottomSheet';
 import {useState} from 'react';
+import {colors} from '../styles/theme';
 
 export default function UserCard({user, from}: {user?: any; from: string}) {
   const navigation = useNavigation();
@@ -23,11 +24,6 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
   const queryClient = useQueryClient();
   const [isProfileVisible, setProfileVisible] = useState(false);
   const [selecteUser, setSelectUser] = useState<number | undefined>(undefined);
-
-  console.log('userCardUser', user);
-
-  console.log('selecteUser', selecteUser);
-  console.log('user.item', user);
 
   const {mutate: acceptPeer} = useMutation({
     mutationFn: async () => {
@@ -96,9 +92,13 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
           </View>
           {from == 'peers' ? (
             <Pressable style={{flexDirection: 'row', alignItems: 'center'}}>
-              <Icon name="add" size={24} color="#806a5b" />
+              <Icon name="add" size={24} color={colors.primary} />
               <Text
-                style={{color: '#806a5b', fontSize: 16, fontWeight: 'bold'}}>
+                style={{
+                  color: colors.primary,
+                  fontSize: 16,
+                  fontWeight: 'bold',
+                }}>
                 피어링
               </Text>
             </Pressable>
@@ -123,9 +123,13 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
                     },
                   ])
                 }>
-                <Icon name="close" size={24} color="#EF4444" />
+                <Icon name="close" size={24} color={colors.error} />
                 <Text
-                  style={{color: '#EF4444', fontSize: 12, fontWeight: 'bold'}}>
+                  style={{
+                    color: colors.error,
+                    fontSize: 12,
+                    fontWeight: 'bold',
+                  }}>
                   거절하기
                 </Text>
               </Pressable>
@@ -142,9 +146,13 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
                     },
                   ])
                 }>
-                <Icon name="check" size={24} color="#3B82F6" />
+                <Icon name="check" size={24} color={colors.accent} />
                 <Text
-                  style={{color: '#3B82F6', fontSize: 12, fontWeight: 'bold'}}>
+                  style={{
+                    color: colors.accent,
+                    fontSize: 12,
+                    fontWeight: 'bold',
+                  }}>
                   수락하기
                 </Text>
               </Pressable>
@@ -165,14 +173,14 @@ const styles = StyleSheet.create({
   cardContainer: {
     height: 250,
     borderRadius: 10,
-    borderColor: '#000000',
+    borderColor: colors.gray,
     borderWidth: 1,
   },
   cardTop: {
     flex: 0.3,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
-    backgroundColor: '#806a5b',
+    backgroundColor: colors.primary,
   },
   avatarContainer: {
     position: 'absolute',

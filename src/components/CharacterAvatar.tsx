@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   ViewStyle,
 } from 'react-native';
-import {API_URL} from '@env';
+import {colors} from '../styles/theme';
 
 interface CharacterAvatarProps {
   size?: number;
@@ -32,7 +32,7 @@ const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
     return ['#339af0', '#1c7ed6'];
   };
 
-  const colors = getBorderColor();
+  const borderColors = getBorderColor();
   const imageSource =
     typeof avatar === 'string'
       ? {uri: avatar}
@@ -45,7 +45,7 @@ const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
         {
           borderRadius: size / 2,
           borderWidth: 2,
-          borderColor: colors[0],
+          borderColor: borderColors[0],
         },
       ]}>
       <View
@@ -57,7 +57,7 @@ const CharacterAvatar: React.FC<CharacterAvatarProps> = ({
             borderRadius: (size * 0.9) / 2,
             backgroundColor: 'white',
             borderWidth: 2,
-            borderColor: colors[1] || colors[0],
+            borderColor: borderColors[1] || borderColors[0],
           },
         ]}>
         <Image
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background,
   },
   characterContainer: {
     alignItems: 'center',

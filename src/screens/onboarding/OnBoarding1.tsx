@@ -35,14 +35,17 @@ export default function Onboarding1() {
       return response.data; // { isNewUser, accessToken?, refreshToken?, email?, name? }
     },
     onSuccess: async data => {
-      if (data.isNewUser) {
+      if (data.newer) {
         // 신규 유저
+        const {accessToken, refreshToken} = data;
         navigation.navigate('OnBoarding3', {
           isSocial: true,
           registerForm: {
             email: data.email,
             name: data.name,
           },
+          accessToken,
+          refreshToken,
         });
       } else {
         // 기존 유저

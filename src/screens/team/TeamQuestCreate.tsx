@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Switch,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useTeamStore} from '../../store/mockData';
