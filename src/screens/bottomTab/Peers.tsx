@@ -193,16 +193,7 @@ export default function Peers() {
               }}>
               <Text style={{fontSize: 16}}>받은 요청</Text>
               {requestedPeersCount > 0 && (
-                <View
-                  style={{
-                    backgroundColor: '#806a5b',
-                    width: 24,
-                    height: 24,
-                    borderRadius: 20,
-                    marginLeft: 12,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}>
+                <View style={styles.requestCount}>
                   <Text style={{color: '#FFFFFF', fontSize: 12}}>
                     {requestedPeersCount}
                   </Text>
@@ -319,8 +310,8 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
+    backgroundColor: colors.switchBG,
+    borderRadius: 12,
     paddingHorizontal: 12,
     marginBottom: 8,
     marginTop: 24,
@@ -331,8 +322,17 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
-    backgroundColor: '#f8f8f8',
+    color: colors.font,
+    backgroundColor: colors.switchBG,
     paddingVertical: 12,
+  },
+  requestCount: {
+    backgroundColor: colors.primary,
+    width: 24,
+    height: 24,
+    borderRadius: 99,
+    marginLeft: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

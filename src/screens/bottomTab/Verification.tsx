@@ -31,6 +31,7 @@ import {
 import {API_URL} from '@env';
 import {useDebounce} from '../../utils/hooks/useDebounce';
 import ReactionButton from '../../components/ReactionButton';
+import {colors} from '../../styles/theme';
 
 // const getReactionData = (
 //   quest: Quest,
@@ -495,8 +496,8 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
+    backgroundColor: colors.switchBG,
+    borderRadius: 12,
     paddingHorizontal: 12,
     marginBottom: 16,
   },
@@ -506,15 +507,15 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
-    backgroundColor: '#f8f8f8',
+    color: colors.font,
+    backgroundColor: colors.switchBG,
     paddingVertical: 12,
   },
   tabRow: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: colors.switchBG,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.gray,
   },
   tabBtn: {
     flex: 1,
@@ -524,23 +525,23 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   activeTabBtn: {
-    borderBottomColor: '#5b807d',
-    backgroundColor: '#f8f8f8',
+    borderBottomColor: colors.accent,
+    backgroundColor: colors.switchBG,
   },
   tabLabel: {
-    fontSize: 15,
-    color: '#888',
-    fontWeight: '500',
+    fontSize: 16,
+    color: colors.gray,
+    fontWeight: 'bold',
   },
   activeTabLabel: {
-    color: '#5b807d',
+    color: colors.accent,
     fontWeight: 'bold',
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#f1f1f1',
+    borderColor: colors.gray,
     marginBottom: 18,
     padding: 16,
     shadowColor: '#000',
@@ -557,23 +558,18 @@ const styles = StyleSheet.create({
   avatar: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 99,
     marginRight: 12,
-    backgroundColor: '#eee',
+    backgroundColor: colors.gray,
   },
   nickname: {
     fontWeight: 'bold',
     fontSize: 16,
-    color: '#222',
-  },
-  badge: {
-    fontSize: 12,
-    color: '#4CAF50',
-    marginTop: 2,
+    color: colors.font,
   },
   timestamp: {
     fontSize: 12,
-    color: '#888',
+    color: colors.gray,
     marginLeft: 8,
   },
   questInfo: {
@@ -583,33 +579,33 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   questTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.font,
   },
   feedImage: {
     height: 180,
     borderRadius: 12,
     marginBottom: 10,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.switchBG,
   },
   contentText: {
-    fontSize: 15,
-    color: '#222',
+    fontSize: 14,
+    color: colors.font,
     marginBottom: 8,
     marginTop: 8,
   },
   verifyBtn: {
-    backgroundColor: '#5b807d',
-    borderRadius: 10,
+    backgroundColor: colors.accent,
+    borderRadius: 12,
     paddingVertical: 10,
     alignItems: 'center',
     marginTop: 10,
   },
   verifyBtnText: {
-    color: '#fff',
+    color: colors.btnFont,
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 14,
     letterSpacing: 1,
   },
 });
