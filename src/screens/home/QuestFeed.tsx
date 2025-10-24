@@ -26,7 +26,6 @@ import {
   ImagePickerResponse,
 } from 'react-native-image-picker';
 import {QuestFeedProps} from '../../types/navigation';
-import {useQuestStore} from '../../store/mockData';
 import useKeyboardHeight from '../../utils/hooks/useKeyboardHeight';
 import ImageCarousel from '../../components/Carousel';
 import {useQuery, useMutation} from '@tanstack/react-query';
@@ -34,6 +33,7 @@ import instance from '../../utils/axiosInterceptor';
 import {useQueryClient} from '@tanstack/react-query';
 import type {QuestRecord, Quest} from '../../types/quest.types';
 import {API_URL} from '@env';
+import {colors} from '../../styles/theme';
 
 const QuestFeed = ({route}: QuestFeedProps) => {
   const navigation = useNavigation();
@@ -59,7 +59,6 @@ const QuestFeed = ({route}: QuestFeedProps) => {
           const response = await instance.get(`/record/${quest.id}`);
           return response.data;
         } catch (error: any) {
-          console.log(error.response.data.message);
           Alert.alert(`${error.response.data.message}`);
           return {records: quest.records || []};
         }
@@ -102,8 +101,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
     },
     onError: (error: any) => {
-      Alert.alert(`오류`, `${error.response.data.message}`);
-      console.log(error);
+      Alert.alert(`${error.response.data.message}`);
     },
     onSettled: () => {
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
@@ -115,7 +113,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       await instance.put(`/quest/complete/${quest.id}`);
     },
     onError: (error: any) => {
-      Alert.alert(`오류`, `${error.response.data.message}`);
+      Alert.alert(`${error.response.data.message}`);
     },
     onSettled: () => {
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
@@ -126,7 +124,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
 
   const handleAddRecord = useCallback(async () => {
     if (!newRecordText.trim() && images.length === 0) {
-      Alert.alert('오류', '기록할 내용을 입력해주세요.');
+      Alert.alert('기록할 내용을 입력해주세요.');
       return;
     }
     mutate({
@@ -193,7 +191,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#000" />
+        <ActivityIndicator size="large" color={colors.secondary} />
       </SafeAreaView>
     );
   }
@@ -211,7 +209,6 @@ const QuestFeed = ({route}: QuestFeedProps) => {
             },
             onError: error => {
               Alert.alert(`${error.response.data.message}`);
-              console.log(error);
             },
           });
         },
@@ -231,10 +228,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
 
     launchImageLibrary(options, (response: any) => {
       if (response.didCancel) {
-        console.log('User cancelled image picker');
+        Alert.alert('이미지 선택을 취소했습니다.');
       } else if (response.errorCode) {
-        console.log('ImagePicker Error: ', response.errorMessage);
-        Alert.alert('오류', '이미지 선택 중 오류가 발생했습니다.');
+        Alert.alert('이미지 선택 중 오류가 발생했습니다.');
       } else if (response.assets?.length) {
         const images: Asset[] = [];
         response.assets.forEach((asset: Asset) => images.push(asset));
@@ -293,7 +289,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                       : 'arrow-back-android'
                   }
                   size={20}
-                  color={'#000'}
+                  color={colors.font}
                 />
               </Pressable>
               <Text style={styles.questTitle}>{quest.title}</Text>
@@ -334,7 +330,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
 
           {questRecord?.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="time-outline" size={50} color="#ccc" />
+              <Ionicons name="time-outline" size={50} color={colors.font} />
               <Text style={styles.emptyStateText}>아직 기록이 없습니다.</Text>
               <Text style={styles.emptyStateSubtext}>
                 오늘의 활동을 기록해보세요!
@@ -385,7 +381,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
             multiline
           />
           <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
-            <Ionicons name="camera" size={24} color="#806a5b" />
+            <Ionicons name="camera" size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -397,7 +393,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                 : [
                     styles.actionButton,
                     styles.completeButton,
-                    {backgroundColor: '#ccc'},
+                    {backgroundColor: colors.accent},
                   ]
             }
             onPress={handleCompleteQuest}
@@ -413,7 +409,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               styles.addButton,
               !newRecordText.trim() &&
                 images.length === 0 && {
-                  backgroundColor: '#ccc',
+                  backgroundColor: colors.lightGray,
                 },
             ]}
             onPress={handleAddRecord}
@@ -437,13 +433,13 @@ const QuestFeed = ({route}: QuestFeedProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
@@ -459,24 +455,24 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   mainQuestHeader: {
-    backgroundColor: '#B9B69B',
+    backgroundColor: colors.secondary,
   },
   subQuestHeader: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.switchBG,
   },
   headerContent: {
     alignItems: 'center',
   },
   questTitle: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.font,
     marginBottom: 5,
     textAlign: 'center',
   },
   questDate: {
     fontSize: 14,
-    color: '#666',
+    color: colors.gray,
     marginBottom: 15,
   },
   progressContainer: {
@@ -488,7 +484,7 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 8,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: colors.lightGray,
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -498,7 +494,7 @@ const styles = StyleSheet.create({
   progressText: {
     marginLeft: 10,
     fontSize: 12,
-    color: '#666',
+    color: colors.font,
     minWidth: 50,
     textAlign: 'right',
   },
@@ -506,9 +502,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.font,
     marginBottom: 15,
   },
   emptyState: {
@@ -526,12 +522,12 @@ const styles = StyleSheet.create({
   emptyStateText: {
     marginTop: 15,
     fontSize: 16,
-    color: '#666',
+    color: colors.font,
   },
   emptyStateSubtext: {
     marginTop: 5,
     fontSize: 14,
-    color: '#999',
+    color: colors.font,
   },
   recordCard: {
     backgroundColor: 'white',
@@ -551,7 +547,7 @@ const styles = StyleSheet.create({
   },
   recordDate: {
     fontSize: 12,
-    color: '#888',
+    color: colors.gray,
   },
   recordImage: {
     width: '100%',
@@ -560,9 +556,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   recordText: {
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 22,
-    color: '#333',
+    color: colors.font,
   },
   inputContainer: {
     position: 'absolute',
@@ -614,13 +610,13 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 20,
+    borderRadius: 12,
     paddingHorizontal: 15,
     paddingVertical: 10,
     paddingRight: 45,
     minHeight: 44,
     maxHeight: 120,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.switchBG,
   },
   cameraButton: {
     position: 'absolute',
@@ -637,23 +633,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     marginHorizontal: 5,
   },
   completeButton: {
-    backgroundColor: '#4caf50',
+    backgroundColor: colors.accent,
   },
   addButton: {
-    backgroundColor: '#806a5b',
+    backgroundColor: colors.primary,
   },
   completeButtonText: {
-    color: 'white',
-    fontWeight: '600',
+    color: colors.btnFont,
+    fontWeight: 'bold',
     marginLeft: 5,
   },
   addButtonText: {
-    color: 'white',
-    fontWeight: '600',
+    color: colors.btnFont,
+    fontWeight: 'bold',
     marginLeft: 5,
   },
 });

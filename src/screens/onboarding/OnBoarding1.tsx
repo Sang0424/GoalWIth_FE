@@ -21,6 +21,8 @@ import instance from '../../utils/axiosInterceptor';
 import {signInWithGoogle} from '../../services/api/auth';
 import {useMutation} from '@tanstack/react-query';
 import {tokenStore} from '../../store/tokenStore';
+import {login} from '@react-native-kakao/user';
+import {KakaoLoginToken} from '@react-native-kakao/user';
 
 export default function Onboarding1() {
   const {height, width} = useWindowDimensions();
@@ -60,10 +62,50 @@ export default function Onboarding1() {
     },
   });
 
+  const {mutate: kakaoLoginMutate} = useMutation({
+    mutationFn: async (idToken: KakaoLoginToken) => {
+      const response = await instance.post('/user/kakao-login', {
+        token: idToken,
+      });
+      return response.data; // { isNewUser, accessToken?, refreshToken?, email?, name? }
+    },
+    onSuccess: async data => {
+      if (data.newer) {
+        // 신규 유저
+        const {accessToken, refreshToken} = data;
+        navigation.navigate('OnBoarding3', {
+          isSocial: true,
+          registerForm: {
+            email: data.email,
+            name: data.name,
+          },
+          accessToken,
+          refreshToken,
+        });
+      } else {
+        // 기존 유저
+        const {accessToken, refreshToken} = data;
+        setAccessToken(accessToken);
+        await AsyncStorage.setItem('refreshToken', refreshToken);
+        navigation.navigate('BottomNav');
+      }
+    },
+    onError: error => {
+      console.error(error);
+    },
+  });
+
   const handleGoogleLogin = async () => {
     const idToken = await signInWithGoogle();
     if (idToken) {
       gogoleLoginMutate(idToken);
+    }
+  };
+
+  const handleKakaoLogin = async () => {
+    const idToken = await login();
+    if (idToken) {
+      kakaoLoginMutate(idToken);
     }
   };
 
@@ -117,15 +159,13 @@ export default function Onboarding1() {
         <Pressable style={styles.oauthBtn} onPress={() => handleGoogleLogin()}>
           <Image
             source={require('../../assets/images/google_ios_ctn.png')}
-            style={{resizeMode: 'stretch', width: width - 54, height: 64}}
+            style={{resizeMode: 'stretch', width: width - 54, height: 72}}
           />
         </Pressable>
-        <Pressable
-          style={styles.oauthBtn}
-          onPress={() => console.log('카카오 로그인')}>
+        <Pressable style={styles.oauthBtn} onPress={() => handleKakaoLogin()}>
           <Image
             source={require('../../assets/images/kakao_login.png')}
-            style={{resizeMode: 'stretch', width: width - 54, height: 64}}
+            style={{resizeMode: 'stretch', width: width - 54, height: 72}}
           />
         </Pressable>
         <DividerWithText text={'또는'} />

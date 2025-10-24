@@ -4,6 +4,8 @@ import React_RCTAppDelegate
 import ReactAppDependencyProvider
 import GoogleSignIn
 import RNBootSplash
+import KakaoSDKCommon
+import KakaoSDKAuth
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -38,12 +40,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Show the app's signed-in state.
       }
     }
-
+    if let kakaoAppKey = Bundle.main.object(forInfoDictionaryKey: "d1390db21826a41c019fb272011b1d17") as? String {
+             KakaoSDK.initSDK(appKey: kakaoAppKey)
+        } else {
+             print("Warning: KAKAO_APP_KEY not found in Info.plist")
+        }
     return true
   }
-  func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-    return GIDSignIn.sharedInstance.handle(url)
-  }
+  func application(
+        _ app: UIApplication,
+        open url: URL,
+        options: [UIApplication.OpenURLOptionsKey : Any] = [:]
+    ) -> Bool {
+        var handled = false
+
+        // 1. Google Sign-In 처리 시도
+        handled = GIDSignIn.sharedInstance.handle(url)
+        if handled { return true }
+
+        // 2. Kakao SDK 처리 시도
+        if (AuthApi.isKakaoTalkLoginUrl(url)) {
+            handled = AuthController.handleOpenUrl(url: url)
+            if handled { return true }
+        }
+        return false
+    }
 }
 
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {

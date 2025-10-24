@@ -20,6 +20,7 @@ import {MenuProvider} from 'react-native-popup-menu';
 import axios from 'axios';
 import {configureGoogleSignIn} from './src/services/api/auth';
 import BootSplash from 'react-native-bootsplash';
+import {initializeKakaoSDK} from '@react-native-kakao/core';
 
 const queryClient = new QueryClient();
 
@@ -30,7 +31,7 @@ const App = () => {
 
   useEffect(() => {
     configureGoogleSignIn();
-
+    initializeKakaoSDK('d1390db21826a41c019fb272011b1d17');
     const checkAuth = async () => {
       if (API_URL === '') {
         // API_URL이 없는 개발 환경에서는 인증 과정을 생략합니다.

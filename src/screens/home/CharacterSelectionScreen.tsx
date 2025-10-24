@@ -22,6 +22,7 @@ import instance from '../../utils/axiosInterceptor';
 import {userStore} from '../../store/userStore';
 import {useQueryClient} from '@tanstack/react-query';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import {colors} from '../../styles/theme';
 
 type Props = NativeStackScreenProps<HomeNavParamList, 'CharacterSelection'>;
 
@@ -30,8 +31,6 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
   const [character, setCharacter] = useState(currentCharacter);
   const user = userStore(state => state.user);
   const queryClient = useQueryClient();
-
-  console.log(character);
 
   const {data, isLoading, refetch, isRefetching, hasNextPage, fetchNextPage} =
     useInfiniteQuery({
@@ -67,7 +66,8 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
     },
   });
 
-  if (isLoading) return <ActivityIndicator size="large" color="#000000" />;
+  if (isLoading)
+    return <ActivityIndicator size="large" color={colors.secondary} />;
 
   const loadMore = () => {
     if (hasNextPage && !isRefetching) {
@@ -123,7 +123,7 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
         onEndReachedThreshold={0.1}
         ListFooterComponent={
           hasNextPage ? (
-            <ActivityIndicator size="small" color="#000000" />
+            <ActivityIndicator size="small" color={colors.secondary} />
           ) : null
         }
       />
@@ -134,7 +134,7 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     padding: 16,
   },
   header: {
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.font,
   },
   listContainer: {
     paddingBottom: 24,
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     margin: 8,
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.switchBG,
     alignItems: 'center',
     justifyContent: 'center',
     aspectRatio: 1,
@@ -165,8 +165,8 @@ const styles = StyleSheet.create({
   },
   selectedCharacter: {
     borderWidth: 2,
-    borderColor: '#806A5B',
-    backgroundColor: '#f0e6dd',
+    borderColor: colors.primary,
+    backgroundColor: colors.secondary,
   },
   characterImage: {
     width: 80,
@@ -175,19 +175,19 @@ const styles = StyleSheet.create({
   },
   characterName: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: 'regular',
+    color: colors.font,
   },
   selectedText: {
     marginTop: 4,
-    color: '#806A5B',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: 'bold',
   },
   completeText: {
-    color: '#806A5B',
+    color: colors.done,
     fontSize: 16,
-    fontWeight: 'medium',
+    fontWeight: 'regular',
   },
 });
 
