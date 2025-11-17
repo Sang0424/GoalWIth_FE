@@ -122,7 +122,6 @@ const ProfileBottomSheet = ({
       <TouchableWithoutFeedback
         onPress={() => {
           closeModalWithAnimation();
-          Keyboard.dismiss();
         }}>
         <View style={styles.overlay} />
       </TouchableWithoutFeedback>
@@ -130,7 +129,8 @@ const ProfileBottomSheet = ({
         visible={visible}
         animationType="fade"
         transparent
-        statusBarTranslucent>
+        statusBarTranslucent
+        onRequestClose={closeModalWithAnimation}>
         <View style={styles.overlay}>
           <GestureDetector gesture={panGesture}>
             <Animated.View style={[styles.bottomSheetContainer, animatedStyle]}>
@@ -164,7 +164,7 @@ const ProfileBottomSheet = ({
                     </View>
                   </View>
 
-                  {user.main_quest && (
+                  {user.main_quest ? (
                     <View style={styles.questContainer}>
                       <Text style={styles.sectionTitle}>메인퀘스트</Text>
                       <View style={styles.questCard}>
@@ -181,6 +181,13 @@ const ProfileBottomSheet = ({
                           {user.main_quest.requiredVerification || 0}
                         </Text>
                       </View>
+                    </View>
+                  ) : (
+                    <View style={styles.questContainer}>
+                      <Text style={styles.sectionTitle}>메인퀘스트</Text>
+                      <Text style={styles.questTitle}>
+                        아직 메인 퀘스트가 없습니다
+                      </Text>
                     </View>
                   )}
                 </ScrollView>
@@ -305,7 +312,7 @@ const styles = StyleSheet.create({
   },
   questProgress: {
     fontSize: 14,
-    color: colors.success,
+    color: colors.accent,
     fontWeight: 'bold',
     alignSelf: 'flex-end',
   },

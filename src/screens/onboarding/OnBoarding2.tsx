@@ -96,12 +96,12 @@ export default function OnBoarding2() {
           }}>
           <BigLogo
             resizeMode="contain"
-            imageStyle={{width: 80, height: 80, marginRight: 24}}
+            imageStyle={{width: 40, height: 40, marginRight: 16}}
           />
           <Text
             style={{
-              fontSize: 40,
-              lineHeight: 40,
+              fontSize: 24,
+              lineHeight: 24,
               fontWeight: 'bold',
               color: '#806A5B',
               textAlign: 'center',
@@ -115,7 +115,7 @@ export default function OnBoarding2() {
           <Icon name="close" size={32} color="#000" />
         </Pressable>
         <KeyboardAvoidingView
-          style={{flex: 3, justifyContent: 'flex-start'}}
+          style={{flex: 5, justifyContent: 'flex-start'}}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
           <TextInput
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: 72,
+    top: 70,
     right: 32,
     padding: 16,
     zIndex: 10,

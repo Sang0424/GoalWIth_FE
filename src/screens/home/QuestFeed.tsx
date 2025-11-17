@@ -8,7 +8,6 @@ import {
   Image,
   TextInput,
   Alert,
-  KeyboardAvoidingView,
   Keyboard,
   Animated,
   Pressable,
@@ -77,7 +76,6 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     }
   }, [data, quest.records]);
 
-  //console.log('QuestRecord:', data);
   const createRecord = useCallback(
     async ({questId, text, images: recordImages}: any) => {
       const formData = new FormData();
@@ -89,7 +87,11 @@ const QuestFeed = ({route}: QuestFeedProps) => {
           name: image.fileName,
         });
       });
-      await instance.post(`/record/create/${questId}`, formData);
+      await instance.post(`/record/create/${questId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
     },
     [],
   );
@@ -103,22 +105,20 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
-    },
   });
 
   const {mutate: completeQuest} = useMutation({
     mutationFn: async () => {
       await instance.put(`/quest/complete/${quest.id}`);
     },
+    onSuccess: () => {
+      Alert.alert('성공', '퀘스트가 완료되었습니다!');
+      navigation.goBack();
+      queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
+      queryClient.invalidateQueries({queryKey: ['homeQuests']});
+    },
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
-      queryClient.invalidateQueries({queryKey: ['user']});
-      queryClient.invalidateQueries({queryKey: ['homeQuests']});
     },
   });
 
@@ -216,6 +216,30 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     ]);
   };
 
+  const handleVerificationQuest = () => {
+    Alert.alert(
+      '이 퀘스트를 인증받으시겠습니까?',
+      '인증을 받기 시작하면 수정할 수 없습니다.',
+      [
+        {text: '취소', style: 'cancel'},
+        {
+          text: '인증',
+          onPress: () => {
+            completeQuest(quest.id, {
+              onSuccess: () => {
+                Alert.alert('성공', '퀘스트를 인증받기 시작합니다!');
+                navigation.goBack();
+              },
+              onError: error => {
+                Alert.alert(`${error.response.data.message}`);
+              },
+            });
+          },
+        },
+      ],
+    );
+  };
+
   const pickImage = () => {
     const options: any = {
       mediaType: 'photo',
@@ -246,10 +270,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     const date = new Date(dateString);
     return `${date.getFullYear()}년 ${
       date.getMonth() + 1
-    }월 ${date.getDate()}일 ${String(date.getHours()).padStart(
-      2,
-      '0',
-    )}:${String(date.getMinutes()).padStart(2, '0')}`;
+    }월 ${date.getDate()}일`;
   };
 
   return (
@@ -309,7 +330,12 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                         100,
                         Math.max(
                           0,
-                          (questRecord ? questRecord.length / 7 : 0) * 100,
+                          (Math.floor(
+                            (Date.now() - new Date(quest.startDate).getTime()) /
+                              86400000,
+                          ) +
+                            1) /
+                            7,
                         ),
                       )}%`,
                       backgroundColor: quest.isMain ? '#4a90e2' : '#a0a0a0',
@@ -318,7 +344,10 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                 />
               </View>
               <Text style={styles.progressText}>
-                {questRecord?.length ?? 0}일차
+                {Math.floor(
+                  (Date.now() - new Date(quest.startDate).getTime()) / 86400000,
+                ) + 1}
+                일차
               </Text>
             </View>
           </View>
@@ -393,15 +422,29 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                 : [
                     styles.actionButton,
                     styles.completeButton,
-                    {backgroundColor: colors.accent},
+                    {backgroundColor: colors.lightGray},
                   ]
             }
-            onPress={handleCompleteQuest}
+            onPress={
+              questParam.verificationRequired &&
+              questParam.procedure === 'progress'
+                ? handleVerificationQuest
+                : handleCompleteQuest
+            }
             disabled={
-              quest.record.length === 0 || new Date(quest.endDate) > new Date()
+              questRecord?.length === 0 ||
+              new Date(quest.endDate) > new Date() ||
+              questParam.procedure === 'verify'
+                ? questParam.verificationCount < questParam.requiredVerification
+                : false
             }>
             <Ionicons name="checkmark-circle" size={18} color="white" />
-            <Text style={styles.completeButtonText}>완료하기</Text>
+            {questParam.verificationRequired &&
+            questParam.procedure === 'progress' ? (
+              <Text style={styles.completeButtonText}>인증받기</Text>
+            ) : (
+              <Text style={styles.completeButtonText}>완료하기</Text>
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             style={[
@@ -616,7 +659,7 @@ const styles = StyleSheet.create({
     paddingRight: 45,
     minHeight: 44,
     maxHeight: 120,
-    backgroundColor: colors.switchBG,
+    backgroundColor: '#ffffff',
   },
   cameraButton: {
     position: 'absolute',

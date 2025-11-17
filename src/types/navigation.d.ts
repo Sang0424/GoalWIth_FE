@@ -34,6 +34,7 @@ export type HomeNavParamList = {
   Home: undefined;
   QuestFeed: {quest: Quest};
   CharacterSelection: {currentCharacter: string};
+  QuestVerification: {id: number};
 };
 
 export type QuestFeedProps = NativeStackNavigationProp<
@@ -43,7 +44,7 @@ export type QuestFeedProps = NativeStackNavigationProp<
 
 export type VerificationNavParamList = {
   Verification: undefined;
-  QuestVerification: {quest: Quest};
+  QuestVerification: {id: number};
 };
 
 export type QuestVerificationProps = NativeStackNavigationProp<
@@ -94,4 +95,9 @@ export type MyPageNavParamList = {
   AppInfoPage: undefined;
   HelpPage: undefined;
   MarketScreen: undefined;
+  MyVerification: undefined;
+  MyReaction: undefined;
+  MyBookmark: undefined;
+  QuestVerification: {quest: Quest};
+  InquiryPage: undefined;
 };

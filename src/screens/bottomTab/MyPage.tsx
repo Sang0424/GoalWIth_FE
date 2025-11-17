@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
@@ -22,7 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {tokenStore} from '../../store/tokenStore';
 import {User} from '../../types/user.types';
 import {Team} from '../../types/team.types';
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, useMutation} from '@tanstack/react-query';
 import {Dropdown} from 'react-native-element-dropdown';
 import {colors} from '../../styles/theme';
 
@@ -37,7 +38,7 @@ export default function MyPage() {
       await AsyncStorage.clear();
       setAccessToken(null);
     } catch (e) {
-      console.log(e);
+      Alert.alert(e as string);
     }
   };
   const {data: badges} = useQuery({
@@ -58,7 +59,7 @@ export default function MyPage() {
     isLoading: myVerificationLoading,
     refetch: myVerificationRefetch,
   } = useQuery({
-    queryKey: ['myVerification'],
+    queryKey: ['myVerificationCount'],
     queryFn: async () => {
       try {
         const response = await instance.get(`/quest/myVerification`);
@@ -76,7 +77,7 @@ export default function MyPage() {
     isLoading: myReactionLoading,
     refetch: myReactionRefetch,
   } = useQuery({
-    queryKey: ['myReaction'],
+    queryKey: ['myReactionCount'],
     queryFn: async () => {
       try {
         const response = await instance.get(`/quest/myReaction`);
@@ -89,55 +90,52 @@ export default function MyPage() {
     enabled: API_URL != '',
   });
 
+  const {
+    data: myBookmark,
+    isLoading: myBookmarkLoading,
+    refetch: myBookmarkRefetch,
+  } = useQuery({
+    queryKey: ['myBookmarkCount'],
+    queryFn: async () => {
+      try {
+        const response = await instance.get(`/quest/bookmarked`);
+        return response.data;
+      } catch (e: any) {
+        setError(e.response.data.message);
+        return [];
+      }
+    },
+    enabled: API_URL != '',
+  });
+
+  const {mutate: changeBadgeMutate} = useMutation({
+    mutationFn: async (badgeId: number) => {
+      const response = await instance.put(`/user/badge`, {
+        badgeId,
+      });
+      return response.data;
+    },
+    onSuccess: () => {},
+    onError: (error: any) => {
+      console.error(error.response.data.message);
+    },
+  });
+
+  if (myVerificationLoading || myReactionLoading || myBookmarkLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color="#000" />
+      </SafeAreaView>
+    );
+  }
+
   const myVerificationCount = myVerification?.totalElements;
   const myReactionCount = myReaction?.totalElements;
-
-  // const {
-  //   data: quests,
-  //   error,
-  //   isLoading,
-  //   refetch,
-  // } = useQuery({
-  //   queryKey: ['quest'],
-  //   queryFn: async () => {
-  //     const response = await instance.get(`/quest`);
-  //     const quests = response.data;
-  //     return quests;
-  //   },
-  //   enabled: true,
-  // });
-  // const {data: team, error: teamError, isLoading: teamLoading} = useQuery({
-  //   queryKey: ['team'],
-  //   queryFn: async () => {
-  //     const response = await instance.get(`/team`);
-  //     const team = response.data;
-  //     return team;
-  //   },
-  //   enabled: true,
-  // });
-  // Navigation types
-  // Type-safe filtering
-  // const completedQuests = quests?.quests.filter(
-  //   (quest: Quest) => quest.procedure === 'complete',
-  // ).length;
-  // const inProgressQuests = quests?.quests.filter(
-  //   (quest: Quest) => quest.procedure === 'progress',
-  // ).length;
-
-  // Calculate level progress with safe defaults
+  const myBookmarkCount = myBookmark?.totalElements;
   const currentExp = user.exp || 0;
-  const maxExp = user.maxExp || 100;
+  const maxExp = Math.round(200 * Math.pow(user?.level, 1.1));
   const levelProgress = (currentExp / maxExp) * 100;
   const nextLevel = (user.level || 1) + 1;
-
-  // Get border color based on user level
-  const getBorderColor = () => {
-    const level = user.level || 1;
-    if (level >= 10) return '#FFD700'; // Gold
-    if (level >= 5) return '#C0C0C0'; // Silver
-    return '#CD7F32'; // Bronze
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -166,24 +164,30 @@ export default function MyPage() {
               user.character || require('../../assets/character/pico_base.png')
             }
           />
-          <Text style={styles.userName}>{user.nickname || user.name}</Text>
+          <Text style={styles.userName}>{user.nickname}</Text>
           {/* <Text style={styles.userTitle}>{user.level}</Text> */}
 
           <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => navigation.navigate('MyVerification')}>
               <Text style={styles.statValue}>{myVerificationCount}</Text>
-              <Text style={styles.statLabel}>내가 인증한 퀘스트</Text>
-            </View>
+              <Text style={styles.statLabel}>인증한 퀘스트</Text>
+            </TouchableOpacity>
             <View style={styles.statDivider} />
-            <View style={styles.statItem}>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => navigation.navigate('MyReaction')}>
               <Text style={styles.statValue}>{myReactionCount}</Text>
-              <Text style={styles.statLabel}>내가 리액션한 퀘스트</Text>
-            </View>
+              <Text style={styles.statLabel}>리액션한 퀘스트</Text>
+            </TouchableOpacity>
             <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{0}</Text>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => navigation.navigate('MyBookmark')}>
+              <Text style={styles.statValue}>{myBookmarkCount}</Text>
               <Text style={styles.statLabel}>저장한 퀘스트</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
         {/* Level Progress */}
@@ -206,41 +210,24 @@ export default function MyPage() {
           </View>
         </View>
         {/* Badges */}
-        <View style={styles.card}>
+        <View style={styles.badgesContainer}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>획득한 칭호</Text>
-            <Dropdown
-              data={badges}
-              placeholder="Select a badge"
-              onChange={item => console.log(item)}
-              labelField="name"
-              valueField="id"
-            />
           </View>
-          {/* <View style={styles.badgesContainer}>
-            <View style={styles.badge}>
-              <View style={styles.badgeIcon}>
-                <Ionicons name="trophy" size={24} color="#FFD700" />
-              </View>
-              <Text style={styles.badgeName}>첫 퀘스트 완료</Text>
-            </View>
-            {user.level >= 5 && (
-              <View style={styles.badge}>
-                <View style={styles.badgeIcon}>
-                  <Ionicons name="star" size={24} color="#4CAF50" />
-                </View>
-                <Text style={styles.badgeName}>중급 도전자</Text>
-              </View>
-            )}
-            {user.level >= 10 && (
-              <View style={styles.badge}>
-                <View style={styles.badgeIcon}>
-                  <Ionicons name="diamond" size={24} color="#2196F3" />
-                </View>
-                <Text style={styles.badgeName}>마스터 도전자</Text>
-              </View>
-            )}
-          </View> */}
+          <Dropdown
+            data={badges}
+            placeholder="칭호를 선택해주세요"
+            placeholderStyle={{color: colors.gray}}
+            onChange={item => changeBadgeMutate(item.id)}
+            labelField="name"
+            valueField="id"
+            style={styles.dropdown}
+            selectedTextStyle={{
+              color: colors.font,
+              fontWeight: 'bold',
+            }}
+            value={user.badge}
+          />
         </View>
         {/* Settings */}
         <View style={styles.card}>
@@ -261,7 +248,6 @@ export default function MyPage() {
             </View>
             <Ionicons name="chevron-forward" size={18} color="#999" />
           </TouchableOpacity> */}
-          {/* <View style={styles.divider} /> */}
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => Alert.alert('Coming Soon! 조금만 기다려주세요!')}>
@@ -292,6 +278,16 @@ export default function MyPage() {
                 color="#666"
               />
               <Text style={styles.settingText}>앱 정보</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#999" />
+          </TouchableOpacity>
+          <View style={styles.divider} />
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => navigation.navigate('InquiryPage')}>
+            <View style={styles.settingLeft}>
+              <Ionicons name="mail-outline" size={22} color="#666" />
+              <Text style={styles.settingText}>문의하기</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#999" />
           </TouchableOpacity>
@@ -376,7 +372,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   cardHeader: {
-    flexDirection: 'row',
+    // flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 15,
@@ -418,23 +414,31 @@ const styles = StyleSheet.create({
     color: colors.font,
   },
   badgesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -5,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 15,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   badge: {
     width: '33.33%',
     padding: 5,
     alignItems: 'center',
   },
-  badgeIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.lightGray,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+  dropdown: {
+    width: '100%',
+    height: 40,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.gray,
   },
   badgeName: {
     fontSize: 12,

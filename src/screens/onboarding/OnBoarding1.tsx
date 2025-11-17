@@ -22,7 +22,6 @@ import {signInWithGoogle} from '../../services/api/auth';
 import {useMutation} from '@tanstack/react-query';
 import {tokenStore} from '../../store/tokenStore';
 import {login} from '@react-native-kakao/user';
-import {KakaoLoginToken} from '@react-native-kakao/user';
 
 export default function Onboarding1() {
   const {height, width} = useWindowDimensions();
@@ -57,14 +56,21 @@ export default function Onboarding1() {
         navigation.navigate('BottomNav');
       }
     },
-    onError: error => {
-      console.error(error);
+    onError: (error: any) => {
+      console.error(error?.response?.data?.message);
     },
   });
 
   const {mutate: kakaoLoginMutate} = useMutation({
-    mutationFn: async (idToken: KakaoLoginToken) => {
+    mutationFn: async ({
+      kakaoAccessToken,
+      idToken,
+    }: {
+      kakaoAccessToken: string;
+      idToken: string;
+    }) => {
       const response = await instance.post('/user/kakao-login', {
+        accessToken: kakaoAccessToken,
         token: idToken,
       });
       return response.data; // { isNewUser, accessToken?, refreshToken?, email?, name? }
@@ -103,9 +109,11 @@ export default function Onboarding1() {
   };
 
   const handleKakaoLogin = async () => {
-    const idToken = await login();
-    if (idToken) {
-      kakaoLoginMutate(idToken);
+    const {accessToken, idToken} = await login();
+    console.log('accessToken', accessToken);
+    console.log('idToken', idToken);
+    if (accessToken && idToken) {
+      kakaoLoginMutate({kakaoAccessToken: accessToken, idToken});
     }
   };
 

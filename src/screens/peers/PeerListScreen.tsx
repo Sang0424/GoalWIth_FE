@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Pressable,
   Platform,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useInfiniteQuery} from '@tanstack/react-query';
@@ -17,15 +18,19 @@ import CharacterAvatar from '../../components/CharacterAvatar';
 import instance from '../../utils/axiosInterceptor';
 import {API_URL} from '@env';
 import {PeerListProps} from '../../types/navigation';
+import ProfileBottomSheet from '../../components/ProfileBottomSheet';
+import {useCancelRequestPeer} from '../../utils/mutations';
+import {colors} from '../../styles/theme';
 
 const PAGE_SIZE = 10;
 
 const PeerListScreen = () => {
+  const [isProfileVisible, setProfileVisible] = useState(false);
+  const [selecteUser, setSelectUser] = useState<number | undefined>(undefined);
   const route = useRoute<PeerListProps>();
   const navigation = useNavigation();
   const {type} = route.params;
-
-  console.log('type:', type);
+  const cancelRequestPeer = useCancelRequestPeer();
 
   const getEndpoint = () => {
     switch (type) {
@@ -45,9 +50,9 @@ const PeerListScreen = () => {
       case 'peers':
         return '내 동료';
       case 'requested':
-        return '내가 요청한 동료';
+        return '내가 받은 동료 요청';
       case 'requesting':
-        return '나에게 요청한 동료';
+        return '내가 요청한 동료';
       default:
         return '동료 목록';
     }
@@ -85,7 +90,12 @@ const PeerListScreen = () => {
   };
 
   const renderItem = ({item}: {item: any}) => (
-    <TouchableOpacity style={styles.itemContainer}>
+    <TouchableOpacity
+      style={styles.itemContainer}
+      onPress={() => {
+        setSelectUser(item.id);
+        setProfileVisible(true);
+      }}>
       <View style={styles.itemContent}>
         <CharacterAvatar
           avatar={
@@ -94,6 +104,24 @@ const PeerListScreen = () => {
           size={50}
         />
         <Text style={styles.peerName}>{item.nickname}</Text>
+        {type === 'requesting' && (
+          <TouchableOpacity
+            onPress={() =>
+              Alert.alert('요청취소', '취소하시겠습니까??', [
+                {text: '아니요', style: 'default'},
+                {
+                  text: '네',
+                  style: 'destructive',
+                  onPress: () => {
+                    cancelRequestPeer(item);
+                  },
+                },
+              ])
+            }
+            style={styles.cancelButton}>
+            <Text style={styles.cancelButtonText}>요청 취소</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -128,7 +156,9 @@ const PeerListScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={{padding: 10}}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={{position: 'absolute', left: 16, padding: 10}}>
           <Icon
             name={
               Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back-android'
@@ -148,6 +178,11 @@ const PeerListScreen = () => {
         ListFooterComponent={renderFooter}
         contentContainerStyle={styles.listContent}
       />
+      <ProfileBottomSheet
+        visible={isProfileVisible}
+        onClose={() => setProfileVisible(false)}
+        userId={selecteUser}
+      />
     </SafeAreaView>
   );
 };
@@ -158,6 +193,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
@@ -190,6 +228,16 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
+  },
+  cancelButton: {
+    position: 'absolute',
+    right: 24,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: colors.error,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
 

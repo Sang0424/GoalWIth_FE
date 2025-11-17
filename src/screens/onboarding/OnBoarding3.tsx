@@ -10,6 +10,8 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   Platform,
+  Linking,
+  Alert,
 } from 'react-native';
 import BigLogo from '../../components/Logo';
 import {useNavigation} from '@react-navigation/native';
@@ -37,6 +39,11 @@ const UserTypes = [
   '기타',
 ];
 
+const TERMS_URL =
+  'https://satin-gallium-b49.notion.site/2ab7d463a92480cf96c2d4b82b7f4f09?pvs=74';
+const PRIVACY_URL =
+  'https://satin-gallium-b49.notion.site/2ab7d463a92480f999cde16f442722c7?pvs=74';
+
 export default function OnBoarding3({route}: OnBoarding3Props) {
   const [selectedUserType, setSelectedUserType] = useState<string | null>(null);
 
@@ -58,6 +65,26 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
       userType: string;
     }>
   >({});
+  const [agreedTerms, setAgreedTerms] = useState(false);
+  const [agreedPrivacy, setAgreedPrivacy] = useState(false);
+  const [fourteen, setFourteen] = useState(false);
+
+  const openLink = async (url: string) => {
+    // 해당 URL을 열 수 있는지 먼저 확인
+    const supported = await Linking.canOpenURL(url);
+
+    if (supported) {
+      // 열 수 있다면, 링크 열기
+      await Linking.openURL(url);
+    } else {
+      Alert.alert('오류', '링크를 열 수 없습니다.');
+    }
+  };
+  const validateTerms = () => {
+    agreedTerms && agreedPrivacy && fourteen ? true : false;
+  };
+
+  console.log(validateTerms());
   const validateUserInfo = () => {
     let isValid = true;
     const errorMsg: Partial<{
@@ -66,6 +93,9 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
     }> = {};
     if (userInfo.nickname.length < 2) {
       errorMsg.nickname = '닉네임은 2글자 이상이어야 합니다.';
+      isValid = false;
+    } else if (userInfo.nickname.length > 15) {
+      errorMsg.nickname = '닉네임은 15글자 이하이어야 합니다.';
       isValid = false;
     } else if (!userInfo.nickname) {
       errorMsg.nickname = '닉네임을 입력해주세요.';
@@ -137,12 +167,12 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
           }}>
           <BigLogo
             resizeMode="contain"
-            imageStyle={{width: 80, height: 80, marginRight: 24}}
+            imageStyle={{width: 40, height: 40, marginRight: 16}}
           />
           <Text
             style={{
-              fontSize: 40,
-              lineHeight: 40,
+              fontSize: 24,
+              lineHeight: 24,
               fontWeight: 'bold',
               color: '#806A5B',
               textAlign: 'center',
@@ -151,13 +181,13 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
           </Text>
         </View>
         <KeyboardAvoidingView
-          style={{flex: 3, justifyContent: 'flex-start'}}
+          style={{flex: 5, justifyContent: 'flex-start'}}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
           <Text style={styles.label}>사용할 닉네임을 입력해주세요</Text>
           <TextInput
             value={userInfo.nickname}
-            placeholder="닉네임"
+            placeholder="사용할 닉네임을 입력해주세요"
             enterKeyHint="next"
             autoCapitalize="none"
             autoCorrect={false}
@@ -168,19 +198,6 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
           {error.nickname && (
             <Text style={styles.errorMsg}>{error.nickname}</Text>
           )}
-          {/* <TextInput
-            ref={roleRef}
-            value={userInfo.userType}
-            placeholder="사용자 유형 ex)학생, 대학생, 직장인 ..."
-            enterKeyHint="done"
-            autoCapitalize="none"
-            autoCorrect={false}
-            style={[styles.input, {width: width - 70, height: 40}]}
-            onChangeText={text => setUserInfo({...userInfo, userType: text})}
-          />
-          {error.userType && (
-            <Text style={styles.errorMsg}>{error.userType}</Text>
-          )} */}
           <Text style={styles.label}>직업 유형을 선택해주세요</Text>
           <View style={styles.chipContainer}>
             {/* USER_TYPES 배열을 순회하며 선택 버튼을 렌더링 */}
@@ -206,6 +223,40 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
               </Pressable>
             ))}
           </View>
+          <View style={styles.agreementContainer}>
+            <Pressable
+              style={styles.checkboxRow}
+              onPress={() => setAgreedTerms(!agreedTerms)}>
+              <Icon
+                name={agreedTerms ? 'check-circle' : 'radio-button-unchecked'}
+                size={24}
+                color={agreedTerms ? '#806a5b' : '#ccc'}
+              />
+
+              <Text style={styles.checkboxLabel}>
+                [필수] 서비스 이용약관 동의
+              </Text>
+              <Pressable onPress={() => openLink(TERMS_URL)}>
+                <Text style={styles.viewLink}>[보기]</Text>
+              </Pressable>
+            </Pressable>
+
+            <Pressable
+              style={styles.checkboxRow}
+              onPress={() => setAgreedPrivacy(!agreedPrivacy)}>
+              <Icon
+                name={agreedPrivacy ? 'check-circle' : 'radio-button-unchecked'}
+                size={24}
+                color={agreedPrivacy ? '#806a5b' : '#ccc'}
+              />
+              <Text style={styles.checkboxLabel}>
+                [필수] 개인정보 수집 및 이용 동의
+              </Text>
+              <Pressable onPress={() => openLink(PRIVACY_URL)}>
+                <Text style={styles.viewLink}>[보기]</Text>
+              </Pressable>
+            </Pressable>
+          </View>
           <View style={{flexDirection: 'row', justifyContent: 'space-around'}}>
             <Pressable
               style={styles.backBtn}
@@ -220,8 +271,21 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
               </Text>
             </Pressable>
             <Pressable
+              style={styles.checkboxRow}
+              onPress={() => setAgreedTerms(!agreedTerms)}>
+              <Icon
+                name={agreedTerms ? 'check-circle' : 'radio-button-unchecked'}
+                size={24}
+                color={agreedTerms ? '#806a5b' : '#ccc'}
+              />
+
+              <Text style={styles.checkboxLabel}>
+                [필수] 만 14세 이상입니다
+              </Text>
+            </Pressable>
+            <Pressable
               style={[
-                isFormFilled(userInfo)
+                isFormFilled(userInfo) && validateTerms()
                   ? styles.registerBtn
                   : styles.registerBtnDisabled,
               ]}
@@ -254,7 +318,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: 72,
+    top: 70,
     right: 32,
     padding: 16,
     zIndex: 10,
@@ -267,7 +331,7 @@ const styles = StyleSheet.create({
   },
   registerBtn: {
     borderRadius: 10,
-    backgroundColor: '#F2F0E6',
+    backgroundColor: '#D1C7BC',
     justifyContent: 'center',
     marginTop: 8,
     alignItems: 'center',
@@ -276,7 +340,7 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     borderRadius: 10,
-    backgroundColor: '#F2F0E6',
+    backgroundColor: '#D1C7BC',
     justifyContent: 'center',
     marginTop: 8,
     alignItems: 'center',
@@ -285,7 +349,7 @@ const styles = StyleSheet.create({
   },
   registerBtnDisabled: {
     borderRadius: 10,
-    backgroundColor: '#F2F0E6',
+    backgroundColor: '#D1C7BC',
     justifyContent: 'center',
     marginTop: 8,
     alignItems: 'center',
@@ -327,4 +391,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF', // 선택 시 글자색
     fontWeight: 'bold',
   },
+  agreementContainer: {marginTop: 24},
+  checkboxRow: {flexDirection: 'row', alignItems: 'center', marginBottom: 15},
+  checkboxLabel: {flex: 1, marginLeft: 10},
+  viewLink: {color: 'blue', textDecorationLine: 'underline'},
 });

@@ -10,19 +10,20 @@ const HelpPage = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={{paddingHorizontal: 24}}>
-          <Icon
-            name={
-              Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back-android'
-            }
-            size={24}
-            color={'#000'}
-          />
-        </Pressable>
-        <Text style={styles.title}>GoalWith 가이드</Text>
-
+        <View style={styles.headerContainer}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={{position: 'absolute', left: 16}}>
+            <Icon
+              name={
+                Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back-android'
+              }
+              size={24}
+              color={'#000'}
+            />
+          </Pressable>
+          <Text style={styles.title}>GoalWith 가이드</Text>
+        </View>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>퀘스트란?</Text>
           <Text style={styles.text}>
@@ -83,6 +84,13 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     padding: 20,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingTop: 20,
+    justifyContent: 'center',
   },
   title: {
     fontSize: 24,

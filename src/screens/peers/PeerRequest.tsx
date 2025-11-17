@@ -53,8 +53,6 @@ export default function PeerRequest() {
   const requestedPeers =
     requestedPeersData?.pages.flatMap(page => page.content) || [];
 
-  console.log('requestedPeers', requestedPeers);
-
   const loadMorePeers = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();

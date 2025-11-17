@@ -13,171 +13,20 @@ import {
 } from 'react-native';
 import {useMemo} from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import CharacterAvatar from '../../components/CharacterAvatar';
 import Logo from '../../components/Logo';
-import type {Quest, ReactionType} from '../../types/quest.types';
-import type {User} from '../../types/user.types';
 import {useQuestStore} from '../../store/mockData';
-import {useNavigation} from '@react-navigation/native';
-import {VerificationNavParamList} from '../../types/navigation';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import instance from '../../utils/axiosInterceptor';
 import {
   useInfiniteQuery,
   useQuery,
   useQueryClient,
+  useMutation,
 } from '@tanstack/react-query';
 import {API_URL} from '@env';
 import {useDebounce} from '../../utils/hooks/useDebounce';
-import ReactionButton from '../../components/ReactionButton';
 import {colors} from '../../styles/theme';
-
-// const getReactionData = (
-//   quest: Quest,
-//   reactionType: ReactionType,
-//   currentUserId?: number,
-// ) => {
-//   const {data: reactions} = useQuery({
-//     queryKey: ['reactions', quest.id],
-//     queryFn: () => instance.get(`/quest/${quest.id}/reactions`),
-//   });
-//   console.log('reactionsCount', reactions?.data);
-//   const count = reactions?.data.filter((r: any) => r.key === reactionType);
-//   const myReaction = reactions?.data.find(
-//     (r: any) => r.key === reactionType && r.user.id === currentUserId,
-//   );
-//   return {
-//     count,
-//     myReaction: myReaction
-//       ? {id: myReaction.id, type: myReaction.reactionType}
-//       : null,
-//   };
-// };
-const useReactionData = (questId: number | string) => {
-  // 1. useQuery로 데이터를 불러옵니다.
-  const {data: response, isLoading} = useQuery({
-    queryKey: ['reactions', questId],
-    queryFn: async () => {
-      const {data} = await instance.get(`/quest/${questId}/reactions`);
-      return data;
-    },
-  });
-
-  // 2. useMemo를 사용해 응답 데이터를 UI에 필요한 형태로 가공합니다.
-  //    (데이터가 변경될 때만 재계산되어 성능에 유리합니다.)
-  const processedData = useMemo(() => {
-    // 데이터가 없으면 기본값 반환
-    if (!response) {
-      return;
-    }
-
-    return {
-      counts: response,
-    };
-  }, [response]);
-
-  // 3. 가공된 데이터와 로딩 상태를 반환합니다.
-  return {...processedData, isLoading};
-};
-
-const VerificationFeedCard = ({item}: {item: any}) => {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<VerificationNavParamList>>();
-  const [isProfileVisible, setProfileVisible] = useState(false);
-  const [selecteUser, setSelectUser] = useState<number | undefined>(undefined);
-
-  const reactions = useReactionData(item.id);
-
-  console.log('reactions', reactions);
-  const handleGoQuest = () => {
-    navigation.navigate('QuestVerification', {quest: item});
-  };
-  return (
-    <TouchableOpacity
-      style={styles.card}
-      activeOpacity={0.88}
-      onPress={() => {
-        setSelectUser(item.user.id);
-        setProfileVisible(true);
-      }}>
-      <TouchableOpacity style={styles.cardHeader}>
-        <CharacterAvatar
-          size={40}
-          level={item.user.level}
-          avatar={require('../../assets/character/pico_base.png')}
-        />
-        <View style={{flex: 1, marginLeft: 10}}>
-          <Text style={styles.nickname}>
-            {item.user.nickname} (Lv.{item.user.level})
-          </Text>
-          {/* <Text style={styles.badge}>{item.user.badge}</Text> */}
-        </View>
-        <Text style={styles.timestamp}>
-          {new Date(item.startDate).toLocaleString('ko-KR')}
-        </Text>
-      </TouchableOpacity>
-      <View style={styles.questInfo}>
-        <Text style={styles.questTitle}>{item.title}</Text>
-      </View>
-      {item.records && item.records.length > 0 && (
-        <View style={styles.imageGrid}>
-          {item.records.map((record: any, index: any) => (
-            <View key={record.id} style={styles.gridItem}>
-              <Image
-                source={{uri: record.images?.[0]}}
-                style={styles.gridImage}
-                resizeMode="cover"
-              />
-            </View>
-          ))}
-        </View>
-      )}
-      <Text style={styles.contentText}>{item.description}</Text>
-      <View style={styles.reactionsRow}>
-        <ReactionButton
-          targetType="quest"
-          targetId={item.id}
-          myReaction={reactions.counts?.myReaction}
-          reactionType="support"
-          count={reactions.counts?.support}
-        />
-        <ReactionButton
-          targetType="quest"
-          targetId={item.id}
-          reactionType="amazing"
-          myReaction={reactions.counts?.myReaction}
-          count={reactions.counts?.amazing}
-        />
-        <ReactionButton
-          targetType="quest"
-          targetId={item.id}
-          reactionType="together"
-          myReaction={reactions.counts?.myReaction}
-          count={reactions.counts?.together}
-        />
-        <ReactionButton
-          targetType="quest"
-          targetId={item.id}
-          reactionType="perfect"
-          myReaction={reactions.counts?.myReaction}
-          count={reactions.counts?.perfect}
-        />
-      </View>
-      {/* 인증자 수 표시 */}
-      <Text style={{color: '#4CAF50', fontWeight: 'bold', marginTop: 6}}>
-        현재 {item.verificationCount}
-        명이 인증했습니다.
-      </Text>
-      <TouchableOpacity
-        style={styles.verifyBtn}
-        onPress={handleGoQuest}
-        activeOpacity={0.85}>
-        <Text style={styles.verifyBtnText}>인증하기</Text>
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
-};
+import VerificationCard from '../../components/VerificationCard';
 
 const TAB_LIST = [
   {key: 'realtime', label: '실시간'},
@@ -194,7 +43,6 @@ const VerificationFeedScreen = () => {
   const [searchError, setSearchError] = useState<string | null>(null);
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
   const queryClient = useQueryClient();
-  const quests = useQuestStore(state => state.quests);
 
   const {
     data,
@@ -214,7 +62,6 @@ const VerificationFeedScreen = () => {
         return response.data;
       } catch (e: any) {
         setError(e.response.data.message);
-        console.log('verification error', e.response.data.message);
         return {items: [], nextPage: null};
       }
     },
@@ -222,7 +69,6 @@ const VerificationFeedScreen = () => {
       return lastPage.hasNext ? allPages.length : undefined;
     },
     enabled: API_URL != '',
-    refetchOnWindowFocus: true,
   });
 
   const {
@@ -233,20 +79,16 @@ const VerificationFeedScreen = () => {
     hasNextPage: searchVerificationHasNextPage,
     refetch: searchVerificationRefetch,
   } = useInfiniteQuery({
-    queryKey: ['searchVerification', debouncedSearchQuery],
+    queryKey: ['searchVerification'],
     initialPageParam: 0,
     queryFn: async ({pageParam = 0}) => {
       try {
         const response = await instance.get(
           `/search/quest/verification?search=${debouncedSearchQuery}&page=${pageParam}&size=${PAGE_SIZE}`,
         );
-        // queryClient.invalidateQueries({
-        //   queryKey: ['searchVerification', debouncedSearchQuery],
-        // });
         return response.data;
       } catch (e: any) {
         setSearchError(e.response.data.message);
-        console.log('search verification error', e.response.data.message);
         return {items: [], nextPage: null};
       }
     },
@@ -274,7 +116,6 @@ const VerificationFeedScreen = () => {
         return response.data;
       } catch (e: any) {
         setError(e.response.data.message);
-        console.log('verification error', e.response.data.message);
         return {items: [], nextPage: null};
       }
     },
@@ -282,43 +123,19 @@ const VerificationFeedScreen = () => {
       return lastPage.hasNext ? allPages.length : undefined;
     },
     enabled: API_URL != '',
-    refetchOnWindowFocus: true,
   });
 
-  // const {data: peerId, isLoading: peerIdLoading} = useQuery({
-  //   queryKey: ['peerId'],
-  //   queryFn: async () => {
-  //     const response = await instance.get('/peer/myPeerId');
-  //     return response.data;
-  //   },
-  //   enabled: API_URL != '',
-  // });
-
   const verificationQuests = React.useMemo(() => {
-    if (API_URL === '') {
-      const filtered = quests.filter(
-        quest =>
-          quest.verificationRequired === true && quest.procedure === 'verify',
-      );
-      return filtered.slice(0, (page + 1) * PAGE_SIZE);
-    }
     return debouncedSearchQuery !== ''
       ? searchVerificationData?.pages.flatMap(page => page.content) || []
       : data?.pages.flatMap(page => page.content) || [];
-  }, [quests, data, page]);
+  }, [data, page, debouncedSearchQuery]);
 
   const peersVerificationQuests = React.useMemo(() => {
-    if (API_URL === '') {
-      const filtered = quests.filter(
-        quest =>
-          quest.verificationRequired === true && quest.procedure === 'verify',
-      );
-      return filtered.slice(0, (page + 1) * PAGE_SIZE);
-    }
     return debouncedSearchQuery !== ''
       ? searchVerificationData?.pages.flatMap(page => page.content) || []
       : peersVerificationData?.pages.flatMap(page => page.content) || [];
-  }, [quests, peersVerificationData, page]);
+  }, [peersVerificationData, page, debouncedSearchQuery]);
 
   const hasMore =
     activeTab === 'realtime'
@@ -380,7 +197,7 @@ const VerificationFeedScreen = () => {
   }
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: '#ffffff'}}>
+    <SafeAreaView style={{flex: 1, backgroundColor: colors.background}}>
       <View style={{paddingHorizontal: 16}}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
           <Logo
@@ -392,7 +209,8 @@ const VerificationFeedScreen = () => {
               marginRight: 16,
             }}
           />
-          <Text style={{fontSize: 24, fontWeight: 'bold', color: '#806A5B'}}>
+          <Text
+            style={{fontSize: 24, fontWeight: 'bold', color: colors.primary}}>
             GoalWith
           </Text>
         </View>
@@ -400,7 +218,7 @@ const VerificationFeedScreen = () => {
           <Icon
             name="search"
             size={32}
-            color={'#000000'}
+            color={colors.font}
             style={styles.searchIcon}
           />
           <TextInput
@@ -414,7 +232,7 @@ const VerificationFeedScreen = () => {
               style={styles.searchIcon}
               name="cancel"
               size={24}
-              color="#a1a1a1"
+              color={colors.font}
               onPress={() => setSearchQuery('')}
             />
           )}
@@ -444,7 +262,7 @@ const VerificationFeedScreen = () => {
         keyExtractor={item => item.id}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
-        renderItem={({item}) => <VerificationFeedCard item={item} />}
+        renderItem={({item}) => <VerificationCard item={item} />}
         ListFooterComponent={
           searchQuery !== '' ? (
             searchVerificationIsFetchingNextPage ? (
@@ -469,30 +287,6 @@ const VerificationFeedScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  imageGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 10,
-    marginHorizontal: -2,
-  },
-  gridItem: {
-    width: '25%',
-    aspectRatio: 1,
-    padding: 2,
-  },
-  gridImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 4,
-  },
-  reactionsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-    gap: 8,
-    width: '100%',
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -513,9 +307,9 @@ const styles = StyleSheet.create({
   },
   tabRow: {
     flexDirection: 'row',
-    backgroundColor: colors.switchBG,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray,
+    borderBottomColor: colors.switchBG,
   },
   tabBtn: {
     flex: 1,
@@ -526,7 +320,6 @@ const styles = StyleSheet.create({
   },
   activeTabBtn: {
     borderBottomColor: colors.accent,
-    backgroundColor: colors.switchBG,
   },
   tabLabel: {
     fontSize: 16,
@@ -536,77 +329,6 @@ const styles = StyleSheet.create({
   activeTabLabel: {
     color: colors.accent,
     fontWeight: 'bold',
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.gray,
-    marginBottom: 18,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 99,
-    marginRight: 12,
-    backgroundColor: colors.gray,
-  },
-  nickname: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    color: colors.font,
-  },
-  timestamp: {
-    fontSize: 12,
-    color: colors.gray,
-    marginLeft: 8,
-  },
-  questInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    justifyContent: 'space-between',
-  },
-  questTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.font,
-  },
-  feedImage: {
-    height: 180,
-    borderRadius: 12,
-    marginBottom: 10,
-    backgroundColor: colors.switchBG,
-  },
-  contentText: {
-    fontSize: 14,
-    color: colors.font,
-    marginBottom: 8,
-    marginTop: 8,
-  },
-  verifyBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  verifyBtnText: {
-    color: colors.btnFont,
-    fontWeight: 'bold',
-    fontSize: 14,
-    letterSpacing: 1,
   },
 });
 

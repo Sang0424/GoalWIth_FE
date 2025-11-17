@@ -6,17 +6,24 @@ import {
   View,
   Alert,
   TouchableOpacity,
+  Touchable,
 } from 'react-native';
 import type {User} from '../types/user.types';
 import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useWindowDimensions} from 'react-native';
-import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  useQuery,
+  useInfiniteQuery,
+} from '@tanstack/react-query';
 import instance from '../utils/axiosInterceptor';
 import CharacterAvatar from './CharacterAvatar';
 import ProfileBottomSheet from './ProfileBottomSheet';
-import {useState} from 'react';
+import {useState, useMemo} from 'react';
 import {colors} from '../styles/theme';
+import {useCancelRequestPeer} from '../utils/mutations';
 
 export default function UserCard({user, from}: {user?: any; from: string}) {
   const navigation = useNavigation();
@@ -25,43 +32,102 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
   const [isProfileVisible, setProfileVisible] = useState(false);
   const [selecteUser, setSelectUser] = useState<number | undefined>(undefined);
 
+  const cancelRequestPeer = useCancelRequestPeer();
+
+  const {mutate: requestPeer} = useMutation({
+    mutationFn: async (user: any) => {
+      const response = await instance.post(`/peer/${user?.id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ['peers']});
+      queryClient.invalidateQueries({queryKey: ['requestedPeers']});
+      queryClient.invalidateQueries({queryKey: ['requestingPeers']});
+      queryClient.invalidateQueries({queryKey: ['recommendPeers']});
+      queryClient.invalidateQueries({queryKey: ['myPeers']});
+      queryClient.invalidateQueries({queryKey: ['requestedPeersCount']});
+      requestingRefetch();
+    },
+    onError: (error: any) => {
+      Alert.alert(`${error.response.data.message}`);
+    },
+  });
+
   const {mutate: acceptPeer} = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (user: any) => {
       const response = await instance.post(`/peer/accept/${user?.id}`);
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: ['peers']});
       queryClient.invalidateQueries({queryKey: ['requestedPeers']});
+      queryClient.invalidateQueries({queryKey: ['requestingPeers']});
+      queryClient.invalidateQueries({queryKey: ['recommendPeers']});
+      queryClient.invalidateQueries({queryKey: ['myPeers']});
+      queryClient.invalidateQueries({queryKey: ['requestedPeersCount']});
+      requestingRefetch();
     },
     onError: (error: any) => {
-      Alert.alert(`오류`, `${error.response.data.message}`);
+      Alert.alert(`${error.response.data.message}`);
     },
   });
 
   const {mutate: rejectPeer} = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (user: any) => {
       const response = await instance.post(`/peer/reject/${user?.id}`);
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: ['peers']});
       queryClient.invalidateQueries({queryKey: ['requestedPeers']});
+      queryClient.invalidateQueries({queryKey: ['requestingPeers']});
+      queryClient.invalidateQueries({queryKey: ['recommendPeers']});
+      queryClient.invalidateQueries({queryKey: ['myPeers']});
+      queryClient.invalidateQueries({queryKey: ['requestedPeersCount']});
+      requestingRefetch();
     },
     onError: (error: any) => {
-      Alert.alert(`오류`, `${error.response.data.message}`);
+      Alert.alert(`${error.response.data.message}`);
     },
   });
 
+  const {
+    data: requestingPeersData,
+    isLoading: requestingLoading,
+    refetch: requestingRefetch,
+  } = useInfiniteQuery({
+    queryKey: ['isAlreadyRequest'],
+    queryFn: async ({pageParam = 0}) => {
+      const response = await instance.get(
+        `/peer/requesting?page=${pageParam}&size=10`,
+      );
+      return response.data;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.number < lastPage.totalPages) {
+        return lastPage.number + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 0,
+  });
+
+  const isAlreadyRequest = useMemo(() => {
+    return requestingPeersData?.pages
+      .flatMap(page => page.content)
+      .some(peer => peer.id === user?.id);
+  }, [requestingPeersData, user?.id]);
+
   return (
-    <TouchableOpacity
-      onPress={() => {
-        setSelectUser(user?.id);
-        setProfileVisible(true);
-      }}>
+    <View>
       <View style={[styles.cardContainer, {width: (width - 48 - 8) / 2}]}>
         <View style={styles.cardTop}></View>
-        <View style={styles.avatarContainer}>
+        <TouchableOpacity
+          style={styles.avatarContainer}
+          onPress={() => {
+            setSelectUser(user?.id);
+            setProfileVisible(true);
+          }}>
           <CharacterAvatar
             size={80}
             level={user?.level || 1}
@@ -69,7 +135,7 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
               user?.character || require('../assets/character/pico_base.png')
             }
           />
-        </View>
+        </TouchableOpacity>
         <View style={styles.cardMain}>
           <View>
             <Text
@@ -91,17 +157,25 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
             </Text>
           </View>
           {from == 'peers' ? (
-            <Pressable style={{flexDirection: 'row', alignItems: 'center'}}>
-              <Icon name="add" size={24} color={colors.primary} />
+            <TouchableOpacity
+              style={{flexDirection: 'row', alignItems: 'center'}}
+              onPress={() => {
+                isAlreadyRequest ? cancelRequestPeer(user) : requestPeer(user);
+              }}>
+              {isAlreadyRequest ? (
+                <Icon name="cancel" size={24} color={colors.primary} />
+              ) : (
+                <Icon name="add" size={24} color={colors.primary} />
+              )}
               <Text
                 style={{
                   color: colors.primary,
                   fontSize: 16,
                   fontWeight: 'bold',
                 }}>
-                피어링
+                {isAlreadyRequest ? '요청취소' : '피어링'}
               </Text>
-            </Pressable>
+            </TouchableOpacity>
           ) : (
             <View
               style={{
@@ -110,7 +184,7 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
                 justifyContent: 'space-around',
                 width: '100%',
               }}>
-              <Pressable
+              <TouchableOpacity
                 style={{flexDirection: 'row', alignItems: 'center'}}
                 onPress={() =>
                   Alert.alert('거절하시겠습니까?', '거절하시겠습니까?', [
@@ -118,7 +192,7 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
                     {
                       text: '거절',
                       onPress: () => {
-                        rejectPeer();
+                        rejectPeer(user);
                       },
                     },
                   ])
@@ -132,8 +206,8 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
                   }}>
                   거절하기
                 </Text>
-              </Pressable>
-              <Pressable
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={{flexDirection: 'row', alignItems: 'center'}}
                 onPress={() =>
                   Alert.alert('수락하시겠습니까?', '수락하시겠습니까?', [
@@ -141,7 +215,7 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
                     {
                       text: '수락',
                       onPress: () => {
-                        acceptPeer();
+                        acceptPeer(user);
                       },
                     },
                   ])
@@ -155,7 +229,7 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
                   }}>
                   수락하기
                 </Text>
-              </Pressable>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -165,7 +239,7 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
         onClose={() => setProfileVisible(false)}
         userId={selecteUser}
       />
-    </TouchableOpacity>
+    </View>
   );
 }
 
