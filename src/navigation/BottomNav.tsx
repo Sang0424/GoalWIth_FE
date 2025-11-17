@@ -51,7 +51,7 @@ export default function BottomNav() {
           tabBarLabel: '동료',
         }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name={'TeamNav'}
         component={TeamNav}
         options={{
@@ -60,7 +60,7 @@ export default function BottomNav() {
           ),
           tabBarLabel: '팀',
         }}
-      />
+      /> */}
       <Tab.Screen
         name={'MyPageNav'}
         component={MyPageNav}

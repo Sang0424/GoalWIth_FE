@@ -13,7 +13,6 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {tokenStore} from './src/store/tokenStore';
 import {userStore} from './src/store/userStore';
-import instance from './src/utils/axiosInterceptor';
 import {decodeJwt} from './src/utils/jwtUtils';
 import {API_URL} from '@env';
 import {MenuProvider} from 'react-native-popup-menu';
@@ -21,6 +20,7 @@ import axios from 'axios';
 import {configureGoogleSignIn} from './src/services/api/auth';
 import BootSplash from 'react-native-bootsplash';
 import {initializeKakaoSDK} from '@react-native-kakao/core';
+import Toast from 'react-native-toast-message';
 
 const queryClient = new QueryClient();
 
@@ -97,6 +97,7 @@ const App = () => {
             <GestureHandlerRootView style={{flex: 1}}>
               {accessToken ? <BottomNav /> : <OnBoardingNav />}
             </GestureHandlerRootView>
+            <Toast position="bottom" bottomOffset={100} visibilityTime={2000} />
           </SafeAreaProvider>
         </NavigationContainer>
       </MenuProvider>

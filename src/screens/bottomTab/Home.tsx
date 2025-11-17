@@ -4,14 +4,12 @@ import {
   StyleSheet,
   ViewStyle,
   TouchableOpacity,
-  TextInput,
   ScrollView,
   KeyboardAvoidingView,
   Alert,
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  PanResponder,
   RefreshControl,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -45,7 +43,9 @@ export default function Home() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [questToEdit, setQuestToEdit] = useState<Quest | null>(null);
   const [isAddingMainQuest, setIsAddingMainQuest] = useState(false);
-  const [filter, setFilter] = useState<'ONGOING' | 'COMPLETED'>('ONGOING');
+  const [filter, setFilter] = useState<'ONGOING' | 'VERIFY' | 'COMPLETED'>(
+    'ONGOING',
+  );
   const navigation =
     useNavigation<NativeStackNavigationProp<HomeNavParamList>>();
   const swipeableRef = useRef<any>(null);
@@ -100,8 +100,8 @@ export default function Home() {
   const quests = data?.quests;
 
   const currentExp = user?.exp || 0;
-  const maxExp = user?.level ? user.level * 100 : 100;
-  const progress = Math.min((currentExp / Math.max(maxExp, 1)) * 100, 100);
+  const maxExp = Math.round(200 * Math.pow(user?.level, 1.1));
+  const levelProgress = (currentExp / maxExp) * 100;
 
   const mainQuest =
     quests && quests?.length > 0
@@ -113,22 +113,29 @@ export default function Home() {
       : [];
 
   const isQuestCompleted = (quest: Quest) => {
-    return (
-      quest.procedure === 'complete' ||
-      (quest.requiredVerification &&
-        quest.verificationCount &&
-        quest.verificationCount >= quest.requiredVerification)
-    );
+    return quest.procedure === 'complete';
   };
+
+  const isQuestVerify = (quest: Quest) => {
+    return quest.procedure === 'verify';
+  };
+
   const filteredMainQuest =
     mainQuest &&
     ((filter === 'COMPLETED' && isQuestCompleted(mainQuest)) ||
-      (filter === 'ONGOING' && !isQuestCompleted(mainQuest)))
+      (filter === 'VERIFY' && isQuestVerify(mainQuest)) ||
+      (filter === 'ONGOING' &&
+        !isQuestCompleted(mainQuest) &&
+        !isQuestVerify(mainQuest)))
       ? mainQuest
       : null;
 
   const filteredSubQuests = subQuests.filter((q: Quest) =>
-    filter === 'COMPLETED' ? isQuestCompleted(q) : !isQuestCompleted(q),
+    filter === 'COMPLETED'
+      ? isQuestCompleted(q)
+      : filter === 'VERIFY'
+      ? isQuestVerify(q)
+      : !isQuestCompleted(q) && !isQuestVerify(q),
   );
 
   // const recommendedQuests = [
@@ -168,6 +175,10 @@ export default function Home() {
           ? isMain
             ? '완료된 메인 퀘스트가 없어요'
             : '완료된 서브 퀘스트가 없어요'
+          : filter === 'VERIFY'
+          ? isMain
+            ? '인증 중인 메인 퀘스트가 없어요'
+            : '인증 중인 서브 퀘스트가 없어요'
           : isMain
           ? '진행 중인 메인 퀘스트가 없어요'
           : '진행 중인 서브 퀘스트가 없어요'}
@@ -175,6 +186,8 @@ export default function Home() {
       <Text style={styles.emptyStateSubtext}>
         {filter === 'COMPLETED'
           ? '완료된 퀘스트가 이곳에 표시됩니다'
+          : filter === 'VERIFY'
+          ? '인증 중인 퀘스트가 이곳에 표시됩니다'
           : isMain
           ? '단 하나의 메인 퀘스트만 생성할 수 있습니다'
           : '마음껏 서브 퀘스트를 생성해보세요'}
@@ -269,6 +282,7 @@ export default function Home() {
 
     const calculateProgressText = () => {
       if (quest.procedure === 'complete') return '완료됨';
+      if (quest.procedure === 'verify') return '인증 중';
 
       const percentage = calculateProgressPercentage();
       if (quest.verificationRequired) {
@@ -288,7 +302,7 @@ export default function Home() {
         : 0;
       const timelineBonus =
         endDateObj && startDateObj
-          ? (endDateObj.getTime() - startDateObj.getTime()) * 3
+          ? (endDateObj.getDate() - startDateObj.getDate()) * 3
           : 0;
       const overVerificationBonus =
         quest.verificationRequired &&
@@ -343,14 +357,20 @@ export default function Home() {
         containerStyle={styles.swipeableContainer}
         friction={2}
         rightThreshold={40}
-        renderRightActions={renderRightActions}
+        renderRightActions={
+          quest.procedure === 'progress' ? renderRightActions : undefined
+        }
         onSwipeableWillOpen={() => setShowHint(false)}>
         <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('QuestFeed', {
-              quest,
-            })
-          }
+          onPress={() => {
+            quest.procedure === 'progress'
+              ? navigation.navigate('QuestFeed', {
+                  quest,
+                })
+              : navigation.navigate('QuestVerification', {
+                  id: quest.id,
+                });
+          }}
           activeOpacity={0.88}>
           <View style={cardStyle}>
             {/* New UI Implementation */}
@@ -516,12 +536,12 @@ export default function Home() {
                     <View
                       style={[
                         styles.progressFill,
-                        {width: `${Math.min(user?.exp || 0, 100)}%`},
+                        {width: `${levelProgress}%`},
                       ]}
                     />
                   </View>
                   <Text style={styles.progressText}>
-                    {`${user?.exp || 0} / ${user?.maxExp || 100} XP`}
+                    {`${user?.exp || 0} / ${maxExp} XP`}
                   </Text>
                 </View>
               </View>
@@ -541,6 +561,21 @@ export default function Home() {
                     filter === 'ONGOING' && styles.filterChipTextActive,
                   ]}>
                   진행중
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.filterChip,
+                  filter === 'VERIFY' && styles.filterChipActive,
+                ]}
+                onPress={() => setFilter('VERIFY')}
+                activeOpacity={0.8}>
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    filter === 'VERIFY' && styles.filterChipTextActive,
+                  ]}>
+                  인증 중
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -720,10 +755,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   editButton: {
-    backgroundColor: '#4e9af1',
+    backgroundColor: colors.done,
   },
   deleteButton: {
-    backgroundColor: '#ff4444',
+    backgroundColor: colors.error,
   },
   actionText: {
     color: 'white',
@@ -736,7 +771,7 @@ const styles = StyleSheet.create({
     right: 16,
     top: '50%',
     transform: [{translateY: -8}],
-    color: '#aaa',
+    color: colors.gray,
     fontSize: 12,
     zIndex: 1,
   },
@@ -745,7 +780,7 @@ const styles = StyleSheet.create({
     right: 0,
     top: '50%',
     transform: [{translateY: -8}],
-    color: '#aaa',
+    color: colors.gray,
     fontSize: 12,
     zIndex: 1,
   },
@@ -768,20 +803,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: '90%',
   },
-  xpText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FF9800',
-  },
   completeButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: colors.accent,
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
     marginTop: 10,
   },
   completedButton: {
-    backgroundColor: '#9E9E9E',
+    backgroundColor: colors.gray,
   },
   completeButtonText: {
     color: 'white',
@@ -789,7 +819,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
@@ -801,7 +831,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderRadius: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'white',
     marginBottom: 16,
     minHeight: 100,
     shadowColor: '#000',
@@ -822,13 +852,13 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: colors.gray,
     marginBottom: 2,
   },
   statValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.font,
   },
   levelText: {
     fontSize: 18,
@@ -841,31 +871,31 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#e9ecef',
+    backgroundColor: colors.switchBG,
     borderRadius: 4,
     marginBottom: 6,
     width: '100%',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: colors.accent,
     borderRadius: 4,
   },
   progressText: {
     fontSize: 12,
-    color: '#6c757d',
+    color: colors.gray,
     textAlign: 'right',
   },
   welcomeText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.font,
     marginBottom: 12,
     textAlign: 'center',
   },
   filterSegmentContainer: {
     flexDirection: 'row',
-    backgroundColor: '#f1f3f5',
+    backgroundColor: colors.switchBG,
     padding: 6,
     borderRadius: 12,
     marginBottom: 16,
@@ -878,15 +908,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   filterChipActive: {
-    backgroundColor: '#806a5b',
+    backgroundColor: colors.primary,
   },
   filterChipText: {
     fontSize: 14,
-    color: '#495057',
+    color: colors.font,
     fontWeight: '600',
   },
   filterChipTextActive: {
-    color: '#fff',
+    color: colors.background,
   },
   section: {
     marginBottom: 24,
@@ -903,7 +933,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   sectionLink: {
-    color: '#007AFF',
+    color: colors.done,
     fontSize: 14,
   },
   questCard: {
@@ -920,11 +950,11 @@ const styles = StyleSheet.create({
   },
   mainQuestCard: {
     borderWidth: 1,
-    borderColor: '#e0e0e0', // Blue border for main quest
+    borderColor: colors.lightGray, // Blue border for main quest
   },
   subQuestCard: {
     borderWidth: 1,
-    borderColor: '#e0e0e0', // Gray border for sub-quests
+    borderColor: colors.lightGray, // Gray border for sub-quests
   },
   questHeader: {
     marginBottom: 8,
@@ -937,7 +967,7 @@ const styles = StyleSheet.create({
   },
   questDescription: {
     fontSize: 14,
-    color: '#6c757d',
+    color: colors.font,
   },
   questFooter: {
     flexDirection: 'row',
@@ -949,18 +979,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
   },
-  verificationText: {
-    fontSize: 12,
-    color: '#666',
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginRight: 8,
-  },
   deadlineText: {
     fontSize: 12,
-    color: '#ff4d4f',
+    color: colors.error,
     fontWeight: 'bold',
   },
   timelinePreview: {
@@ -968,34 +989,23 @@ const styles = StyleSheet.create({
   },
   timelineCount: {
     fontSize: 12,
-    color: '#666',
+    color: colors.gray,
     marginBottom: 4,
-  },
-  timelineImages: {
-    flexDirection: 'row',
-    marginTop: 4,
-  },
-  timelineThumbnail: {
-    width: 40,
-    height: 40,
-    borderRadius: 4,
-    marginRight: 4,
-    backgroundColor: '#f0f0f0',
   },
   rewardSection: {
     marginTop: 12,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: colors.switchBG,
   },
   rewardText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1890ff',
+    color: colors.accent,
   },
   rewardDetail: {
     fontSize: 10,
-    color: '#999',
+    color: colors.gray,
     marginTop: 2,
   },
   dateRangeContainer: {
@@ -1006,12 +1016,12 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 12,
-    color: '#6c757d',
+    color: colors.gray,
     marginRight: 8,
   },
   dateRangeText: {
     fontSize: 11,
-    color: '#adb5bd',
+    color: colors.gray,
     fontStyle: 'italic',
   },
   questStatus: {
@@ -1023,7 +1033,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.switchBG,
     borderRadius: 12,
   },
   emptyStateText: {
@@ -1041,28 +1051,28 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   addButton: {
-    backgroundColor: '#806a5b',
+    backgroundColor: colors.primary,
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: 'center',
   },
   addButtonText: {
-    color: '#fff',
+    color: colors.background,
     fontWeight: '600',
   },
   seeAll: {
-    color: '#6c757d',
+    color: colors.font,
     fontSize: 14,
   },
   noQuestsText: {
     fontSize: 14,
-    color: '#6c757d',
+    color: colors.font,
     textAlign: 'center',
     marginVertical: 16,
   },
   addQuestButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: colors.accent,
     borderRadius: 8,
     padding: 12,
     marginTop: 16,
@@ -1073,7 +1083,7 @@ const styles = StyleSheet.create({
   },
   statsText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.gray,
   },
   emptyStateIcon: {
     fontSize: 48,

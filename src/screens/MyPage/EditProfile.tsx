@@ -25,6 +25,7 @@ import CharacterAvatar from '../../components/CharacterAvatar';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
 import {Dropdown} from 'react-native-element-dropdown';
+import {colors} from '../../styles/theme';
 
 interface EditProfileProps {
   nickname: string;
@@ -97,6 +98,7 @@ const EditProfile = () => {
 
       // Update user store
       setUser({
+        ...user,
         nickname,
         userType,
       });
@@ -114,17 +116,22 @@ const EditProfile = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}>
         <ScrollView style={styles.scrollView}>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={{paddingHorizontal: 24}}>
-            <Icon
-              name={
-                Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back-android'
-              }
-              size={24}
-              color={'#000'}
-            />
-          </Pressable>
+          <View style={styles.headerContainer}>
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={{position: 'absolute', left: 24}}>
+              <Icon
+                name={
+                  Platform.OS === 'ios'
+                    ? 'arrow-back-ios'
+                    : 'arrow-back-android'
+                }
+                size={24}
+                color={'#000'}
+              />
+            </Pressable>
+            <Text style={styles.title}>프로필 수정</Text>
+          </View>
           <View style={styles.avatarContainer}>
             <TouchableOpacity style={styles.avatarWrapper}>
               <CharacterAvatar avatar={user.character} size={120} />
@@ -189,6 +196,19 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingTop: 20,
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.font,
+    marginBottom: 5,
   },
   avatarContainer: {
     alignItems: 'center',

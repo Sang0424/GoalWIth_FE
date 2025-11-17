@@ -28,9 +28,10 @@ export interface QuestRecord {
 export interface QuestVerification {
   id: number;
   username: string;
-  text: string;
+  comment: string;
   character: string;
   createdAt: Date;
+  user_id: number;
 }
 
 export interface RouteParams {

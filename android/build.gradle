@@ -11,15 +11,19 @@ buildscript {
     repositories {
         google()
         mavenCentral()
-        maven {
-            url "https://devrepo.kakao.com/nexus/content/groups/public/"
-        }
     }
     dependencies {
         classpath("com.android.tools.build:gradle")
         classpath("com.facebook.react:react-native-gradle-plugin")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
         classpath("com.google.gms:google-services:4.4.2")
+    }
+}
+allprojects {
+    repositories {
+        mavenCentral()
+        google()
+        maven { url 'https://devrepo.kakao.com/nexus/content/groups/public/' }
     }
 }
 

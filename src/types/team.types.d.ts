@@ -111,7 +111,8 @@ interface ApiDataReturnType {
     postId: number,
     commentData: Omit<
       QuestVerification,
-      'id' | 'createdAt' | 'updatedAt' | 'user'
+      'id' | 'createdAt' | 'updatedAt' | 'username',
+      'character'
     >,
   ) => void;
   handleUpdatePost: (postId: number, updates: Partial<TeamPost>) => void;

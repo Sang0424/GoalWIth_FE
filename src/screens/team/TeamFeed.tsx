@@ -80,108 +80,108 @@ const useReactionData = (recordId: number | string) => {
   return {...processedData, isLoading};
 };
 
-const useMockData = ({
-  teamId,
-  newPostText,
-  images,
-  commentText,
-  setNewPostText,
-  setImages,
-  setCommentText,
-}: any): Omit<ApiDataReturnType, 'team'> & {team?: Team} => {
-  const {
-    teams,
-    getTeamById,
-    createTeamPost,
-    addComment,
-    deleteTeamPost,
-    updateTeamPost,
-    deleteComment,
-    updateComment,
-  } = useTeamStore();
-  const team = getTeamById(teamId);
+// const useMockData = ({
+//   teamId,
+//   newPostText,
+//   images,
+//   commentText,
+//   setNewPostText,
+//   setImages,
+//   setCommentText,
+// }: any): Omit<ApiDataReturnType, 'team'> & {team?: Team} => {
+//   const {
+//     teams,
+//     getTeamById,
+//     createTeamPost,
+//     addComment,
+//     deleteTeamPost,
+//     updateTeamPost,
+//     deleteComment,
+//     updateComment,
+//   } = useTeamStore();
+//   const team = getTeamById(teamId);
 
-  const handleAddRecord = async () => {
-    if (!newPostText.trim() && images.length === 0) {
-      Alert.alert('오류', '기록할 내용을 입력해주세요.');
-      return;
-    }
-    if (images.length > 3) {
-      Alert.alert('오류', '이미지는 최대 3장까지만 선택할 수 있습니다.');
-      return;
-    }
-    createTeamPost(teamId, {
-      text: newPostText.trim(),
-      images: images.length > 0 ? images : undefined,
-      user: {id: '4', name: 'test', avatar: '', level: 1},
-      verifications: [],
-    });
-    setNewPostText('');
-    setImages([]);
-    Alert.alert('성공', '기록이 추가되었습니다!');
-  };
+//   const handleAddRecord = async () => {
+//     if (!newPostText.trim() && images.length === 0) {
+//       Alert.alert('오류', '기록할 내용을 입력해주세요.');
+//       return;
+//     }
+//     if (images.length > 3) {
+//       Alert.alert('오류', '이미지는 최대 3장까지만 선택할 수 있습니다.');
+//       return;
+//     }
+//     createTeamPost(teamId, {
+//       text: newPostText.trim(),
+//       images: images.length > 0 ? images : undefined,
+//       user: {id: '4', name: 'test', avatar: '', level: 1},
+//       verifications: [],
+//     });
+//     setNewPostText('');
+//     setImages([]);
+//     Alert.alert('성공', '기록이 추가되었습니다!');
+//   };
 
-  const handleAddComment = (
-    postId: number,
-    comment: Omit<QuestVerification, 'id' | 'createdAt' | 'updatedAt' | 'user'>,
-  ) => {
-    if (!commentText.trim()) return;
-    addComment(postId, comment);
-    setCommentText('');
-  };
+//   const handleAddComment = (
+//     postId: number,
+//     comment: Omit<QuestVerification, 'id' | 'createdAt' | 'updatedAt' | 'user'>,
+//   ) => {
+//     if (!commentText.trim()) return;
+//     addComment(postId, comment);
+//     setCommentText('');
+//   };
 
-  const handleUpdatePost = (postId: number, updates: Partial<TeamPost>) => {
-    const currentPost = team?.teamQuest?.records.find(
-      post => post.id === postId,
-    );
-    if (!currentPost) return;
+//   const handleUpdatePost = (postId: number, updates: Partial<TeamPost>) => {
+//     const currentPost = team?.teamQuest?.records.find(
+//       post => post.id === postId,
+//     );
+//     if (!currentPost) return;
 
-    const updatedPost = {
-      ...currentPost,
-      ...updates,
-      images: updates.images || currentPost.images,
-    };
-    updateTeamPost(teamId, postId, updates);
-  };
+//     const updatedPost = {
+//       ...currentPost,
+//       ...updates,
+//       images: updates.images || currentPost.images,
+//     };
+//     updateTeamPost(teamId, postId, updates);
+//   };
 
-  const handleUpdateComment = (commentId: number | null, comment: string) => {
-    if (!commentId) return;
-    const currentComment = team?.teamQuest?.records.find(
-      post => post.id === commentId,
-    );
-    if (!currentComment) return;
-    updateComment(commentId, {comment});
-  };
+//   const handleUpdateComment = (commentId: number | null, comment: string) => {
+//     if (!commentId) return;
+//     const currentComment = team?.teamQuest?.records.find(
+//       post => post.id === commentId,
+//     );
+//     if (!currentComment) return;
+//     updateComment(commentId, {comment});
+//   };
 
-  const handleDeletePost = (postId: number) => {
-    deleteTeamPost(teamId, postId);
-  };
+//   const handleDeletePost = (postId: number) => {
+//     deleteTeamPost(teamId, postId);
+//   };
 
-  const handleDeleteComment = (commentId: number | null) => {
-    if (!commentId) return;
-    deleteComment(commentId);
-  };
+//   const handleDeleteComment = (commentId: number | null) => {
+//     if (!commentId) return;
+//     deleteComment(commentId);
+//   };
 
-  return {
-    data: team?.teamQuest?.records || [],
-    pages: team?.teamQuest?.records
-      ? [{records: team.teamQuest.records, nextPage: undefined}]
-      : [],
-    pageParams: [],
-    fetchNextPage: () => {},
-    hasNextPage: false,
-    isFetchingNextPage: false,
-    isLoading: false,
-    isError: false,
-    handleAddRecord,
-    handleAddComment,
-    handleUpdatePost,
-    handleUpdateComment,
-    handleDeletePost,
-    handleDeleteComment,
-    loadMore: () => {},
-  };
-};
+//   return {
+//     data: team?.teamQuest?.records || [],
+//     pages: team?.teamQuest?.records
+//       ? [{records: team.teamQuest.records, nextPage: undefined}]
+//       : [],
+//     pageParams: [],
+//     fetchNextPage: () => {},
+//     hasNextPage: false,
+//     isFetchingNextPage: false,
+//     isLoading: false,
+//     isError: false,
+//     handleAddRecord,
+//     handleAddComment,
+//     handleUpdatePost,
+//     handleUpdateComment,
+//     handleDeletePost,
+//     handleDeleteComment,
+//     loadMore: () => {},
+//   };
+// };
 
 const useApiData = ({
   teamId,
@@ -426,11 +426,9 @@ const TeamFeedScreen = () => {
     setCommentText,
   };
 
-  const mockData = useMockData(hookProps);
   const apiData = useApiData(hookProps);
 
   const {
-    team,
     data: teamPosts,
     handleAddRecord,
     handleAddComment,
@@ -441,7 +439,7 @@ const TeamFeedScreen = () => {
     isLoading,
     isError,
     loadMore,
-  } = useMock ? mockData : apiData;
+  } = apiData;
 
   useEffect(() => {
     const keyboardWillShow = (e: any) => {
@@ -519,8 +517,6 @@ const TeamFeedScreen = () => {
       setSelectedPostId(postId);
     }
   };
-
-  console.log('teamQuest', teamQuest);
 
   if (teamQuest === undefined) {
     return (

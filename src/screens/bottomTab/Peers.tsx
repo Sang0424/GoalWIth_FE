@@ -36,50 +36,6 @@ export default function Peers() {
   const queryClient = useQueryClient();
   const debouncedSearchQuery = useDebounce(searchQuery.toLowerCase(), 1000);
 
-  // const {data: requestedPeersData, isLoading: requestedPeersLoading} =
-  //   useInfiniteQuery<RequestedPeers, Error>({
-  //     queryKey: ['requestedPeers'],
-  //     queryFn: async ({pageParam = 0}) => {
-  //       const response = await instance.get<RequestedPeers>(
-  //         `/peer/requested?page=${pageParam}&size=${PAGE_SIZE}`,
-  //       );
-  //       return response.data;
-  //     },
-  //     getNextPageParam: (lastPage, allPages) => {
-  //       if (lastPage.number < lastPage.totalPages) {
-  //         return lastPage.number + 1;
-  //       }
-  //       return undefined;
-  //     },
-  //     initialPageParam: 0,
-  //     enabled: API_URL !== '',
-  //   });
-
-  // const {
-  //   data: recommendPeers,
-  //   isLoading: recommendPeersLoading,
-  //   hasNextPage: recommendHasNextPage,
-  //   fetchNextPage: recommendFetchNextPage,
-  //   isFetchingNextPage: recommendIsFetchingNextPage,
-  //   refetch: recommendRefetch,
-  // } = useInfiniteQuery({
-  //   queryKey: ['recommendPeers'],
-  //   queryFn: async ({pageParam = 0}) => {
-  //     const response = await instance.get(
-  //       `/peer/recommend?page=${pageParam}&size=${PAGE_SIZE}`,
-  //     );
-  //     return response.data;
-  //   },
-  //   getNextPageParam: (lastPage, allPages) => {
-  //     if (lastPage.number < lastPage.totalPages) {
-  //       return lastPage.number + 1;
-  //     }
-  //     return undefined;
-  //   },
-  //   initialPageParam: 0,
-  //   enabled: API_URL !== '',
-  // });
-
   const {data: requestedPeersData} = useQuery({
     queryKey: ['requestedPeersCount'],
     queryFn: async () => {
@@ -142,7 +98,6 @@ export default function Peers() {
     initialPageParam: 0,
     enabled: API_URL !== '' && debouncedSearchQuery !== '',
   });
-  console.log('hasNextPage', hasNextPage);
   const users =
     API_URL === ''
       ? initialUser
@@ -178,7 +133,16 @@ export default function Peers() {
     setIsRefreshing(false);
   }, [refetch, searchRefetch]);
 
-  const renderHeader = useCallback(() => {
+  if (peersLoading || searchPeersLoading) {
+    return (
+      <SafeAreaView
+        style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
+  }
+
+  const renderHeader = () => {
     return (
       <>
         <View>
@@ -205,16 +169,16 @@ export default function Peers() {
         </View>
       </>
     );
-  }, [requestedPeersCount, navigation]);
+  };
 
-  const renderItems = useCallback((item: any) => {
+  const renderItems = (item: any) => {
     return (
       <View
         style={{marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>
         <UserCard user={item.item} from="peers" />
       </View>
     );
-  }, []);
+  };
 
   if (peersLoading) {
     return (
@@ -227,7 +191,11 @@ export default function Peers() {
 
   return (
     <SafeAreaView
-      style={{flex: 1, paddingHorizontal: 12, backgroundColor: '#FFFFFF'}}>
+      style={{
+        flex: 1,
+        paddingHorizontal: 16,
+        backgroundColor: colors.background,
+      }}>
       <View style={styles.header}>
         <Pressable
           onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
@@ -300,19 +268,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-  },
-  main: {
-    flex: 1,
-    paddingHorizontal: 12,
-    marginTop: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.lightGray,
+    paddingBottom: 8,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.switchBG,
     borderRadius: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     marginBottom: 8,
     marginTop: 24,
   },

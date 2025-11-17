@@ -24,14 +24,23 @@ import {
   QuestRecord,
   QuestVerification as Verification,
 } from '../../types/quest.types';
-import {useQuestStore} from '../../store/mockData';
 import type {QuestVerificationProps} from '../../types/navigation';
 import useKeyboardHeight from '../../utils/hooks/useKeyboardHeight';
 import ImageCarousel from '../../components/Carousel';
 import {useQueryClient} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
-import {useMutation} from '@tanstack/react-query';
+import {useMutation, useQuery} from '@tanstack/react-query';
 import CharacterAvatar from '../../components/CharacterAvatar';
+import {formatRelativeTime} from '../../utils/dateUtils';
+import {
+  Menu,
+  MenuOptions,
+  MenuOption,
+  MenuTrigger,
+} from 'react-native-popup-menu';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import {colors} from '../../styles/theme';
+import {userStore} from '../../store/userStore';
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<
   QuestVerificationProps,
@@ -41,11 +50,11 @@ type QuestVerificationScreenNavigationProp = StackNavigationProp<
 const QuestVerification = () => {
   const navigation = useNavigation<QuestVerificationScreenNavigationProp>();
   const route = useRoute();
-  const {quest} = route.params as {quest: Quest};
-
-  const {addVerification} = useQuestStore();
+  const {id} = route.params as {id: number};
   const [verificationText, setVerificationText] = useState('');
   const [record, setRecord] = useState<QuestRecord | null>(null);
+  const [isCommentUpdate, setIsCommentUpdate] = useState(false);
+  const [commentId, setCommentId] = useState<number | null>(null);
   const {keyboardHeight} = useKeyboardHeight();
 
   // 1. State for tracking scroll position and verification status
@@ -53,8 +62,21 @@ const QuestVerification = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const contentHeight = useRef(0);
   const scrollViewHeight = useRef(0);
+  const user = userStore(state => state.user);
 
   const keyboardOffset = useRef(new Animated.Value(0)).current;
+
+  const {data, isLoading, refetch} = useQuery({
+    queryKey: ['QuestVerification', id],
+    queryFn: async () => {
+      try {
+        const response = await instance.get(`/quest/verification/${id}`);
+        return response.data;
+      } catch (e: any) {
+        Alert.alert(e.response.data.message);
+      }
+    },
+  });
 
   // 200 duration is somewhat a magic number that seemed to work nicely with
   // the default keyboard opening speed
@@ -92,10 +114,10 @@ const QuestVerification = () => {
   }, []);
 
   useEffect(() => {
-    if (quest) {
-      setRecord(quest.records[quest.records.length - 1]);
+    if (data) {
+      setRecord(data.records[data.records.length - 1]);
     }
-  }, [quest]);
+  }, [data]);
 
   useEffect(() => {
     if (keyboardHeight > 0) {
@@ -108,35 +130,77 @@ const QuestVerification = () => {
   // ********* Backend랑 연결 부분 *********
 
   const queryClient = useQueryClient();
-  const {mutate, error} = useMutation({
-    mutationFn: async () => {
-      const response = await instance.post(`/quest/verification/${quest.id}`, {
-        comment: verificationText,
-      });
-      return response.data;
+
+  const {mutate} = useMutation({
+    mutationFn: async (comment: string) => {
+      try {
+        const response = await instance.post(`/quest/verification/${id}`, {
+          comment,
+        });
+        return response.data;
+      } catch (e: any) {
+        Alert.alert(e.response.data.message);
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['Verification'],
-      });
+      refetch();
+      Alert.alert('인증 댓글이 추가되었습니다.');
     },
-    onError: error => {
-      Alert.alert('오류', '인증 메시지 추가에 실패했습니다.');
+  });
+
+  const {mutate: editVerification} = useMutation({
+    mutationFn: async ({id, comment}: {id: number; comment: string}) => {
+      try {
+        const response = await instance.put(`quest/verifications/${id}`, {
+          comment,
+        });
+        return response.data;
+      } catch (e: any) {
+        Alert.alert(e.response.data.message);
+      }
+    },
+    onSuccess: () => {
+      refetch();
+      Alert.alert('인증 댓글이 수정되었습니다.');
+      setVerificationText('');
+      setIsCommentUpdate(false);
+      setCommentId(null);
+    },
+  });
+
+  const {mutate: deleteVerification} = useMutation({
+    mutationFn: async (id: number) => {
+      try {
+        const response = await instance.delete(`quest/verifications/${id}`);
+        return response.data;
+      } catch (e: any) {
+        Alert.alert(e.response.data.message);
+      }
+    },
+    onSuccess: () => {
+      refetch();
+      Alert.alert('삭제', '인증 댓글이 삭제되었습니다.');
     },
   });
 
   const handleVerify = () => {
     if (!verificationText.trim()) {
-      Alert.alert('오류', '인증 메시지를 입력해주세요.');
+      Alert.alert('인증 메시지를 입력해주세요.');
       return;
     }
-    mutate();
-    Alert.alert('성공', '퀘스트 인증이 완료되었습니다!');
+    mutate(verificationText);
     setVerificationText('');
-    navigation.goBack();
   };
 
-  if (!quest) {
+  const handleEdit = (id: number | null, comment: string) => {
+    if (!id || !comment.trim()) {
+      Alert.alert('인증 메시지를 입력해주세요.');
+      return;
+    }
+    editVerification({id, comment});
+  };
+
+  if (!data) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <Text>로딩 중...</Text>
@@ -145,17 +209,29 @@ const QuestVerification = () => {
   }
 
   // 모든 인증 메시지(댓글) 리스트 추출
-  const allVerifications = quest.verifications;
+  const allVerifications = data.verifications;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.getFullYear()}년 ${
       date.getMonth() + 1
-    }월 ${date.getDate()}일 ${String(date.getHours()).padStart(
-      2,
-      '0',
-    )}:${String(date.getMinutes()).padStart(2, '0')}`;
+    }월 ${date.getDate()}일`;
   };
+
+  const calculateProgressPercentage = () => {
+    if (!data.startDate || !data.endDate) return 0;
+
+    const start = new Date(data.startDate).getTime();
+    const end = new Date(data.endDate).getTime();
+    const now = new Date().getTime();
+
+    const totalDuration = end - start;
+    const elapsed = now - start;
+
+    return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+  };
+
+  const percentage = calculateProgressPercentage();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -191,7 +267,7 @@ const QuestVerification = () => {
         <View
           style={[
             styles.header,
-            quest.isMain ? styles.mainQuestHeader : styles.subQuestHeader,
+            data.isMain ? styles.mainQuestHeader : styles.subQuestHeader,
           ]}>
           <View style={styles.headerContent}>
             <View
@@ -214,12 +290,12 @@ const QuestVerification = () => {
                   color={'#000'}
                 />
               </Pressable>
-              <Text style={styles.questTitle}>{quest.title}</Text>
+              <Text style={styles.questTitle}>{data.title}</Text>
               <View style={{width: 40}} />
             </View>
             <Text style={styles.questDate}>
-              {formatDate(quest.startDate.toString())} -{' '}
-              {formatDate(quest.endDate.toString())}
+              {formatDate(data.startDate.toString())} -{' '}
+              {formatDate(data.endDate.toString())}
             </Text>
             <View style={styles.progressContainer}>
               <View style={styles.progressBar}>
@@ -227,31 +303,38 @@ const QuestVerification = () => {
                   style={[
                     styles.progressFill,
                     {
-                      width: `${Math.min(
-                        100,
-                        Math.max(
-                          0,
-                          (quest.records ? quest.records.length / 7 : 0) * 100,
-                        ),
-                      )}%`,
-                      backgroundColor: quest.isMain ? '#4a90e2' : '#a0a0a0',
+                      width: `${Math.min(100, Math.max(0, percentage))}%`,
+                      backgroundColor: colors.accent,
                     },
                   ]}
                 />
               </View>
               <Text style={styles.progressText}>
-                {quest.records?.length ?? 0}일차
+                {Math.floor(
+                  (Date.now() - new Date(data.startDate).getTime()) / 86400000,
+                ) + 1}
+                일차
               </Text>
             </View>
           </View>
         </View>
         <View style={styles.timelineSection}>
-          <Text style={styles.sectionTitle}>퀘스트 타임라인</Text>
-          {quest.records.map(record => (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>퀘스트 타임라인</Text>
+            {!hasScrolledToBottom && (
+              <View style={styles.scrollPrompt}>
+                <Text style={styles.scrollPromptText}>
+                  아래로 스크롤하여 인증하기
+                </Text>
+                <Icon name="arrow-downward" size={16} color="#666" />
+              </View>
+            )}
+          </View>
+          {data.records.map((record: any) => (
             <View key={record.id} style={styles.recordCard}>
               <View style={styles.recordHeader}>
                 <Text style={styles.recordDate}>
-                  {formatDate(record.createdAt.toString() || '')}
+                  {formatRelativeTime(record.createdAt.toString() || '')}
                 </Text>
               </View>
               {record.images && <ImageCarousel images={record.images} />}
@@ -264,30 +347,66 @@ const QuestVerification = () => {
         <View style={styles.commentsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>인증 댓글</Text>
-            {!hasScrolledToBottom && (
-              <View style={styles.scrollPrompt}>
-                <Text style={styles.scrollPromptText}>
-                  아래로 스크롤하여 인증하기
-                </Text>
-                <Icon name="arrow-downward" size={16} color="#666" />
-              </View>
-            )}
           </View>
 
           {allVerifications && allVerifications.length > 0 ? (
             allVerifications.map((verification: Verification) => (
               <View key={verification.id} style={styles.commentCard}>
                 <View style={styles.commentHeader}>
-                  <CharacterAvatar
-                    avatar={verification.character}
-                    size={40}
-                    onPress={() => {}}
-                  />
-                  <Text style={{marginLeft: 8}}>{verification.username}</Text>
+                  <View style={styles.userContainer}>
+                    <CharacterAvatar
+                      avatar={verification.character}
+                      size={40}
+                      onPress={() => {}}
+                    />
+                    <Text style={{marginLeft: 8}}>{verification.username}</Text>
+                  </View>
+                  {verification.user_id === user?.id && (
+                    <Menu>
+                      <MenuTrigger>
+                        <View>
+                          <Ionicons
+                            name="ellipsis-horizontal"
+                            size={20}
+                            color={colors.gray}
+                          />
+                        </View>
+                      </MenuTrigger>
+                      <MenuOptions optionsContainerStyle={styles.menuOptions}>
+                        <MenuOption
+                          onSelect={() => {
+                            setVerificationText(verification.comment);
+                            setIsCommentUpdate(true);
+                            setCommentId(verification.id);
+                          }}
+                          style={styles.menuOption}>
+                          <Text>수정</Text>
+                        </MenuOption>
+                        <MenuOption
+                          onSelect={() => {
+                            Alert.alert('삭제', '정말로 삭제하시겠습니까?', [
+                              {
+                                text: '취소',
+                                onPress: () => {},
+                              },
+                              {
+                                text: '삭제',
+                                onPress: () => {
+                                  deleteVerification(verification.id);
+                                },
+                              },
+                            ]);
+                          }}
+                          style={[styles.menuOption, styles.deleteOption]}>
+                          <Text style={styles.deleteText}>삭제</Text>
+                        </MenuOption>
+                      </MenuOptions>
+                    </Menu>
+                  )}
                 </View>
-                <Text style={styles.commentText}>{verification.text}</Text>
+                <Text style={styles.commentText}>{verification.comment}</Text>
                 <Text style={styles.commentDate}>
-                  {formatDate(verification.createdAt.toString() || '')}
+                  {formatRelativeTime(verification.createdAt.toString() || '')}
                 </Text>
               </View>
             ))
@@ -324,8 +443,14 @@ const QuestVerification = () => {
             !hasScrolledToBottom && styles.disabledButton,
           ]}
           disabled={!hasScrolledToBottom}
-          onPress={handleVerify}>
-          <Text style={styles.submitButtonText}>인증하기</Text>
+          onPress={
+            isCommentUpdate
+              ? () => handleEdit(commentId, verificationText)
+              : handleVerify
+          }>
+          <Text style={styles.submitButtonText}>
+            {isCommentUpdate ? '수정하기' : '인증하기'}
+          </Text>
         </TouchableOpacity>
       </Animated.View>
     </SafeAreaView>
@@ -396,11 +521,12 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
+    backgroundColor: colors.accent,
   },
   progressText: {
-    marginLeft: 10,
+    marginLeft: 8,
     fontSize: 12,
-    color: '#666',
+    color: colors.font,
     minWidth: 50,
     textAlign: 'right',
   },
@@ -410,7 +536,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.font,
     marginBottom: 15,
   },
   emptyState: {
@@ -556,17 +682,50 @@ const styles = StyleSheet.create({
   commentText: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#333',
+    color: colors.font,
+    paddingHorizontal: 8,
   },
   commentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    justifyContent: 'space-between',
+  },
+  userContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   commentDate: {
     fontSize: 12,
-    color: '#888',
+    color: colors.gray,
     marginTop: 12,
+    paddingHorizontal: 8,
+    textAlign: 'right',
+  },
+  menuContainer: {
+    position: 'relative',
+    zIndex: 1000,
+  },
+  menuOptions: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    width: 100,
+    padding: 5,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  menuOption: {
+    padding: 10,
+  },
+  deleteOption: {
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  deleteText: {
+    color: 'red',
   },
 });
 

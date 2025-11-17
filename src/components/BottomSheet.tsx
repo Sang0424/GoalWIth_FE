@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 16,
     borderBottomWidth: 1,
-    // borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.lightGray,
     marginBottom: 16,
   },
   headerButton: {
@@ -483,10 +483,10 @@ const styles = StyleSheet.create({
   bottomSheetTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.font,
   },
   cancelButtonText: {
-    color: '#666',
+    color: colors.gray,
     fontSize: 16,
     fontWeight: 'regular',
   },
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.font,
     marginBottom: 8,
     fontWeight: 'regular',
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     fontSize: 14,
-    color: colors.gray,
+    color: colors.font,
     borderWidth: 1,
     borderColor: colors.gray,
     marginBottom: 16,
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.gray,
+    backgroundColor: colors.switchBG,
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -25,20 +25,22 @@ const AppInfoPage = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={{paddingHorizontal: 24}}>
-          <Icon
-            name={
-              Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back-android'
-            }
-            size={24}
-            color={'#000'}
-          />
-        </Pressable>
-        <View style={styles.header}>
-          <Text style={styles.title}>GoalWith</Text>
-          <Text style={styles.version}>버전 1.0.0</Text>
+        <View style={styles.headerContainer}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={{position: 'absolute', left: 24}}>
+            <Icon
+              name={
+                Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back-android'
+              }
+              size={24}
+              color={'#000'}
+            />
+          </Pressable>
+          <View style={styles.header}>
+            <Text style={styles.title}>GoalWith</Text>
+            <Text style={styles.version}>버전 1.0.0</Text>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -65,12 +67,12 @@ const AppInfoPage = () => {
             <Icon name="chevron-right" size={20} color="#666" />
           </TouchableOpacity>
           <View style={styles.divider} />
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.linkItem}
             onPress={() => openLink('mailto:support@picoquest.app')}>
             <Text style={styles.linkText}>문의하기</Text>
             <Icon name="chevron-right" size={20} color="#666" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         <View style={styles.section}>
@@ -92,6 +94,13 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     padding: 20,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 30,
+    paddingTop: 20,
+    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
