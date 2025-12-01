@@ -16,7 +16,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useTeamStore} from '../../store/mockData';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {TeamNavParamList} from '../../types/navigation';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
 import {TeamPayload, TeamCreationResponse} from '../../types/team.types';
@@ -48,7 +48,7 @@ const TeamCreateScreen = ({route}: {route: any}) => {
   >({
     // 3. mutationFn 내부에서 API_URL에 따라 로직 분기
     mutationFn: async (payload: TeamPayload) => {
-      if (API_URL === '') {
+      if (Config.API_URL === '') {
         // 로컬 모드: API 호출 없이 성공한 것처럼 응답 객체를 시뮬레이션하여 반환
         console.log('로컬 모드: 팀 생성 시뮬레이션', payload);
         // onSuccess 콜백에서 일관된 데이터 처리를 위해
@@ -76,7 +76,7 @@ const TeamCreateScreen = ({route}: {route: any}) => {
       setIsPublic(true);
 
       // 백엔드 모드일 때만 쿼리 데이터 조작
-      if (API_URL !== '') {
+      if (Config.API_URL !== '') {
         queryClient.setQueryData(['TeamCreate'], response);
       }
 
@@ -96,7 +96,7 @@ const TeamCreateScreen = ({route}: {route: any}) => {
 
     onSettled: () => {
       // 백엔드 모드일 때만 팀 목록 쿼리를 무효화하여 새로고침
-      if (API_URL !== '') {
+      if (Config.API_URL !== '') {
         queryClient.invalidateQueries({queryKey: ['Team']});
       }
     },

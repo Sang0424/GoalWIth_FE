@@ -5,6 +5,7 @@ if (__DEV__) {
 import React from 'react';
 import OnBoardingNav from './src/navigation/OnBoardingNav';
 import BottomNav from './src/navigation/BottomNav';
+import MainNav from './src/navigation/MainNav';
 import {useState, useEffect} from 'react';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {NavigationContainer} from '@react-navigation/native';
@@ -14,13 +15,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {tokenStore} from './src/store/tokenStore';
 import {userStore} from './src/store/userStore';
 import {decodeJwt} from './src/utils/jwtUtils';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import {MenuProvider} from 'react-native-popup-menu';
 import axios from 'axios';
 import {configureGoogleSignIn} from './src/services/api/auth';
 import BootSplash from 'react-native-bootsplash';
 import {initializeKakaoSDK} from '@react-native-kakao/core';
 import Toast from 'react-native-toast-message';
+import mobileAds from 'react-native-google-mobile-ads';
 
 const queryClient = new QueryClient();
 
@@ -28,17 +30,16 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const setAccessToken = tokenStore(state => state.actions.setAccessToken);
   const accessToken = tokenStore(state => state.accessToken);
-
   useEffect(() => {
+    mobileAds().initialize();
     configureGoogleSignIn();
     initializeKakaoSDK('d1390db21826a41c019fb272011b1d17');
     const checkAuth = async () => {
-      if (API_URL === '') {
+      if (Config.API_URL === '') {
         // API_URL이 없는 개발 환경에서는 인증 과정을 생략합니다.
         setIsLoading(false);
         return;
       }
-
       try {
         const refreshToken = await AsyncStorage.getItem('refreshToken');
         if (!refreshToken) {
@@ -54,9 +55,8 @@ const App = () => {
           setAccessToken(null);
           return;
         }
-
         try {
-          const response = await axios.post(`${API_URL}/user/refresh`, {
+          const response = await axios.post(`${Config.API_URL}/user/refresh`, {
             refreshToken,
           });
           const {accessToken: newAccessToken, refreshToken: newRefreshToken} =
@@ -95,7 +95,7 @@ const App = () => {
         <NavigationContainer>
           <SafeAreaProvider>
             <GestureHandlerRootView style={{flex: 1}}>
-              {accessToken ? <BottomNav /> : <OnBoardingNav />}
+              {accessToken ? <MainNav /> : <OnBoardingNav />}
             </GestureHandlerRootView>
             <Toast position="bottom" bottomOffset={100} visibilityTime={2000} />
           </SafeAreaProvider>

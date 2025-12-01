@@ -1,6 +1,11 @@
 import {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import {Todo} from './todos';
 
+export type MainNavParamList = {
+  BottomNav: undefined;
+  QuestVerification: {id: number};
+};
+
 export type OnBoardingStackParamList = {
   OnBoarding1: any;
   OnBoarding2: undefined;
@@ -15,7 +20,7 @@ export type OnBoardingStackParamList = {
     refreshToken?: string;
   };
   Login: undefined;
-  BottomNav: undefined;
+  MainNav: undefined;
 };
 
 export type OnBoarding3Props = NativeStackScreenProps<
@@ -63,6 +68,7 @@ export type PeersNavParamList = {
   Peers: undefined;
   PeerRequest: undefined;
   PeerListScreen: {type: string};
+  QuestVerification: {id: number};
 };
 
 export type PeersDrawerParamList = {
@@ -100,4 +106,10 @@ export type MyPageNavParamList = {
   MyBookmark: undefined;
   QuestVerification: {quest: Quest};
   InquiryPage: undefined;
+};
+
+export type RootStackParamList = {
+  VerificationNav: NavigatorScreenParams<VerificationNavParamList>;
+  PeersNav: NavigatorScreenParams<PeersNavParamList>;
+  QuestVerification: {id: number};
 };

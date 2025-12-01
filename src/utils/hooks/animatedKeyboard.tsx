@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View, Animated, Keyboard, TextInput } from 'react-native';
+import React, {useEffect, useRef} from 'react';
+import {StyleSheet, View, Animated, Keyboard, TextInput} from 'react-native';
 
-export default function AnimatedKeyboard() {
+export default function MovingKeyboard() {
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
   // 200 duration is somewhat a magic number that seemed to work nicely with
@@ -32,7 +32,7 @@ export default function AnimatedKeyboard() {
 
   return (
     <View style={styles.container}>
-      <Animated.View style={{ transform: [{ translateY: keyboardOffset }] }}>
+      <Animated.View style={{transform: [{translateY: keyboardOffset}]}}>
         <TextInput placeholder={'댓글을 작성해 주세요'} />
       </Animated.View>
     </View>

@@ -41,6 +41,7 @@ import {colors} from '../../styles/theme';
 export default function Home() {
   const [modalVisible, setModalVisible] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [quests, setQuests] = useState<Quest[]>([]);
   const [questToEdit, setQuestToEdit] = useState<Quest | null>(null);
   const [isAddingMainQuest, setIsAddingMainQuest] = useState(false);
   const [filter, setFilter] = useState<'ONGOING' | 'VERIFY' | 'COMPLETED'>(
@@ -63,7 +64,6 @@ export default function Home() {
     },
     onError: error => {
       Alert.alert('오류', '퀘스트 삭제 중 오류가 발생했습니다.');
-      console.log(error);
     },
     onSettled: () => {
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
@@ -79,7 +79,7 @@ export default function Home() {
     },
     enabled: true,
   });
-  const {data: userData} = useQuery({
+  const {data: userData, refetch: userRefetch} = useQuery({
     queryKey: ['user'],
     queryFn: async () => {
       const response = await instance.get(`/user/info`);
@@ -97,46 +97,53 @@ export default function Home() {
     }
   }, [user, setUser]);
 
-  const quests = data?.quests;
+  useEffect(() => {
+    if (data) {
+      setQuests(data.quests);
+    }
+  }, [data]);
 
   const currentExp = user?.exp || 0;
   const maxExp = Math.round(200 * Math.pow(user?.level, 1.1));
   const levelProgress = (currentExp / maxExp) * 100;
 
   const mainQuest =
-    quests && quests?.length > 0
-      ? quests?.find((quest: Quest) => quest.isMain)
-      : null;
+    quests && quests.length > 0
+      ? quests.filter((quest: Quest) => quest.isMain)
+      : [];
   const subQuests =
-    quests && quests?.length > 0
-      ? quests?.filter((quest: Quest) => !quest.isMain).slice(0, 10)
+    quests && quests.length > 0
+      ? quests.filter((quest: Quest) => !quest.isMain).slice(0, 10)
       : [];
 
-  const isQuestCompleted = (quest: Quest) => {
-    return quest.procedure === 'complete';
-  };
+  const isQuestCompleted = (quest?: Quest | null) =>
+    quest?.procedure === 'complete';
 
-  const isQuestVerify = (quest: Quest) => {
-    return quest.procedure === 'verify';
+  const isQuestVerify = (quest?: Quest | null) => quest?.procedure === 'verify';
+
+  const isQuestProgress = (quest?: Quest | null) =>
+    quest?.procedure === 'progress';
+
+  const matchesCurrentFilter = (quest: Quest) => {
+    switch (filter) {
+      case 'COMPLETED':
+        return isQuestCompleted(quest);
+      case 'VERIFY':
+        return isQuestVerify(quest);
+      case 'ONGOING':
+        return isQuestProgress(quest);
+    }
   };
 
   const filteredMainQuest =
-    mainQuest &&
-    ((filter === 'COMPLETED' && isQuestCompleted(mainQuest)) ||
-      (filter === 'VERIFY' && isQuestVerify(mainQuest)) ||
-      (filter === 'ONGOING' &&
-        !isQuestCompleted(mainQuest) &&
-        !isQuestVerify(mainQuest)))
-      ? mainQuest
-      : null;
+    mainQuest && mainQuest.length > 0
+      ? mainQuest.filter(matchesCurrentFilter)
+      : [];
 
-  const filteredSubQuests = subQuests.filter((q: Quest) =>
-    filter === 'COMPLETED'
-      ? isQuestCompleted(q)
-      : filter === 'VERIFY'
-      ? isQuestVerify(q)
-      : !isQuestCompleted(q) && !isQuestVerify(q),
-  );
+  const filteredSubQuests = subQuests.filter(matchesCurrentFilter);
+
+  const canAddMainQuest =
+    filter === 'ONGOING' && (!mainQuest || mainQuest.length === 0);
 
   // const recommendedQuests = [
   //   {
@@ -192,10 +199,11 @@ export default function Home() {
           ? '단 하나의 메인 퀘스트만 생성할 수 있습니다'
           : '마음껏 서브 퀘스트를 생성해보세요'}
       </Text>
-      {filter === 'ONGOING' && (
+      {filter === 'ONGOING' && (!isMain || canAddMainQuest) && (
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => {
+            setQuestToEdit(null);
             setIsAddingMainQuest(isMain);
             setModalVisible(true);
           }}>
@@ -367,8 +375,12 @@ export default function Home() {
               ? navigation.navigate('QuestFeed', {
                   quest,
                 })
-              : navigation.navigate('QuestVerification', {
+              : quest.verificationRequired
+              ? navigation.navigate('QuestVerification', {
                   id: quest.id,
+                })
+              : navigation.navigate('QuestFeed', {
+                  quest,
                 });
           }}
           activeOpacity={0.88}>
@@ -456,8 +468,9 @@ export default function Home() {
     setIsRefreshing(true);
     try {
       await refetch();
+      await userRefetch();
     } catch (error) {
-      console.log(error);
+      Alert.alert('문제가 발생하였습니다.', '다시 시도해주세요.');
     } finally {
       setIsRefreshing(false);
     }
@@ -513,6 +526,9 @@ export default function Home() {
                 }
               />
               <View style={styles.statsContainer}>
+                <Text style={styles.badgeText}>
+                  {user?.badge ? user.badge : null}
+                </Text>
                 <Text style={styles.welcomeText}>{user?.nickname}</Text>
                 <View
                   style={{
@@ -599,18 +615,20 @@ export default function Home() {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>메인 퀘스트</Text>
-                {!filteredMainQuest && filter === 'ONGOING' && (
+                {canAddMainQuest && !filteredMainQuest && (
                   <TouchableOpacity
                     onPress={() => {
+                      setQuestToEdit(null);
+                      setIsAddingMainQuest(true);
                       setModalVisible(true);
                     }}>
                     <Text style={styles.sectionLink}>+ 추가</Text>
                   </TouchableOpacity>
                 )}
               </View>
-              {filteredMainQuest ? (
+              {filteredMainQuest.length > 0 ? (
                 <QuestItem
-                  quest={filteredMainQuest}
+                  quest={filteredMainQuest[0]}
                   onDelete={handleDeleteQuest}
                   onEdit={handleEditQuest}
                 />
@@ -626,6 +644,8 @@ export default function Home() {
                 {filter === 'ONGOING' && (
                   <TouchableOpacity
                     onPress={() => {
+                      setQuestToEdit(null);
+                      setIsAddingMainQuest(false);
                       setModalVisible(true);
                     }}>
                     <Text style={styles.sectionLink}>+ 추가</Text>
@@ -646,6 +666,7 @@ export default function Home() {
                     <TouchableOpacity
                       style={styles.addButton}
                       onPress={() => {
+                        setQuestToEdit(null);
                         setIsAddingMainQuest(false);
                         setModalVisible(true);
                       }}>
@@ -892,6 +913,13 @@ const styles = StyleSheet.create({
     color: colors.font,
     marginBottom: 12,
     textAlign: 'center',
+  },
+  badgeText: {
+    fontSize: 14,
+    color: colors.primary,
+    marginBottom: 4,
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
   filterSegmentContainer: {
     flexDirection: 'row',

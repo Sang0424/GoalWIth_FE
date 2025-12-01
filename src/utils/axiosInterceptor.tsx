@@ -1,10 +1,10 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import {tokenStore} from '../store/tokenStore';
 
 const instance = axios.create({
-  baseURL: API_URL,
+  baseURL: Config.API_URL,
   timeout: 10000,
   withCredentials: true,
   headers: {
@@ -68,7 +68,7 @@ instance.interceptors.response.use(
           throw new Error('No refresh token available');
         }
 
-        const response = await axios.post(`${API_URL}/user/refresh`, {
+        const response = await axios.post(`${Config.API_URL}/user/refresh`, {
           refreshToken: refreshToken,
         });
         const {accessToken, refreshToken: newRefreshToken} = response.data;

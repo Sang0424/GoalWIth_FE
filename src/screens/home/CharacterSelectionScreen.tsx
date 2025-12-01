@@ -48,7 +48,7 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
 
   const {mutate} = useMutation({
     mutationFn: async (character: string) => {
-      const response = await instance.put(`/user/characters/${user.id}`, {
+      const response = await instance.put(`/user/character/${user.id}`, {
         character_id: character,
       });
       return response.data;

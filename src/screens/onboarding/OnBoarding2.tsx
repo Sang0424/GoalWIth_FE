@@ -2,7 +2,6 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   View,
   Text,
-  Pressable,
   StyleSheet,
   TextInput,
   useWindowDimensions,
@@ -10,6 +9,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import BigLogo from '../../components/Logo';
 import {useNavigation} from '@react-navigation/native';
@@ -18,6 +18,7 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useRef, useState} from 'react';
 import React from 'react';
 import {isFormFilled} from '../../utils/isFormFilled';
+import {colors} from '../../styles/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export default function OnBoarding2() {
@@ -109,11 +110,11 @@ export default function OnBoarding2() {
             GoalWith
           </Text>
         </View>
-        <Pressable
+        <TouchableOpacity
           style={styles.closeButton}
           onPress={() => navigation.goBack()}>
           <Icon name="close" size={32} color="#000" />
-        </Pressable>
+        </TouchableOpacity>
         <KeyboardAvoidingView
           style={{flex: 5, justifyContent: 'flex-start'}}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -121,6 +122,7 @@ export default function OnBoarding2() {
           <TextInput
             value={registerForm.name}
             placeholder="이름"
+            placeholderTextColor={colors.gray}
             enterKeyHint="next"
             autoCapitalize="none"
             autoCorrect={false}
@@ -135,6 +137,7 @@ export default function OnBoarding2() {
             value={registerForm.email}
             ref={emailRef}
             placeholder="이메일"
+            placeholderTextColor={colors.gray}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -150,6 +153,7 @@ export default function OnBoarding2() {
             value={registerForm.password}
             ref={passwordRef}
             placeholder="비밀번호"
+            placeholderTextColor={colors.gray}
             enterKeyHint="next"
             secureTextEntry={true}
             autoCorrect={false}
@@ -168,6 +172,7 @@ export default function OnBoarding2() {
             value={passwordConfirm}
             ref={passwordConfirmRef}
             placeholder="비밀번호 확인"
+            placeholderTextColor={colors.gray}
             enterKeyHint="done"
             autoComplete="off"
             autoCorrect={false}
@@ -179,7 +184,7 @@ export default function OnBoarding2() {
           {error.passwordConfirm && (
             <Text style={styles.errorMsg}>{error.passwordConfirm}</Text>
           )}
-          <Pressable
+          <TouchableOpacity
             style={[
               isFormFilled(registerForm)
                 ? styles.nextBtn
@@ -201,7 +206,7 @@ export default function OnBoarding2() {
               }}>
               다음
             </Text>
-          </Pressable>
+          </TouchableOpacity>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </TouchableWithoutFeedback>
@@ -244,7 +249,7 @@ const styles = StyleSheet.create({
   },
   errorMsg: {
     color: 'red',
-    fontSize: 12,
+    fontSize: 14,
     marginBottom: 8,
   },
 });

@@ -1,3 +1,6 @@
+require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
+ENV['RCT_NEW_ARCH_ENABLED'] = '0' 
+
 # Resolve react_native_pods.rb with node to allow for hoisting
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
@@ -9,13 +12,33 @@ platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
-end
+use_frameworks! :linkage => :static
+$RNFirebaseAsStaticFramework = true
 
 target 'GoalWith' do
-  config = use_native_modules!
+
+  use_expo_modules!
+  pod 'FirebaseCore' , :modular_headers => true
+  pod 'GoogleSignIn'  , :modular_headers => true
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'KakaoSDKCommon', :modular_headers => true
+
+  if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
+    config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
+  else
+    config_command = [
+      'node',
+      '--no-warnings',
+      '--eval',
+      'require(require.resolve(\'expo-modules-autolinking\', { paths: [require.resolve(\'expo/package.json\')] }))(process.argv.slice(1))',
+      'react-native-config',
+      '--json',
+      '--platform',
+      'ios'
+    ]
+  end
+
+  config = use_native_modules!(config_command)
 
   use_react_native!(
     :path => config[:reactNativePath],
@@ -31,5 +54,37 @@ target 'GoalWith' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
-  end
+    installer.pods_project.targets.each do |target|
+        target.build_configurations.each do |config|
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'          
+          # ✅ C++ 표준을 C++17로 고정 (필수)
+          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
+          config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
+
+          # ✅✅✅ [핵심 해결책] ✅✅✅
+          # 모듈형 헤더 안에서도 비모듈형(C++) 헤더를 불러올 수 있도록 허용합니다.
+          # JSArgT, ReturnT 등의 타입 에러를 해결하는 열쇠입니다.
+          config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+
+          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
+
+          current_defs = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS']
+          current_defs = current_defs.is_a?(String) ? current_defs.split(' ') : (current_defs || [])
+          current_defs.delete_if { |d| d.include?('RCT_NEW_ARCH_ENABLED') }
+          current_defs += [
+          'FOLLY_NO_CONFIG=1',
+          'FOLLY_MOBILE=1',
+          'FOLLY_USE_LIBCPP=1',
+          'FOLLY_HAVE_CLOCK_GETTIME=1',
+          'FOLLY_CFG_NO_COROUTINES=1'
+        ]
+
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = current_defs.uniq
+
+        config.build_settings['HEADER_SEARCH_PATHS'] ||= ['$(inherited)']
+
+        config.build_settings['OTHER_CPLUSPLUSFLAGS'] ||= ['$(OTHER_CFLAGS)']
+        end
+      end
+    end
 end

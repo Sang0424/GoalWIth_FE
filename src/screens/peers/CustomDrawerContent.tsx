@@ -17,7 +17,7 @@ import instance from '../../utils/axiosInterceptor';
 import {userStore} from '../../store/userStore';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import CharacterAvatar from '../../components/CharacterAvatar';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import {useState} from 'react';
 import {useNavigation, useNavigationState} from '@react-navigation/native';
 import {DrawerNavigationProp} from '@react-navigation/drawer';
@@ -42,7 +42,7 @@ export default function CustomDrawerContent(props: any) {
       const response = await instance.get('/peer?page=0&size=5');
       return response.data;
     },
-    enabled: API_URL !== '',
+    enabled: Config.API_URL !== '',
   });
 
   const {data: requestingPeersData, isLoading: requestingLoading} = useQuery({
@@ -51,7 +51,7 @@ export default function CustomDrawerContent(props: any) {
       const response = await instance.get('/peer/requesting?page=0&size=5');
       return response.data;
     },
-    enabled: API_URL !== '',
+    enabled: Config.API_URL !== '',
   });
 
   if (peersLoading || requestingLoading) {

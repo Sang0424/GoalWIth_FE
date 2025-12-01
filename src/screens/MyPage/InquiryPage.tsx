@@ -57,7 +57,7 @@ const InquiryPage = () => {
           <TextInput
             style={styles.input}
             placeholder="문의 사항을 입력해주세요."
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.gray}
             value={inquiry}
             onChangeText={setInquiry}
             multiline

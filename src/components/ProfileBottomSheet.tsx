@@ -8,7 +8,8 @@ import {
   Image,
   ScrollView,
   TouchableWithoutFeedback,
-  Keyboard,
+  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {GestureDetector, Gesture} from 'react-native-gesture-handler';
@@ -16,11 +17,14 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  runOnJS,
 } from 'react-native-reanimated';
-import {scheduleOnRN} from 'react-native-worklets';
 import instance from '../utils/axiosInterceptor';
-import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {useQuery} from '@tanstack/react-query';
 import {colors} from '../styles/theme';
+import type {RootStackParamList} from '../types/navigation';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 // --- Type Definitions ---
 export interface UserProfile {
@@ -33,7 +37,7 @@ export interface UserProfile {
   character: string; // URL
   badge: string;
   main_quest: {
-    id: string;
+    id: number;
     title: string;
     description: string;
     startDate: string; // ISO 8601 date string
@@ -56,11 +60,11 @@ const ProfileBottomSheet = ({
   onClose,
   userId,
 }: ProfileBottomSheetProps) => {
-  const queryClient = useQueryClient();
   const {height: screenHeight} = useWindowDimensions();
   const translateY = useSharedValue(screenHeight);
   const context = useSharedValue({y: 0});
-
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const {
     data: user,
     error,
@@ -70,24 +74,24 @@ const ProfileBottomSheet = ({
     queryKey: ['userProfile', userId],
     queryFn: async () => {
       const response = await instance.get(`/user/${userId}`);
-      const user = response.data;
-      return user;
+      return response.data;
     },
-    enabled: userId !== undefined,
+    enabled: visible && userId !== undefined,
   });
 
   const closeModalWithAnimation = useCallback(() => {
-    'worklet';
-    translateY.value = withSpring(screenHeight, {damping: 1000}, () => {
-      scheduleOnRN(onClose);
-    });
+    // 1) 부모 상태를 즉시 false로 만들어 모달/오버레이를 바로 제거
+    runOnJS(onClose)();
+
+    // 2) 다음 번 오픈을 대비해 위치만 리셋
+    translateY.value = withSpring(screenHeight, {damping: 20});
   }, [onClose, screenHeight, translateY]);
 
   useEffect(() => {
     if (visible) {
-      translateY.value = withSpring(screenHeight * 0.1, {damping: 1000}); // Show 90% of the screen
+      translateY.value = withSpring(screenHeight * 0.1, {damping: 1000});
     } else {
-      // This will be triggered by the visibility change, ensuring the modal closes
+      translateY.value = withSpring(screenHeight, {damping: 1000});
     }
   }, [visible, translateY, screenHeight]);
 
@@ -103,7 +107,7 @@ const ProfileBottomSheet = ({
     })
     .onEnd(event => {
       if (event.translationY > 100) {
-        scheduleOnRN(onClose);
+        runOnJS(onClose)();
       } else {
         translateY.value = withSpring(screenHeight * 0.1, {damping: 1000});
       }
@@ -115,7 +119,7 @@ const ProfileBottomSheet = ({
     };
   });
 
-  if (!user) return null;
+  if (!visible || !user) return null;
 
   return (
     <SafeAreaView>
@@ -132,6 +136,10 @@ const ProfileBottomSheet = ({
         statusBarTranslucent
         onRequestClose={closeModalWithAnimation}>
         <View style={styles.overlay}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={closeModalWithAnimation}
+          />
           <GestureDetector gesture={panGesture}>
             <Animated.View style={[styles.bottomSheetContainer, animatedStyle]}>
               <SafeAreaView style={styles.safeArea}>
@@ -143,6 +151,9 @@ const ProfileBottomSheet = ({
                       style={styles.characterImage}
                     />
                     <View style={styles.profileInfo}>
+                      <Text style={styles.badgeText}>
+                        {user.badge ? user.badge : null}
+                      </Text>
                       <Text style={styles.nickname}>{user.nickname}</Text>
                       <Text style={styles.email}>{user.email}</Text>
                       <Text style={styles.userType}>{user.userType}</Text>
@@ -167,20 +178,29 @@ const ProfileBottomSheet = ({
                   {user.main_quest ? (
                     <View style={styles.questContainer}>
                       <Text style={styles.sectionTitle}>메인퀘스트</Text>
-                      <View style={styles.questCard}>
+                      <TouchableOpacity
+                        style={styles.questCard}
+                        onPress={() => {
+                          closeModalWithAnimation();
+                          // navigation.navigate('VerificationNav', {
+                          //   screen: 'QuestVerification',
+                          //   params: {id: user.main_quest.id},
+                          // });
+                          navigation.navigate('QuestVerification', {
+                            id: user.main_quest.id,
+                          });
+                        }}>
                         <Text style={styles.questTitle}>
-                          {user.main_quest.title ||
-                            '아직 메인 퀘스트가 없습니다'}
+                          {user.main_quest.title}
                         </Text>
                         <Text style={styles.questDescription}>
-                          {user.main_quest.description ||
-                            '아직 메인 퀘스트가 없습니다'}
+                          {user.main_quest.description}
                         </Text>
                         <Text style={styles.questProgress}>
                           인증: {user.main_quest.verificationCount || 0} /{' '}
                           {user.main_quest.requiredVerification || 0}
                         </Text>
-                      </View>
+                      </TouchableOpacity>
                     </View>
                   ) : (
                     <View style={styles.questContainer}>
@@ -250,10 +270,17 @@ const styles = StyleSheet.create({
   profileInfo: {
     flex: 1,
   },
+  badgeText: {
+    fontSize: 14,
+    color: colors.primary,
+    marginBottom: 4,
+    fontWeight: 'bold',
+  },
   nickname: {
     fontSize: 22,
     fontWeight: 'bold',
     color: colors.font,
+    marginBottom: 4,
   },
   email: {
     fontSize: 14,

@@ -3,6 +3,7 @@ import type {PeersNavParamList} from '../types/navigation';
 import Peers from '../screens/bottomTab/Peers';
 import PeerRequest from '../screens/peers/PeerRequest';
 import PeerListScreen from '../screens/peers/PeerListScreen';
+import QuestVerification from '../screens/verification/QuestVerification';
 
 const Stack = createNativeStackNavigator<PeersNavParamList>();
 
@@ -16,6 +17,7 @@ export default function PeersNav() {
       <Stack.Screen name={'Peers'} component={Peers} />
       <Stack.Screen name={'PeerRequest'} component={PeerRequest} />
       <Stack.Screen name={'PeerListScreen'} component={PeerListScreen} />
+      <Stack.Screen name={'QuestVerification'} component={QuestVerification} />
     </Stack.Navigator>
   );
 }

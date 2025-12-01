@@ -55,14 +55,22 @@ const AppInfoPage = () => {
           <Text style={styles.sectionTitle}>이용 약관 및 정책</Text>
           <TouchableOpacity
             style={styles.linkItem}
-            onPress={() => openLink('https://picoquest.app/terms')}>
+            onPress={() =>
+              openLink(
+                'https://satin-gallium-b49.notion.site/2ab7d463a92480cf96c2d4b82b7f4f09',
+              )
+            }>
             <Text style={styles.linkText}>이용약관</Text>
             <Icon name="chevron-right" size={20} color="#666" />
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.linkItem}
-            onPress={() => openLink('https://picoquest.app/privacy')}>
+            onPress={() =>
+              openLink(
+                'https://satin-gallium-b49.notion.site/2ab7d463a92480f999cde16f442722c7?pvs=74',
+              )
+            }>
             <Text style={styles.linkText}>개인정보 처리방침</Text>
             <Icon name="chevron-right" size={20} color="#666" />
           </TouchableOpacity>

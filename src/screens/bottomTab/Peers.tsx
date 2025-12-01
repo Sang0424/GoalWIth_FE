@@ -23,7 +23,7 @@ import {useNavigation, DrawerActions} from '@react-navigation/native';
 import {PeersNavParamList} from '../../types/navigation';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {initialUser} from '../../store/mockData';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import type {RequestedPeers} from '../../types/peers.types.d.ts';
 import {useDebounce} from '../../utils/hooks/useDebounce';
 import {colors} from '../../styles/theme';
@@ -34,7 +34,8 @@ export default function Peers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const queryClient = useQueryClient();
-  const debouncedSearchQuery = useDebounce(searchQuery.toLowerCase(), 1000);
+
+  const debouncedSearchQuery = useDebounce(searchQuery.toLowerCase(), 300);
 
   const {data: requestedPeersData} = useQuery({
     queryKey: ['requestedPeersCount'],
@@ -44,7 +45,7 @@ export default function Peers() {
       );
       return response.data;
     },
-    enabled: API_URL !== '',
+    enabled: Config.API_URL !== '',
   });
 
   const {
@@ -70,7 +71,7 @@ export default function Peers() {
       return undefined;
     },
     initialPageParam: 0,
-    enabled: API_URL !== '',
+    enabled: Config.API_URL !== '',
   });
 
   const {
@@ -81,7 +82,7 @@ export default function Peers() {
     isFetchingNextPage: searchIsFetchingNextPage,
     refetch: searchRefetch,
   } = useInfiniteQuery({
-    queryKey: ['peers', searchQuery],
+    queryKey: ['peers', debouncedSearchQuery],
     queryFn: async ({pageParam = 0}) => {
       const response = await instance.get(
         `/search/user?search=${debouncedSearchQuery}&page=${pageParam}&size=${PAGE_SIZE}`,
@@ -96,17 +97,16 @@ export default function Peers() {
       return undefined;
     },
     initialPageParam: 0,
-    enabled: API_URL !== '' && debouncedSearchQuery !== '',
+    enabled: debouncedSearchQuery.length > 0,
+    placeholderData: previousData => previousData,
   });
   const users =
-    API_URL === ''
-      ? initialUser
-      : debouncedSearchQuery !== ''
+    debouncedSearchQuery.length > 0
       ? searchPeersData?.pages.flatMap(page => page.content) || []
       : peersData?.pages.flatMap(page => page.content) || [];
 
   const requestedPeersCount =
-    API_URL === '' ? 0 : requestedPeersData?.totalElements || 0;
+    Config.API_URL === '' ? 0 : requestedPeersData?.totalElements || 0;
 
   const navigation =
     useNavigation<NativeStackNavigationProp<PeersNavParamList>>();
@@ -213,6 +213,7 @@ export default function Peers() {
         />
         <TextInput
           placeholder="검색어를 입력해주세요"
+          placeholderTextColor={colors.gray}
           style={[styles.searchInput]}
           value={searchQuery}
           onChangeText={setSearchQuery}

@@ -32,3 +32,5 @@ apply plugin: "com.facebook.react.rootproject"
 project.ext.react = [
     enableHermes: true, // or false
 ]
+
+apply plugin: "expo-root-project"

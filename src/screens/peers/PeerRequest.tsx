@@ -21,7 +21,7 @@ import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {PeersNavParamList} from '../../types/navigation';
 import BackArrow from '../../components/BackArrow';
 import type {RequestedPeers} from '../../types/peers.types.d.ts';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 
 const PAGE_SIZE = 10;
 
@@ -47,7 +47,7 @@ export default function PeerRequest() {
       return undefined;
     },
     initialPageParam: 0,
-    enabled: API_URL !== '',
+    enabled: Config.API_URL !== '',
   });
 
   const requestedPeers =

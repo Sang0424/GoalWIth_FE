@@ -11,12 +11,9 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import BigLogo from '../../components/Logo';
 import DividerWithText from '../../components/DividerWithText';
 import {useNavigation} from '@react-navigation/native';
-//import OnBoarding2 from './OnBoarding2';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {OnBoardingStackParamList} from '../../types/navigation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-//import {useMutation} from '@tanstack/react-query';
-//import {userStore} from '../../store/userStore';
 import instance from '../../utils/axiosInterceptor';
 import {signInWithGoogle} from '../../services/api/auth';
 import {useMutation} from '@tanstack/react-query';
@@ -53,7 +50,7 @@ export default function Onboarding1() {
         const {accessToken, refreshToken} = data;
         setAccessToken(accessToken);
         await AsyncStorage.setItem('refreshToken', refreshToken);
-        navigation.navigate('BottomNav');
+        // navigation.navigate('MainNav');
       }
     },
     onError: (error: any) => {
@@ -93,7 +90,7 @@ export default function Onboarding1() {
         const {accessToken, refreshToken} = data;
         setAccessToken(accessToken);
         await AsyncStorage.setItem('refreshToken', refreshToken);
-        navigation.navigate('BottomNav');
+        navigation.navigate('MainNav');
       }
     },
     onError: error => {
@@ -110,8 +107,6 @@ export default function Onboarding1() {
 
   const handleKakaoLogin = async () => {
     const {accessToken, idToken} = await login();
-    console.log('accessToken', accessToken);
-    console.log('idToken', idToken);
     if (accessToken && idToken) {
       kakaoLoginMutate({kakaoAccessToken: accessToken, idToken});
     }

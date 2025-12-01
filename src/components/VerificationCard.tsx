@@ -3,13 +3,11 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {VerificationNavParamList} from '../types/navigation';
 import {useState} from 'react';
 import instance from '../utils/axiosInterceptor';
-import {formatRelativeTime} from '../utils/dateUtils';
 import Toast from 'react-native-toast-message';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import ReactionButton from './ReactionButton';
-import {Alert} from 'react-native';
 import CharacterAvatar from './CharacterAvatar';
-import {Text, TouchableOpacity, View, Image} from 'react-native';
+import {Text, TouchableOpacity, View} from 'react-native';
 import {colors} from '../styles/theme';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {
@@ -22,6 +20,7 @@ import {StyleSheet} from 'react-native';
 import useReactionData from '../utils/hooks/useReactionData';
 import {userStore} from '../store/userStore';
 import ProfileBottomSheet from './ProfileBottomSheet';
+import {Image} from 'expo-image';
 
 const VerificationCard = ({item}: {item: any}) => {
   const user = userStore(state => state.user);
@@ -68,6 +67,9 @@ const VerificationCard = ({item}: {item: any}) => {
   const handleGoQuest = () => {
     navigation.navigate('QuestVerification', {id: item.id});
   };
+
+  const blurhash =
+    '|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[';
 
   return (
     <>
@@ -130,7 +132,8 @@ const VerificationCard = ({item}: {item: any}) => {
                 <Image
                   source={{uri: record.images?.[0]}}
                   style={styles.gridImage}
-                  resizeMode="cover"
+                  placeholder={blurhash}
+                  transition={1000}
                 />
               </View>
             ))}
