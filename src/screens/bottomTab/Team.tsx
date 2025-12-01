@@ -25,7 +25,7 @@ import {
   useQueryClient,
   useInfiniteQuery,
 } from '@tanstack/react-query';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Reanimated, {
   SharedValue,
@@ -49,12 +49,12 @@ const TeamScreen = () => {
   const debouncedSearchQuery = useDebounce(searchQuery.toLowerCase(), 1000);
   const swipeableRef = useRef<any>(null);
   const queryClient = useQueryClient();
-  const isMockData = API_URL == '';
+  const isMockData = Config.API_URL == '';
   const mockTeams = useTeamStore(state => state.teams);
 
   const {mutate} = useMutation({
     mutationFn: async (teamId: number) => {
-      if (API_URL === '') {
+      if (Config.API_URL === '') {
         useTeamStore.getState().deleteTeam(teamId);
         return;
       }
@@ -108,7 +108,7 @@ const TeamScreen = () => {
       return undefined;
     },
     initialPageParam: 0,
-    enabled: API_URL !== '' && debouncedSearchQuery !== '',
+    enabled: Config.API_URL !== '' && debouncedSearchQuery !== '',
   });
 
   const {
@@ -134,7 +134,7 @@ const TeamScreen = () => {
       return undefined;
     },
     initialPageParam: 0,
-    enabled: API_URL !== '',
+    enabled: Config.API_URL !== '',
   });
 
   let teams =

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Image,
   TextInput,
   Alert,
   Keyboard,
@@ -31,8 +30,11 @@ import {useQuery, useMutation} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
 import {useQueryClient} from '@tanstack/react-query';
 import type {QuestRecord, Quest} from '../../types/quest.types';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import {colors} from '../../styles/theme';
+import {formatRelativeTime} from '../../utils/dateUtils';
+import {Image as ImageCompressor} from 'react-native-compressor';
+import {Image} from 'expo-image';
 
 const QuestFeed = ({route}: QuestFeedProps) => {
   const navigation = useNavigation();
@@ -44,6 +46,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const queryClient = useQueryClient();
 
+  const blurhash =
+    '|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[';
+
   const quest = {
     ...questParam,
     startDate: questParam.startDate ? new Date(questParam.startDate) : null,
@@ -53,7 +58,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   const {data, isLoading} = useQuery({
     queryKey: ['QuestRecord', quest.id],
     queryFn: async () => {
-      if (API_URL !== '') {
+      if (Config.API_URL !== '') {
         try {
           const response = await instance.get(`/record/${quest.id}`);
           return response.data;
@@ -64,7 +69,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       }
       return {records: quest.records || []};
     },
-    enabled: API_URL !== '', // Only run the query if API_URL is not empty
+    enabled: Config.API_URL !== '', // Only run the query if API_URL is not empty
   });
 
   // Set questRecord when data changes
@@ -95,7 +100,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     },
     [],
   );
-  const {mutate} = useMutation({
+  const {mutate, isPending: isCreatingRecord} = useMutation({
     mutationFn: createRecord,
     onSuccess: () => {
       Alert.alert('성공', '기록이 추가되었습니다!');
@@ -104,6 +109,8 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     },
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);
+      queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
+      queryClient.invalidateQueries({queryKey: ['badges']});
     },
   });
 
@@ -116,6 +123,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       navigation.goBack();
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
+      queryClient.invalidateQueries({queryKey: ['badges']});
     },
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);
@@ -240,27 +248,53 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     );
   };
 
-  const pickImage = () => {
+  const pickImage = async () => {
     const options: any = {
       mediaType: 'photo',
       selectionLimit: 3 - images.length,
       maxWidth: 1000,
       maxHeight: 1000,
-      quality: 1, // 0-1 where 1 is best quality
+      quality: 0.8, // 0-1 where 1 is best quality
       includeBase64: false,
     };
-
-    launchImageLibrary(options, (response: any) => {
+    try {
+      const response = await new Promise<ImagePickerResponse>(resolve =>
+        launchImageLibrary(options, resolve),
+      );
       if (response.didCancel) {
         Alert.alert('이미지 선택을 취소했습니다.');
-      } else if (response.errorCode) {
-        Alert.alert('이미지 선택 중 오류가 발생했습니다.');
-      } else if (response.assets?.length) {
-        const images: Asset[] = [];
-        response.assets.forEach((asset: Asset) => images.push(asset));
-        setImages(prev => [...prev, ...images].slice(0, 3));
       }
-    });
+      if (response.errorCode) {
+        Alert.alert('이미지 선택 중 오류가 발생했습니다.');
+      }
+      if (response.assets?.length) {
+        const compressedImages = await Promise.all(
+          response.assets.map(async (asset: Asset) => {
+            try {
+              const result = await ImageCompressor.compress(asset.uri || '', {
+                maxWidth: 1000,
+                maxHeight: 1000,
+                quality: 0.8,
+                input: 'uri',
+              });
+              return {
+                ...asset,
+                uri: result,
+              };
+            } catch (error) {
+              console.error(error);
+            }
+          }),
+        );
+        const validCompressedImages = compressedImages.filter(
+          img => img !== undefined,
+        );
+        setImages(prev => [...prev, ...validCompressedImages].slice(0, 3));
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('이미지 처리하는 중 오류가 발생했습니다.');
+    }
   };
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
@@ -271,6 +305,19 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     return `${date.getFullYear()}년 ${
       date.getMonth() + 1
     }월 ${date.getDate()}일`;
+  };
+
+  const calculateProgressPercentage = () => {
+    if (!quest.startDate || !quest.endDate) return 0;
+
+    const start = new Date(quest.startDate).getTime();
+    const end = new Date(quest.endDate).getTime();
+    const now = new Date().getTime();
+
+    const totalDuration = end - start;
+    const elapsed = now - start;
+
+    return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
   };
 
   return (
@@ -325,19 +372,8 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                 <View
                   style={[
                     styles.progressFill,
+                    {width: `${calculateProgressPercentage()}%`},
                     {
-                      width: `${Math.min(
-                        100,
-                        Math.max(
-                          0,
-                          (Math.floor(
-                            (Date.now() - new Date(quest.startDate).getTime()) /
-                              86400000,
-                          ) +
-                            1) /
-                            7,
-                        ),
-                      )}%`,
                       backgroundColor: quest.isMain ? '#4a90e2' : '#a0a0a0',
                     },
                   ]}
@@ -372,6 +408,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                   <ImageCarousel images={record.images} />
                 )}
                 <Text style={styles.recordText}>{record.text}</Text>
+                <Text style={styles.recordDate}>
+                  {formatRelativeTime(record.createdAt.toString())}
+                </Text>
               </View>
             ))
           )}
@@ -379,96 +418,115 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       </ScrollView>
 
       {/* Add Record Form */}
-      <Animated.View
-        style={[
-          styles.inputContainer,
-          {transform: [{translateY: keyboardOffset}]},
-        ]}>
-        {images.length > 0 && (
-          <View style={styles.imagePreviewContainer}>
-            {images.map((image, index) => (
+      {quest.procedure === 'progress' && (
+        <Animated.View
+          style={[
+            styles.inputContainer,
+            {transform: [{translateY: keyboardOffset}]},
+          ]}>
+          {images.length > 0 && (
+            <View style={styles.imagePreviewContainer}>
+              {images.map((image, index) => (
+                <TouchableOpacity
+                  key={`image-${index}-${image}`}
+                  onPress={() => removeImage(index)}
+                  style={styles.imageWrapper}>
+                  <Image
+                    source={{uri: image.uri}}
+                    style={styles.imagePreview}
+                    placeholder={blurhash}
+                    transition={1000}
+                  />
+                </TouchableOpacity>
+              ))}
               <TouchableOpacity
-                key={`image-${index}-${image}`}
-                onPress={() => removeImage(index)}
-                style={styles.imageWrapper}>
-                <Image source={{uri: image.uri}} style={styles.imagePreview} />
+                style={styles.removeImageButton}
+                onPress={() => setImages([])}>
+                <Ionicons name="close" size={16} color="white" />
               </TouchableOpacity>
-            ))}
+            </View>
+          )}
+          <View style={[styles.inputRow]}>
+            <TextInput
+              style={styles.input}
+              placeholder="오늘의 활동을 기록하세요..."
+              placeholderTextColor={colors.gray}
+              value={newRecordText}
+              onChangeText={setNewRecordText}
+              multiline
+              editable={!isCreatingRecord}
+            />
             <TouchableOpacity
-              style={styles.removeImageButton}
-              onPress={() => setImages([])}>
-              <Ionicons name="close" size={16} color="white" />
+              style={styles.cameraButton}
+              onPress={pickImage}
+              disabled={isCreatingRecord}>
+              <Ionicons name="camera" size={24} color={colors.primary} />
             </TouchableOpacity>
           </View>
-        )}
-        <View style={[styles.inputRow]}>
-          <TextInput
-            style={styles.input}
-            placeholder="오늘의 활동을 기록하세요..."
-            value={newRecordText}
-            onChangeText={setNewRecordText}
-            multiline
-          />
-          <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
-            <Ionicons name="camera" size={24} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
 
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={
-              new Date(quest.endDate) < new Date()
-                ? [styles.actionButton, styles.completeButton]
-                : [
-                    styles.actionButton,
-                    styles.completeButton,
-                    {backgroundColor: colors.lightGray},
-                  ]
-            }
-            onPress={
-              questParam.verificationRequired &&
-              questParam.procedure === 'progress'
-                ? handleVerificationQuest
-                : handleCompleteQuest
-            }
-            disabled={
-              questRecord?.length === 0 ||
-              new Date(quest.endDate) > new Date() ||
-              questParam.procedure === 'verify'
-                ? questParam.verificationCount < questParam.requiredVerification
-                : false
-            }>
-            <Ionicons name="checkmark-circle" size={18} color="white" />
-            {questParam.verificationRequired &&
-            questParam.procedure === 'progress' ? (
-              <Text style={styles.completeButtonText}>인증받기</Text>
-            ) : (
-              <Text style={styles.completeButtonText}>완료하기</Text>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              styles.addButton,
-              !newRecordText.trim() &&
-                images.length === 0 && {
-                  backgroundColor: colors.lightGray,
-                },
-            ]}
-            onPress={handleAddRecord}
-            disabled={!newRecordText.trim() && images.length === 0}>
-            <Ionicons name="add" size={18} color="white" />
-            <Text
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
               style={
-                !newRecordText.trim() && images.length === 0
-                  ? styles.addButtonText
-                  : styles.addButtonText
+                new Date(quest.endDate) < new Date()
+                  ? [styles.actionButton, styles.completeButton]
+                  : [
+                      styles.actionButton,
+                      styles.completeButton,
+                      {backgroundColor: colors.lightGray},
+                    ]
+              }
+              onPress={
+                questParam.verificationRequired &&
+                questParam.procedure === 'progress'
+                  ? handleVerificationQuest
+                  : handleCompleteQuest
+              }
+              disabled={
+                questRecord?.length === 0 ||
+                new Date(quest.endDate) > new Date() ||
+                questParam.procedure === 'verify'
+                  ? questParam.verificationCount <
+                    questParam.requiredVerification
+                  : false
               }>
-              기록 추가
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
+              <Ionicons name="checkmark-circle" size={18} color="white" />
+              {questParam.verificationRequired &&
+              questParam.procedure === 'progress' ? (
+                <Text style={styles.completeButtonText}>인증받기</Text>
+              ) : (
+                <Text style={styles.completeButtonText}>완료하기</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.addButton,
+                !newRecordText.trim() &&
+                  images.length === 0 && {
+                    backgroundColor: colors.lightGray,
+                  },
+              ]}
+              onPress={handleAddRecord}
+              disabled={!newRecordText.trim() && images.length === 0}>
+              <Ionicons name="add" size={18} color="white" />
+              <Text
+                style={
+                  !newRecordText.trim() && images.length === 0
+                    ? styles.addButtonText
+                    : styles.addButtonText
+                }>
+                기록 추가
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {isCreatingRecord && (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={styles.loadingText}>기록을 업로드 중입니다...</Text>
+            </View>
+          )}
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 };
@@ -589,6 +647,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   recordDate: {
+    marginTop: 14,
     fontSize: 12,
     color: colors.gray,
   },
@@ -694,6 +753,16 @@ const styles = StyleSheet.create({
     color: colors.btnFont,
     fontWeight: 'bold',
     marginLeft: 5,
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  loadingText: {
+    color: colors.font,
+    marginLeft: 8,
   },
 });
 

@@ -14,7 +14,6 @@ import {
 import {useMemo} from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Logo from '../../components/Logo';
-import {useQuestStore} from '../../store/mockData';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import instance from '../../utils/axiosInterceptor';
 import {
@@ -23,15 +22,18 @@ import {
   useQueryClient,
   useMutation,
 } from '@tanstack/react-query';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import {useDebounce} from '../../utils/hooks/useDebounce';
 import {colors} from '../../styles/theme';
 import VerificationCard from '../../components/VerificationCard';
+import NativeVerificationAd from '../../components/NativeVerificationAd';
 
 const TAB_LIST = [
   {key: 'realtime', label: '실시간'},
   {key: 'peers', label: '피어즈'},
 ];
+
+const AD_FREQUENCY = 1;
 
 const VerificationFeedScreen = () => {
   const PAGE_SIZE = 5;
@@ -68,7 +70,7 @@ const VerificationFeedScreen = () => {
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.hasNext ? allPages.length : undefined;
     },
-    enabled: API_URL != '',
+    enabled: Config.API_URL != '',
   });
 
   const {
@@ -79,7 +81,7 @@ const VerificationFeedScreen = () => {
     hasNextPage: searchVerificationHasNextPage,
     refetch: searchVerificationRefetch,
   } = useInfiniteQuery({
-    queryKey: ['searchVerification'],
+    queryKey: ['searchVerification', debouncedSearchQuery],
     initialPageParam: 0,
     queryFn: async ({pageParam = 0}) => {
       try {
@@ -95,7 +97,7 @@ const VerificationFeedScreen = () => {
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.hasNext ? allPages.length : undefined;
     },
-    enabled: API_URL != '' && debouncedSearchQuery !== '',
+    enabled: debouncedSearchQuery.length > 0,
   });
 
   const {
@@ -122,17 +124,17 @@ const VerificationFeedScreen = () => {
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.hasNext ? allPages.length : undefined;
     },
-    enabled: API_URL != '',
+    enabled: Config.API_URL != '',
   });
 
   const verificationQuests = React.useMemo(() => {
-    return debouncedSearchQuery !== ''
+    return debouncedSearchQuery.length > 0
       ? searchVerificationData?.pages.flatMap(page => page.content) || []
       : data?.pages.flatMap(page => page.content) || [];
   }, [data, page, debouncedSearchQuery]);
 
   const peersVerificationQuests = React.useMemo(() => {
-    return debouncedSearchQuery !== ''
+    return debouncedSearchQuery.length > 0
       ? searchVerificationData?.pages.flatMap(page => page.content) || []
       : peersVerificationData?.pages.flatMap(page => page.content) || [];
   }, [peersVerificationData, page, debouncedSearchQuery]);
@@ -143,7 +145,7 @@ const VerificationFeedScreen = () => {
       : peersVerificationQuests.length < (page + 1) * PAGE_SIZE;
 
   const handleLoadMore = () => {
-    if (API_URL == '') {
+    if (Config.API_URL == '') {
       if (hasMore) {
         setPage(page => page + 1);
       }
@@ -180,7 +182,7 @@ const VerificationFeedScreen = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    debouncedSearchQuery !== ''
+    debouncedSearchQuery.length > 0
       ? await searchVerificationRefetch()
       : activeTab === 'realtime'
       ? await refetch()
@@ -191,6 +193,18 @@ const VerificationFeedScreen = () => {
   // 팔로잉 피드는 userId가 'user1'인 것만 노출 (예시)
   const filteredFeed =
     activeTab === 'peers' ? peersVerificationQuests : verificationQuests;
+
+  const feedWithAds = useMemo(() => {
+    const source = filteredFeed;
+    const injected = [];
+    for (let i = 0; i < source.length; i += 1) {
+      injected.push({type: 'quest', data: source[i]});
+      if ((i + 1) % AD_FREQUENCY === 0) {
+        injected.push({type: 'ad', key: `ad-${i}`});
+      }
+    }
+    return injected;
+  }, [filteredFeed]);
 
   if (isLoading || searchVerificationLoading || peersVerificationLoading) {
     return <ActivityIndicator style={{flex: 1, marginTop: 100}} size="large" />;
@@ -223,6 +237,7 @@ const VerificationFeedScreen = () => {
           />
           <TextInput
             placeholder="검색어를 입력해주세요"
+            placeholderTextColor={colors.gray}
             style={[styles.searchInput]}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -258,13 +273,20 @@ const VerificationFeedScreen = () => {
         ))}
       </View>
       <FlatList
-        data={filteredFeed}
-        keyExtractor={item => item.id}
+        data={feedWithAds}
+        keyExtractor={item =>
+          item.type === 'ad' ? item.key : item.data.id.toString()
+        }
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
-        renderItem={({item}) => <VerificationCard item={item} />}
+        renderItem={({item}) => {
+          if (item.type === 'quest') {
+            return <VerificationCard item={item.data} />;
+          }
+          return <NativeVerificationAd />;
+        }}
         ListFooterComponent={
-          searchQuery !== '' ? (
+          debouncedSearchQuery.length > 0 ? (
             searchVerificationIsFetchingNextPage ? (
               <ActivityIndicator size="small" color="#000" />
             ) : null

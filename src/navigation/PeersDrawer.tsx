@@ -1,36 +1,7 @@
-// import {createDrawerNavigator} from '@react-navigation/drawer';
-// import PeersNav from './PeersNav';
-// import CustomDrawerContent from '../screens/peers/CustomDrawerContent';
-// import {PeersDrawerParamList} from '../types/navigation';
-
-// const Drawer = createDrawerNavigator<PeersDrawerParamList>();
-
-// export default function PeersDrawer() {
-//   return (
-//     <Drawer.Navigator
-//       screenOptions={{
-//         headerShown: false,
-//         drawerType: 'front',
-//         drawerStyle: {
-//           width: '80%',
-//         },
-//         overlayColor: 'transparent',
-//       }}
-//       drawerContent={props => <CustomDrawerContent {...props} />}>
-//       <Drawer.Screen
-//         name="PeersNav"
-//         component={PeersNav}
-//         options={{drawerItemStyle: {display: 'none'}}}
-//       />
-//     </Drawer.Navigator>
-//   );
-// }
 import React from 'react';
 import {createDrawerNavigator} from '@react-navigation/drawer';
 import CustomDrawerContent from '../screens/peers/CustomDrawerContent';
-import PeersNav from './PeersNav'; // PeersNav import 경로가 올바른지 확인
-
-// types/navigation 파일에서 타입을 정확히 import 했는지 확인
+import PeersNav from './PeersNav';
 import {PeersDrawerParamList} from '../types/navigation';
 
 const Drawer = createDrawerNavigator<PeersDrawerParamList>();

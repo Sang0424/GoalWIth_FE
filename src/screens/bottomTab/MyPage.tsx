@@ -16,14 +16,14 @@ import CharacterAvatar from '../../components/CharacterAvatar';
 import Logo from '../../components/Logo';
 import {MyPageNavParamList} from '../../types/navigation';
 import {useState} from 'react';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import instance from '../../utils/axiosInterceptor';
 import {userStore} from '../../store/userStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {tokenStore} from '../../store/tokenStore';
 import {User} from '../../types/user.types';
 import {Team} from '../../types/team.types';
-import {useQuery, useMutation} from '@tanstack/react-query';
+import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {Dropdown} from 'react-native-element-dropdown';
 import {colors} from '../../styles/theme';
 
@@ -33,12 +33,14 @@ export default function MyPage() {
     useNavigation<NativeStackNavigationProp<MyPageNavParamList>>();
   const setAccessToken = tokenStore(state => state.actions.setAccessToken);
   const user = userStore(state => state.user);
+  const [value, setValue] = useState(user?.badge);
+  const queryClient = useQueryClient();
   const logout = async () => {
     try {
       await AsyncStorage.clear();
       setAccessToken(null);
-    } catch (e) {
-      Alert.alert(e as string);
+    } catch (e: any) {
+      Alert.alert(e.response.data.message);
     }
   };
   const {data: badges} = useQuery({
@@ -52,7 +54,7 @@ export default function MyPage() {
         return [];
       }
     },
-    enabled: API_URL != '',
+    enabled: Config.API_URL != '',
   });
   const {
     data: myVerification,
@@ -69,7 +71,7 @@ export default function MyPage() {
         return [];
       }
     },
-    enabled: API_URL != '',
+    enabled: Config.API_URL != '',
   });
 
   const {
@@ -87,7 +89,7 @@ export default function MyPage() {
         return [];
       }
     },
-    enabled: API_URL != '',
+    enabled: Config.API_URL != '',
   });
 
   const {
@@ -105,17 +107,17 @@ export default function MyPage() {
         return [];
       }
     },
-    enabled: API_URL != '',
+    enabled: Config.API_URL != '',
   });
 
   const {mutate: changeBadgeMutate} = useMutation({
     mutationFn: async (badgeId: number) => {
-      const response = await instance.put(`/user/badge`, {
-        badgeId,
-      });
+      const response = await instance.put(`/user/badge/${badgeId}`);
       return response.data;
     },
-    onSuccess: () => {},
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ['user']});
+    },
     onError: (error: any) => {
       console.error(error.response.data.message);
     },
@@ -128,6 +130,28 @@ export default function MyPage() {
       </SafeAreaView>
     );
   }
+
+  const renderBadgeItem = (item: {id: number; name: string}) => {
+    const isCurrentBadge = item.name === user.badge;
+    return (
+      <View
+        style={[
+          styles.dropdownItem,
+          isCurrentBadge && styles.dropdownItemActive,
+        ]}>
+        <Text
+          style={[
+            styles.dropdownItemText,
+            isCurrentBadge && styles.dropdownItemTextActive,
+          ]}>
+          {item.name}
+        </Text>
+        {isCurrentBadge && (
+          <Ionicons name="checkmark" size={16} color={colors.secondary} />
+        )}
+      </View>
+    );
+  };
 
   const myVerificationCount = myVerification?.totalElements;
   const myReactionCount = myReaction?.totalElements;
@@ -216,17 +240,13 @@ export default function MyPage() {
           </View>
           <Dropdown
             data={badges}
-            placeholder="칭호를 선택해주세요"
-            placeholderStyle={{color: colors.gray}}
+            placeholder={user?.badge ? user.badge : '칭호를 선택해주세요'}
+            placeholderStyle={{color: colors.font}}
             onChange={item => changeBadgeMutate(item.id)}
             labelField="name"
             valueField="id"
             style={styles.dropdown}
-            selectedTextStyle={{
-              color: colors.font,
-              fontWeight: 'bold',
-            }}
-            value={user.badge}
+            renderItem={renderBadgeItem}
           />
         </View>
         {/* Settings */}
@@ -323,16 +343,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: colors.font,
   },
-  // userTitle: {
-  //   fontSize: 14,
-  //   color: colors.primary,
-  //   backgroundColor: '#f0e6dd',
-  //   paddingHorizontal: 12,
-  //   paddingVertical: 4,
-  //   borderRadius: 12,
-  //   overflow: 'hidden',
-  //   marginBottom: 20,
-  // },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -425,11 +435,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  badge: {
-    width: '33.33%',
-    padding: 5,
-    alignItems: 'center',
-  },
   dropdown: {
     width: '100%',
     height: 40,
@@ -440,10 +445,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.gray,
   },
-  badgeName: {
-    fontSize: 12,
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dropdownItemText: {
+    fontSize: 16,
     color: colors.font,
-    textAlign: 'center',
+  },
+  dropdownItemActive: {
+    backgroundColor: colors.secondary,
+  },
+  dropdownItemTextActive: {
+    color: colors.font,
   },
   settingItem: {
     flexDirection: 'row',

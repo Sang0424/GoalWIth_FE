@@ -2,7 +2,6 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   View,
   Text,
-  Pressable,
   StyleSheet,
   TextInput,
   useWindowDimensions,
@@ -12,6 +11,7 @@ import {
   Platform,
   Linking,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import BigLogo from '../../components/Logo';
 import {useNavigation} from '@react-navigation/native';
@@ -29,6 +29,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {tokenStore} from '../../store/tokenStore';
 import {userStore} from '../../store/userStore';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import {colors} from '../../styles/theme';
 
 const UserTypes = [
   '학생',
@@ -81,10 +82,9 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
     }
   };
   const validateTerms = () => {
-    agreedTerms && agreedPrivacy && fourteen ? true : false;
+    return agreedTerms && agreedPrivacy && fourteen;
   };
 
-  console.log(validateTerms());
   const validateUserInfo = () => {
     let isValid = true;
     const errorMsg: Partial<{
@@ -112,7 +112,7 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
     if (isSocial) {
       setAccessToken(accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);
-      await loadUser();
+      loadUser();
       // 소셜 로그인 추가 정보 입력
       await instance.put('/user/info', {
         nickname: userInfo.nickname,
@@ -131,7 +131,7 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
       const {accessToken, refreshToken} = response.data;
       setAccessToken(accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);
-      await loadUser();
+      loadUser();
       queryClient.invalidateQueries({
         queryKey: ['user'],
       });
@@ -140,10 +140,10 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
   const {mutate} = useMutation({
     mutationFn: register,
     onSuccess: () => {
-      navigation.navigate('BottomNav');
+      // navigation.navigate('MainNav');
     },
-    onError: error => {
-      console.error(error);
+    onError: (error: any) => {
+      Alert.alert('가입 실패', error.response.data.message);
     },
   });
   const submitRegister = () => {
@@ -152,11 +152,11 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <SafeAreaView style={styles.container}>
-        <Pressable
+        <TouchableOpacity
           style={styles.closeButton}
           onPress={() => navigation.navigate('OnBoarding1')}>
           <Icon name="close" size={32} color="#000" />
-        </Pressable>
+        </TouchableOpacity>
         <View
           style={{
             flex: 1,
@@ -188,6 +188,7 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
           <TextInput
             value={userInfo.nickname}
             placeholder="사용할 닉네임을 입력해주세요"
+            placeholderTextColor={colors.gray}
             enterKeyHint="next"
             autoCapitalize="none"
             autoCorrect={false}
@@ -202,7 +203,7 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
           <View style={styles.chipContainer}>
             {/* USER_TYPES 배열을 순회하며 선택 버튼을 렌더링 */}
             {UserTypes.map(type => (
-              <Pressable
+              <TouchableOpacity
                 key={type}
                 // 현재 type이 선택된 type과 같으면 selectedChip 스타일 적용
                 style={[
@@ -220,11 +221,11 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
                   ]}>
                   {type}
                 </Text>
-              </Pressable>
+              </TouchableOpacity>
             ))}
           </View>
           <View style={styles.agreementContainer}>
-            <Pressable
+            <TouchableOpacity
               style={styles.checkboxRow}
               onPress={() => setAgreedTerms(!agreedTerms)}>
               <Icon
@@ -232,16 +233,14 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
                 size={24}
                 color={agreedTerms ? '#806a5b' : '#ccc'}
               />
-
               <Text style={styles.checkboxLabel}>
                 [필수] 서비스 이용약관 동의
               </Text>
-              <Pressable onPress={() => openLink(TERMS_URL)}>
+              <TouchableOpacity onPress={() => openLink(TERMS_URL)}>
                 <Text style={styles.viewLink}>[보기]</Text>
-              </Pressable>
-            </Pressable>
-
-            <Pressable
+              </TouchableOpacity>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={styles.checkboxRow}
               onPress={() => setAgreedPrivacy(!agreedPrivacy)}>
               <Icon
@@ -252,13 +251,25 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
               <Text style={styles.checkboxLabel}>
                 [필수] 개인정보 수집 및 이용 동의
               </Text>
-              <Pressable onPress={() => openLink(PRIVACY_URL)}>
+              <TouchableOpacity onPress={() => openLink(PRIVACY_URL)}>
                 <Text style={styles.viewLink}>[보기]</Text>
-              </Pressable>
-            </Pressable>
+              </TouchableOpacity>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={() => setFourteen(!fourteen)}>
+              <Icon
+                name={fourteen ? 'check-circle' : 'radio-button-unchecked'}
+                size={24}
+                color={fourteen ? '#806a5b' : '#ccc'}
+              />
+              <Text style={styles.checkboxLabel}>
+                [필수] 만 14세 이상입니다
+              </Text>
+            </TouchableOpacity>
           </View>
           <View style={{flexDirection: 'row', justifyContent: 'space-around'}}>
-            <Pressable
+            <TouchableOpacity
               style={styles.backBtn}
               onPress={() => navigation.goBack()}>
               <Text
@@ -269,21 +280,8 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
                 }}>
                 뒤로
               </Text>
-            </Pressable>
-            <Pressable
-              style={styles.checkboxRow}
-              onPress={() => setAgreedTerms(!agreedTerms)}>
-              <Icon
-                name={agreedTerms ? 'check-circle' : 'radio-button-unchecked'}
-                size={24}
-                color={agreedTerms ? '#806a5b' : '#ccc'}
-              />
-
-              <Text style={styles.checkboxLabel}>
-                [필수] 만 14세 이상입니다
-              </Text>
-            </Pressable>
-            <Pressable
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[
                 isFormFilled(userInfo) && validateTerms()
                   ? styles.registerBtn
@@ -292,7 +290,8 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
               onPress={() => {
                 validateUserInfo();
                 validateUserInfo() && submitRegister();
-              }}>
+              }}
+              disabled={!isFormFilled(userInfo) || !validateTerms()}>
               <Text
                 style={{
                   textAlign: 'center',
@@ -301,7 +300,7 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
                 }}>
                 {isSocial ? '시작하기' : '가입하기'}
               </Text>
-            </Pressable>
+            </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -331,7 +330,7 @@ const styles = StyleSheet.create({
   },
   registerBtn: {
     borderRadius: 10,
-    backgroundColor: '#D1C7BC',
+    backgroundColor: colors.secondary,
     justifyContent: 'center',
     marginTop: 8,
     alignItems: 'center',
@@ -340,7 +339,7 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     borderRadius: 10,
-    backgroundColor: '#D1C7BC',
+    backgroundColor: colors.secondary,
     justifyContent: 'center',
     marginTop: 8,
     alignItems: 'center',
@@ -349,7 +348,7 @@ const styles = StyleSheet.create({
   },
   registerBtnDisabled: {
     borderRadius: 10,
-    backgroundColor: '#D1C7BC',
+    backgroundColor: colors.secondary,
     justifyContent: 'center',
     marginTop: 8,
     alignItems: 'center',
@@ -358,7 +357,7 @@ const styles = StyleSheet.create({
   },
   errorMsg: {
     color: 'red',
-    fontSize: 12,
+    fontSize: 14,
     marginBottom: 8,
   },
   label: {

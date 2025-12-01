@@ -2,13 +2,14 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   View,
   Text,
-  Pressable,
+  TouchableOpacity,
   StyleSheet,
   TextInput,
   useWindowDimensions,
   KeyboardAvoidingView,
   Keyboard,
   TouchableWithoutFeedback,
+  Alert,
   Platform,
 } from 'react-native';
 import Logo from '../../components/Logo';
@@ -21,9 +22,9 @@ import {isFormFilled} from '../../utils/isFormFilled';
 import {useMutation} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
 import {tokenStore} from '../../store/tokenStore';
-import {userStore} from '../../store/userStore';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {colors} from '../../styles/theme';
 
 export default function Login() {
   const {width} = useWindowDimensions();
@@ -80,10 +81,10 @@ export default function Login() {
     onSuccess: async ({accessToken, refreshToken}) => {
       setAccessToken(accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);
-      navigation.navigate('BottomNav');
+      // navigation.navigate('MainNav');
     },
-    onError: error => {
-      console.log(error);
+    onError: (error: any) => {
+      Alert.alert('로그인 실패', error.response.data.message);
     },
   });
   const submitLogin = () => {
@@ -92,11 +93,6 @@ export default function Login() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <SafeAreaView style={styles.container}>
-        <Pressable
-          style={styles.closeButton}
-          onPress={() => navigation.goBack()}>
-          <Icon name="close" size={32} color="#000" />
-        </Pressable>
         <View
           style={{
             flex: 1,
@@ -119,6 +115,11 @@ export default function Login() {
             }}>
             GoalWith
           </Text>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => navigation.goBack()}>
+            <Icon name="close" size={32} color="#000" />
+          </TouchableOpacity>
         </View>
         <KeyboardAvoidingView
           style={{flex: 3, justifyContent: 'flex-start'}}
@@ -128,6 +129,7 @@ export default function Login() {
             value={loginForm.email}
             ref={emailRef}
             placeholder="이메일"
+            placeholderTextColor={colors.gray}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -143,6 +145,7 @@ export default function Login() {
             value={loginForm.password}
             ref={passwordRef}
             placeholder="비밀번호"
+            placeholderTextColor={colors.gray}
             enterKeyHint="next"
             secureTextEntry={true}
             autoCorrect={false}
@@ -154,7 +157,7 @@ export default function Login() {
           {error.password && (
             <Text style={styles.errorMsg}>{error.password}</Text>
           )}
-          <Pressable
+          <TouchableOpacity
             style={[
               isFormFilled(loginForm) ? styles.nextBtn : styles.nextBtnDisabled,
               {width: width - 54, height: 64},
@@ -168,7 +171,7 @@ export default function Login() {
               }}>
               로그인
             </Text>
-          </Pressable>
+          </TouchableOpacity>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </TouchableWithoutFeedback>
@@ -182,11 +185,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   closeButton: {
-    position: 'absolute',
-    top: 72,
-    right: 32,
-    padding: 16,
     zIndex: 10,
+    marginLeft: 12,
   },
   input: {
     borderBottomColor: '#a1a1a1',
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   },
   errorMsg: {
     color: 'red',
-    fontSize: 12,
+    fontSize: 14,
     marginBottom: 8,
   },
 });

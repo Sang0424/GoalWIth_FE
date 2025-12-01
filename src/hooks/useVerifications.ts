@@ -1,11 +1,11 @@
 import {useQuery} from '@tanstack/react-query';
 import instance from '../utils/axiosInterceptor';
 import {useQuestStore} from '../store/mockData';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import type {Quest} from '../types/quest.types';
 import {useMemo} from 'react';
 
-const isMock = API_URL === '';
+const isMock = Config.API_URL === '';
 
 // API로부터 데이터를 가져오는 함수
 const fetchVerifications = async (): Promise<Quest[]> => {

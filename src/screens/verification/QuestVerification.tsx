@@ -3,8 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
-  Image,
   TouchableOpacity,
   TextInput,
   Alert,
@@ -13,7 +11,6 @@ import {
   Pressable,
   Platform,
   Keyboard,
-  KeyboardAvoidingView,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -27,9 +24,8 @@ import {
 import type {QuestVerificationProps} from '../../types/navigation';
 import useKeyboardHeight from '../../utils/hooks/useKeyboardHeight';
 import ImageCarousel from '../../components/Carousel';
-import {useQueryClient} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
-import {useMutation, useQuery} from '@tanstack/react-query';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import {formatRelativeTime} from '../../utils/dateUtils';
 import {
@@ -56,6 +52,7 @@ const QuestVerification = () => {
   const [isCommentUpdate, setIsCommentUpdate] = useState(false);
   const [commentId, setCommentId] = useState<number | null>(null);
   const {keyboardHeight} = useKeyboardHeight();
+  const queryClient = useQueryClient();
 
   // 1. State for tracking scroll position and verification status
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
@@ -128,9 +125,6 @@ const QuestVerification = () => {
   }, [keyboardHeight]);
 
   // ********* Backend랑 연결 부분 *********
-
-  const queryClient = useQueryClient();
-
   const {mutate} = useMutation({
     mutationFn: async (comment: string) => {
       try {
@@ -144,7 +138,13 @@ const QuestVerification = () => {
     },
     onSuccess: () => {
       refetch();
+      queryClient.invalidateQueries({
+        queryKey: ['Verification'],
+      });
       Alert.alert('인증 댓글이 추가되었습니다.');
+    },
+    onError: (error: any) => {
+      Alert.alert(error.response.data.message);
     },
   });
 
@@ -161,10 +161,16 @@ const QuestVerification = () => {
     },
     onSuccess: () => {
       refetch();
+      queryClient.invalidateQueries({
+        queryKey: ['Verification'],
+      });
       Alert.alert('인증 댓글이 수정되었습니다.');
       setVerificationText('');
       setIsCommentUpdate(false);
       setCommentId(null);
+    },
+    onError: (error: any) => {
+      Alert.alert(error.response.data.message);
     },
   });
 
@@ -180,6 +186,9 @@ const QuestVerification = () => {
     onSuccess: () => {
       refetch();
       Alert.alert('삭제', '인증 댓글이 삭제되었습니다.');
+    },
+    onError: (error: any) => {
+      Alert.alert(error.response.data.message);
     },
   });
 
@@ -200,11 +209,27 @@ const QuestVerification = () => {
     editVerification({id, comment});
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, styles.loadingContainer]}>
+        <Text>로딩 중...</Text>
+      </SafeAreaView>
+    );
+  }
+
   if (!data) {
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <Text>로딩 중...</Text>
-      </View>
+      <SafeAreaView style={[styles.container, styles.loadingContainer]}>
+        <Text
+          style={{
+            textAlign: 'center',
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: colors.font,
+          }}>
+          기록이 없습니다
+        </Text>
+      </SafeAreaView>
     );
   }
 
@@ -332,13 +357,13 @@ const QuestVerification = () => {
           </View>
           {data.records.map((record: any) => (
             <View key={record.id} style={styles.recordCard}>
-              <View style={styles.recordHeader}>
-                <Text style={styles.recordDate}>
-                  {formatRelativeTime(record.createdAt.toString() || '')}
-                </Text>
-              </View>
-              {record.images && <ImageCarousel images={record.images} />}
+              {record.images.length > 0 ? (
+                <ImageCarousel images={record.images} />
+              ) : null}
               <Text style={styles.recordText}>{record.text}</Text>
+              <Text style={styles.recordDate}>
+                {formatRelativeTime(record.createdAt.toString() || '')}
+              </Text>
             </View>
           ))}
         </View>
@@ -433,6 +458,7 @@ const QuestVerification = () => {
               ? '인증 댓글을 남겨주세요'
               : '타임라인을 확인한 후 인증이 가능합니다'
           }
+          placeholderTextColor={colors.gray}
           editable={hasScrolledToBottom}
           value={verificationText}
           onChangeText={setVerificationText}
@@ -578,19 +604,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   recordDate: {
+    marginTop: 14,
     fontSize: 12,
-    color: '#888',
-  },
-  recordImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 10,
+    color: colors.gray,
   },
   recordText: {
-    fontSize: 15,
+    fontSize: 16,
     lineHeight: 22,
-    color: '#333',
+    color: colors.font,
   },
   timelineSection: {
     padding: 16,
@@ -617,7 +638,7 @@ const styles = StyleSheet.create({
   scrollPromptText: {
     marginRight: 4,
     fontSize: 12,
-    color: '#666',
+    color: colors.gray,
   },
   verificationForm: {
     position: 'absolute',
@@ -665,7 +686,7 @@ const styles = StyleSheet.create({
   },
   noCommentsText: {
     textAlign: 'center',
-    color: '#999',
+    color: colors.gray,
     marginVertical: 20,
   },
   commentCard: {
@@ -680,7 +701,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   commentText: {
-    fontSize: 15,
+    fontSize: 16,
     lineHeight: 22,
     color: colors.font,
     paddingHorizontal: 8,
@@ -696,7 +717,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   commentDate: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.gray,
     marginTop: 12,
     paddingHorizontal: 8,

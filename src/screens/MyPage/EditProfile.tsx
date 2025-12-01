@@ -149,6 +149,7 @@ const EditProfile = () => {
                 value={nickname}
                 onChangeText={setNickname}
                 placeholder="닉네임을 입력하세요"
+                placeholderTextColor={colors.gray}
                 maxLength={20}
               />
             </View>

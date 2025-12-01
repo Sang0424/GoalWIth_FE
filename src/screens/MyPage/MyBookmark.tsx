@@ -17,7 +17,7 @@ import {MyPageNavParamList} from '../../types/navigation';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useState} from 'react';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import VerificationCard from '../../components/VerificationCard';
 import Toast from 'react-native-toast-message';
 
@@ -54,7 +54,7 @@ export default function MyBookmark() {
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.hasNext ? allPages.length : undefined;
     },
-    enabled: API_URL != '',
+    enabled: Config.API_URL != '',
   });
   const onRefresh = async () => {
     setRefreshing(true);

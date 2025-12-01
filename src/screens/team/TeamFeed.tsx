@@ -30,7 +30,7 @@ import {TeamFeedProps as TeamFeedRouteProps} from '@/types/navigation';
 import {launchImageLibrary, Asset} from 'react-native-image-picker';
 import ImageCarousel from '../../components/Carousel';
 import useKeyboardHeight from '../../utils/hooks/useKeyboardHeight';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import {
   useQueryClient,
@@ -79,109 +79,6 @@ const useReactionData = (recordId: number | string) => {
   // 3. 가공된 데이터와 로딩 상태를 반환합니다.
   return {...processedData, isLoading};
 };
-
-// const useMockData = ({
-//   teamId,
-//   newPostText,
-//   images,
-//   commentText,
-//   setNewPostText,
-//   setImages,
-//   setCommentText,
-// }: any): Omit<ApiDataReturnType, 'team'> & {team?: Team} => {
-//   const {
-//     teams,
-//     getTeamById,
-//     createTeamPost,
-//     addComment,
-//     deleteTeamPost,
-//     updateTeamPost,
-//     deleteComment,
-//     updateComment,
-//   } = useTeamStore();
-//   const team = getTeamById(teamId);
-
-//   const handleAddRecord = async () => {
-//     if (!newPostText.trim() && images.length === 0) {
-//       Alert.alert('오류', '기록할 내용을 입력해주세요.');
-//       return;
-//     }
-//     if (images.length > 3) {
-//       Alert.alert('오류', '이미지는 최대 3장까지만 선택할 수 있습니다.');
-//       return;
-//     }
-//     createTeamPost(teamId, {
-//       text: newPostText.trim(),
-//       images: images.length > 0 ? images : undefined,
-//       user: {id: '4', name: 'test', avatar: '', level: 1},
-//       verifications: [],
-//     });
-//     setNewPostText('');
-//     setImages([]);
-//     Alert.alert('성공', '기록이 추가되었습니다!');
-//   };
-
-//   const handleAddComment = (
-//     postId: number,
-//     comment: Omit<QuestVerification, 'id' | 'createdAt' | 'updatedAt' | 'user'>,
-//   ) => {
-//     if (!commentText.trim()) return;
-//     addComment(postId, comment);
-//     setCommentText('');
-//   };
-
-//   const handleUpdatePost = (postId: number, updates: Partial<TeamPost>) => {
-//     const currentPost = team?.teamQuest?.records.find(
-//       post => post.id === postId,
-//     );
-//     if (!currentPost) return;
-
-//     const updatedPost = {
-//       ...currentPost,
-//       ...updates,
-//       images: updates.images || currentPost.images,
-//     };
-//     updateTeamPost(teamId, postId, updates);
-//   };
-
-//   const handleUpdateComment = (commentId: number | null, comment: string) => {
-//     if (!commentId) return;
-//     const currentComment = team?.teamQuest?.records.find(
-//       post => post.id === commentId,
-//     );
-//     if (!currentComment) return;
-//     updateComment(commentId, {comment});
-//   };
-
-//   const handleDeletePost = (postId: number) => {
-//     deleteTeamPost(teamId, postId);
-//   };
-
-//   const handleDeleteComment = (commentId: number | null) => {
-//     if (!commentId) return;
-//     deleteComment(commentId);
-//   };
-
-//   return {
-//     data: team?.teamQuest?.records || [],
-//     pages: team?.teamQuest?.records
-//       ? [{records: team.teamQuest.records, nextPage: undefined}]
-//       : [],
-//     pageParams: [],
-//     fetchNextPage: () => {},
-//     hasNextPage: false,
-//     isFetchingNextPage: false,
-//     isLoading: false,
-//     isError: false,
-//     handleAddRecord,
-//     handleAddComment,
-//     handleUpdatePost,
-//     handleUpdateComment,
-//     handleDeletePost,
-//     handleDeleteComment,
-//     loadMore: () => {},
-//   };
-// };
 
 const useApiData = ({
   teamId,
@@ -314,8 +211,7 @@ const useApiData = ({
   });
 
   const deletePostMutation = useMutation({
-    mutationFn: (postId: number) =>
-      instance.delete(`${API_URL}/record/team/${postId}`),
+    mutationFn: (postId: number) => instance.delete(`/record/team/${postId}`),
     ...mutationOptions,
   });
 
@@ -343,7 +239,7 @@ const useApiData = ({
 
   const deleteCommentMutation = useMutation({
     mutationFn: ({commentId}: {commentId: number}) =>
-      instance.delete(`${API_URL}/record/team/verification/${commentId}`),
+      instance.delete(`/record/team/verification/${commentId}`),
     ...mutationOptions,
   });
 
@@ -412,7 +308,6 @@ const TeamFeedScreen = () => {
   const [isCommentUpdate, setIsCommentUpdate] = useState(false);
   const [page, setPage] = useState(0);
   const pageSize = 5;
-  const useMock = API_URL === '';
 
   const hookProps = {
     teamId,

@@ -16,7 +16,7 @@ import {useRoute, useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import instance from '../../utils/axiosInterceptor';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import {PeerListProps} from '../../types/navigation';
 import ProfileBottomSheet from '../../components/ProfileBottomSheet';
 import {useCancelRequestPeer} from '../../utils/mutations';
@@ -80,7 +80,7 @@ const PeerListScreen = () => {
       }
       return undefined;
     },
-    enabled: API_URL !== '',
+    enabled: Config.API_URL !== '',
   });
 
   const loadMore = () => {

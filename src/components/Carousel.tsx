@@ -1,29 +1,19 @@
 import React from 'react';
-import {
-  View,
-  Image,
-  Dimensions,
-  Animated,
-  useWindowDimensions,
-} from 'react-native';
+import {View, Dimensions, Animated, useWindowDimensions} from 'react-native';
 import {Asset} from 'react-native-image-picker';
-// import {API_URL} from '@env';
 import {FlatList} from 'react-native-gesture-handler';
 import {colors} from '../styles/theme';
+import {Image} from 'expo-image';
 
 const ImageCarousel = ({images}: {images: string[]}) => {
-  console.log('feed image: ', images);
   const scrollX = new Animated.Value(0);
   const [activeIndex, setActiveIndex] = React.useState(0);
   const {width} = useWindowDimensions();
   const ITEM_WIDTH = width - 70;
 
-  //   const onScroll = (event: any) => {
-  //     const slideSize = event.nativeEvent.layoutMeasurement.width;
-  //     const offset = event.nativeEvent.contentOffset.x;
-  //     const currentIndex = Math.round(offset / slideSize);
-  //     setActiveIndex(currentIndex);
-  //   };
+  const blurhash =
+    '|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[';
+
   const onScroll = (event: any) => {
     const slideSize = ITEM_WIDTH;
     const offset = event.nativeEvent.contentOffset.x;
@@ -56,6 +46,8 @@ const ImageCarousel = ({images}: {images: string[]}) => {
               resizeMode: 'contain',
               borderRadius: 16,
             }}
+            placeholder={blurhash}
+            transition={1000}
           />
         )}
         keyExtractor={(_, index) => index.toString()}

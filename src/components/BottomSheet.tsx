@@ -16,7 +16,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
-  Switch,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import DateTimePicker, {
@@ -25,9 +24,9 @@ import DateTimePicker, {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useCallback} from 'react';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {API_URL} from '@env';
+import Config from 'react-native-config';
 import instance from '../utils/axiosInterceptor';
-import {GestureDetector, Gesture} from 'react-native-gesture-handler';
+import {GestureDetector, Gesture, Switch} from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -127,19 +126,25 @@ const BottomSheet = ({
     setVerificationRequired(!verificationRequired);
   };
 
+  // if (todoModalVisible) {
+  //   translateY.value = withSpring(SNAP_TOP, {damping: 1000});
+  // }
+
   const closeModalWithAnimation = useCallback(() => {
     // 먼저 상태 업데이트
-    closeDatePickers();
-    settodoModalVisible(false);
+    runOnJS(closeDatePickers)();
+    runOnJS(settodoModalVisible)(false);
 
     // 그 다음 애니메이션 실행
-    translateY.value = withSpring(screenHeight, {damping: 1000});
+    translateY.value = withSpring(screenHeight, {damping: 20});
   }, []);
 
   useEffect(() => {
     if (todoModalVisible) {
-      translateY.value = withSpring(0, {damping: 1000});
+      translateY.value = withSpring(screenHeight * 0.1, {damping: 1000});
       closeDatePickers();
+    } else {
+      translateY.value = withSpring(screenHeight, {damping: 1000});
     }
   }, [todoModalVisible]);
 
@@ -148,15 +153,16 @@ const BottomSheet = ({
       context.value = {y: translateY.value};
     })
     .onUpdate(event => {
-      if (event.translationY > 0) {
-        translateY.value = event.translationY + context.value.y;
-      }
+      translateY.value = Math.max(
+        event.translationY + context.value.y,
+        screenHeight * 0.1,
+      );
     })
     .onEnd(event => {
       if (event.translationY > 100) {
         runOnJS(closeModalWithAnimation)();
       } else {
-        translateY.value = withSpring(0, {damping: 50});
+        translateY.value = withSpring(screenHeight * 0.1, {damping: 50});
       }
     });
 
@@ -168,8 +174,7 @@ const BottomSheet = ({
   const closeModalImmediately = useCallback(() => {
     // 그 다음 애니메이션 실행
     translateY.value = withSpring(screenHeight, {
-      damping: 100, // 값을 높이면 더 부드럽고 느려짐 (기본값은 약 10-20)
-      stiffness: 100, // 스프링의 강도 (기본값 100)
+      damping: 1000,
     });
     closeDatePickers();
     settodoModalVisible(false);
@@ -181,7 +186,7 @@ const BottomSheet = ({
       payload: Omit<Quest, 'id' | 'createdAt' | 'updatedAt' | 'records'>,
     ) => {
       // questData: mutate 함수 호출 시 전달된 변수
-      if (API_URL === '') {
+      if (Config.API_URL === '') {
         // 로컬 상태 관리 로직 (Zustand, Redux 등)
         if (questToEdit) {
           // questToEdit.id와 questData를 사용해 업데이트
@@ -215,9 +220,8 @@ const BottomSheet = ({
       closeModalImmediately();
       Keyboard.dismiss();
     },
-    onError: err => {
-      console.error('Mutation failed:', err);
-      Alert.alert('오류가 발생했습니다.');
+    onError: (err: any) => {
+      Alert.alert(err.response.data.message);
     },
   });
 
@@ -307,6 +311,7 @@ const BottomSheet = ({
                       <TextInput
                         style={styles.input}
                         placeholder="퀘스트 제목을 입력하세요"
+                        placeholderTextColor={colors.gray}
                         value={newQuestTitle}
                         onChangeText={setNewQuestTitle}
                         autoFocus
@@ -382,6 +387,7 @@ const BottomSheet = ({
                       <TextInput
                         style={[styles.input, styles.multilineInput]}
                         placeholder="퀘스트에 대한 상세한 설명을 입력하세요"
+                        placeholderTextColor={colors.gray}
                         value={newQuestDescription}
                         onChangeText={setNewQuestDescription}
                         multiline
@@ -392,14 +398,16 @@ const BottomSheet = ({
                       <View style={styles.verificationContainer}>
                         <View style={styles.verificationHeader}>
                           <Text style={styles.inputLabel}>인증 필요</Text>
-                          <Switch
-                            value={verificationRequired}
-                            onValueChange={toggleVerification}
-                            trackColor={{false: '#ddd', true: '#4CAF50'}}
-                            thumbColor="#fff"
-                          />
+                          <View>
+                            <Switch
+                              value={verificationRequired}
+                              onValueChange={toggleVerification}
+                              trackColor={{false: '#ddd', true: '#4CAF50'}}
+                              thumbColor="#fff"
+                              style={{width: 51, height: 31}}
+                            />
+                          </View>
                         </View>
-
                         {verificationRequired && (
                           <View style={styles.verificationSettings}>
                             <Text style={styles.verificationLabel}>
@@ -486,7 +494,7 @@ const styles = StyleSheet.create({
     color: colors.font,
   },
   cancelButtonText: {
-    color: colors.gray,
+    color: colors.warning,
     fontSize: 16,
     fontWeight: 'regular',
   },
@@ -505,7 +513,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 14,
+    padding: 12,
     fontSize: 14,
     color: colors.font,
     borderWidth: 1,
@@ -525,7 +533,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 14,
+    padding: 12,
     borderWidth: 1,
     borderColor: colors.gray,
   },
@@ -546,12 +554,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
+    borderWidth: 1,
+    borderColor: colors.gray,
+    width: '100%',
   },
   verificationHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+    width: '100%',
   },
   verificationSettings: {
     marginTop: 12,
