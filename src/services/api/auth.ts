@@ -4,7 +4,9 @@ import {
   statusCodes,
 } from '@react-native-google-signin/google-signin';
 import {Platform} from 'react-native';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {tokenStore} from '../../store/tokenStore';
+import Config from 'react-native-config';
 /**
  * Google Sign-In을 설정합니다.
  * 앱 시작 시 한 번만 호출하면 됩니다.
@@ -13,12 +15,7 @@ export const configureGoogleSignIn = () => {
   GoogleSignin.configure({
     // webClientId는 안드로이드에서 사용되며, strings.xml에 있는 server_client_id를 참조합니다.
     // iOS에서는 iosClientId를 사용합니다.
-    webClientId:
-      Platform.OS === 'android'
-        ? '470348844526-3ltopccruquc0grj285n81pild492nof.apps.googleusercontent.com'
-        : '', // 안드로이드에서는 이 값을 비워두면 strings.xml을 자동으로 읽습니다.
-    iosClientId:
-      '470348844526-k3njci3uh3anrs9fte9a5fqesemkbphr.apps.googleusercontent.com',
+    webClientId: Config.GOOGLE_CLIENT_ID,
     offlineAccess: false, // 백엔드에서 토큰을 사용하려면 true로 설정
   });
 };
@@ -60,6 +57,9 @@ export const signInWithGoogle = async (): Promise<string | null> => {
 export const signOutWithGoogle = async () => {
   try {
     await GoogleSignin.signOut();
+    const setAccessToken = tokenStore(state => state.actions.setAccessToken);
+    setAccessToken(null);
+    await AsyncStorage.clear();
     // 추가로 앱의 상태(e.g., zustand store)에서 사용자 정보를 제거해야 합니다.
   } catch (error) {
     console.error('Google sign-out error:', error);
@@ -72,7 +72,7 @@ export const signOutWithGoogle = async () => {
  */
 export const getCurrentGoogleUser = async () => {
   try {
-    const userInfo = await GoogleSignin.getCurrentUser();
+    const userInfo = GoogleSignin.getCurrentUser();
     return userInfo;
   } catch (error: any) {
     if (error.code === statusCodes.SIGN_IN_REQUIRED) {

@@ -3,13 +3,14 @@ import {
   NativeAsset,
   NativeAssetType,
   NativeMediaView,
+  TestIds,
 } from 'react-native-google-mobile-ads';
 import {NativeAd} from 'react-native-google-mobile-ads';
 import {useState, useEffect} from 'react';
 import {Image, Text, TouchableOpacity, View, StyleSheet} from 'react-native';
 import {colors} from '../styles/theme';
 
-const NATIVE_VERIFICATION_AD_UNIT = 'ca-app-pub-3940256099942544/2247696110';
+const NATIVE_VERIFICATION_AD_UNIT = TestIds.NATIVE;
 
 export const NativeVerificationAd = () => {
   const [nativeAd, setNativeAd] = useState<NativeAd>();
