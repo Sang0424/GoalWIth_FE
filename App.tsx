@@ -33,7 +33,7 @@ const App = () => {
   useEffect(() => {
     mobileAds().initialize();
     configureGoogleSignIn();
-    initializeKakaoSDK('d1390db21826a41c019fb272011b1d17');
+    initializeKakaoSDK(Config.KAKAO_APP_KEY as string);
     const checkAuth = async () => {
       if (Config.API_URL === '') {
         // API_URL이 없는 개발 환경에서는 인증 과정을 생략합니다.
