@@ -20,7 +20,7 @@ interface UserStore {
 
 export const userStore = create<UserStore>((set, get) => ({
   user: {
-    id: 0,
+    id: -1,
     nickname: '',
     eamil: '',
     level: 0,

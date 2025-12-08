@@ -1,4 +1,8 @@
 #include? "Pods/Target Support Files/Pods-GoalWith/Pods-GoalWith.debug.xcconfig"
+#include? "tmp.xcconfig"
 
-API_URL = "https://21b4826caab3.ngrok-free.app/api"
-KAKAO_APP_KEY = "d1390db21826a41c019fb272011b1d17"
+API_URL = "http://52.79.64.40:80/api"
+KAKAO_APP_KEY = d1390db21826a41c019fb272011b1d17
+GOOGLE_WEB_CLIENT_ID=961970985824-gp8b8du2ok4amk93fhkgo3gq55q6bptn.apps.googleusercontent.com
+GOOGLE_URL_SCHEME=com.googleusercontent.apps.961970985824-npl37nh1qr5m8k6cqqds8ceitcq5g9gj
+GOOGLE_IOS_CLIENT_ID=961970985824-npl37nh1qr5m8k6cqqds8ceitcq5g9gj.apps.googleusercontent.com"

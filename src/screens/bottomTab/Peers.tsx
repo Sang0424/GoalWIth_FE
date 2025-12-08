@@ -22,11 +22,11 @@ import instance from '../../utils/axiosInterceptor';
 import {useNavigation, DrawerActions} from '@react-navigation/native';
 import {PeersNavParamList} from '../../types/navigation';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {initialUser} from '../../store/mockData';
 import Config from 'react-native-config';
 import type {RequestedPeers} from '../../types/peers.types.d.ts';
 import {useDebounce} from '../../utils/hooks/useDebounce';
 import {colors} from '../../styles/theme';
+import {AutoSkeletonView} from 'react-native-auto-skeleton';
 
 const PAGE_SIZE = 10;
 
@@ -133,14 +133,14 @@ export default function Peers() {
     setIsRefreshing(false);
   }, [refetch, searchRefetch]);
 
-  if (peersLoading || searchPeersLoading) {
-    return (
-      <SafeAreaView
-        style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-        <ActivityIndicator size="large" />
-      </SafeAreaView>
-    );
-  }
+  // if (peersLoading || searchPeersLoading) {
+  //   return (
+  //     <SafeAreaView
+  //       style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+  //       <ActivityIndicator size="large" />
+  //     </SafeAreaView>
+  //   );
+  // }
 
   const renderHeader = () => {
     return (
@@ -180,7 +180,7 @@ export default function Peers() {
     );
   };
 
-  if (peersLoading) {
+  if (peersLoading || searchPeersLoading) {
     return (
       <SafeAreaView
         style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>

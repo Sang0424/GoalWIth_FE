@@ -71,9 +71,20 @@ const VerificationCard = ({item}: {item: any}) => {
   const blurhash =
     '|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[';
 
+  const recordImages = (item.records ?? []).flatMap((record: any) =>
+    (record.images ?? [])
+      .filter((uri: string | undefined): uri is string => Boolean(uri))
+      .map((uri: string, idx: number) => ({
+        key: `${record.id ?? 'record'}-${idx}`,
+        uri,
+      })),
+  );
   return (
     <>
-      <TouchableOpacity style={styles.card} activeOpacity={0.88}>
+      <TouchableOpacity
+        style={styles.card}
+        activeOpacity={0.88}
+        onPress={handleGoQuest}>
         <TouchableOpacity
           style={styles.cardHeader}
           onPress={() => {
@@ -127,10 +138,10 @@ const VerificationCard = ({item}: {item: any}) => {
         </View>
         {item.records && item.records.length > 0 && (
           <View style={styles.imageGrid}>
-            {item.records.map((record: any) => (
-              <View key={record.id} style={styles.gridItem}>
+            {recordImages.slice(0, 4).map((record: any) => (
+              <View key={record.key} style={styles.gridItem}>
                 <Image
-                  source={{uri: record.images?.[0]}}
+                  source={{uri: record.uri}}
                   style={styles.gridImage}
                   placeholder={blurhash}
                   transition={1000}

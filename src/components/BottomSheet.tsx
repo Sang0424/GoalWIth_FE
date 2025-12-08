@@ -34,7 +34,6 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import type {Quest} from '../types/quest.types';
-import {useQuestStore} from '../store/mockData';
 import {colors} from '../styles/theme';
 
 interface BottomSheetProps {
@@ -56,7 +55,6 @@ const BottomSheet = ({
   const translateY = useSharedValue(screenHeight);
   const context = useSharedValue({y: 0});
 
-  const {addQuest, updateQuest} = useQuestStore();
   const [newQuestTitle, setNewQuestTitle] = useState('');
   const [newQuestDescription, setNewQuestDescription] = useState('');
   const [startDate, setStartDate] = useState(new Date());
@@ -186,17 +184,7 @@ const BottomSheet = ({
       payload: Omit<Quest, 'id' | 'createdAt' | 'updatedAt' | 'records'>,
     ) => {
       // questData: mutate 함수 호출 시 전달된 변수
-      if (Config.API_URL === '') {
-        // 로컬 상태 관리 로직 (Zustand, Redux 등)
-        if (questToEdit) {
-          // questToEdit.id와 questData를 사용해 업데이트
-          updateQuest(questToEdit.id, payload);
-        } else {
-          addQuest(payload);
-        }
-        // 로컬 로직은 보통 Promise를 반환하지 않으므로, 일관성을 위해 Promise로 감싸줌
-        return Promise.resolve();
-      } else {
+      {
         // 백엔드 연결 로직
         if (questToEdit) {
           return instance.put(`/quest/${questToEdit.id}`, payload);

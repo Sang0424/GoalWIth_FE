@@ -20,6 +20,11 @@ import {useState} from 'react';
 import Config from 'react-native-config';
 import VerificationCard from '../../components/VerificationCard';
 import Toast from 'react-native-toast-message';
+import {colors} from '../../styles/theme';
+import {
+  AutoSkeletonView,
+  AutoSkeletonIgnoreView,
+} from 'react-native-auto-skeleton';
 
 export default function MyBookmark() {
   const navigation =
@@ -68,14 +73,8 @@ export default function MyBookmark() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#000" />
-      </SafeAreaView>
-    );
-  }
   const myBookmark = data?.pages.flatMap(page => page.content);
+
   return (
     <SafeAreaView style={styles.container}>
       <View
@@ -91,7 +90,7 @@ export default function MyBookmark() {
               Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back-android'
             }
             size={24}
-            color={'#000'}
+            color={colors.font}
           />
         </Pressable>
         <Text style={{fontSize: 24, fontWeight: 'bold', textAlign: 'center'}}>
@@ -99,29 +98,32 @@ export default function MyBookmark() {
         </Text>
         <View style={{paddingHorizontal: 16}} />
       </View>
-      <FlatList
-        data={myBookmark}
-        renderItem={({item}) => <VerificationCard item={item} />}
-        keyExtractor={item => item.id.toString()}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.1}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListFooterComponent={
-          <View style={styles.footer}>
-            {isFetchingNextPage ? (
-              <ActivityIndicator size="small" color="#000" />
-            ) : null}
-          </View>
-        }
-        contentContainerStyle={{padding: 16, paddingBottom: 32}}
-        ListEmptyComponent={
-          <Text style={{textAlign: 'center', color: '#999', marginTop: 40}}>
-            저장한 퀘스트가 없습니다.
-          </Text>
-        }
-      />
+      <AutoSkeletonView isLoading={isLoading}>
+        <FlatList
+          data={myBookmark}
+          renderItem={({item}) => <VerificationCard item={item} />}
+          keyExtractor={item => item.id.toString()}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.1}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListFooterComponent={
+            <View style={styles.footer}>
+              {isFetchingNextPage ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : null}
+            </View>
+          }
+          contentContainerStyle={{padding: 16, paddingBottom: 32}}
+          ListEmptyComponent={
+            <Text
+              style={{textAlign: 'center', color: colors.font, marginTop: 40}}>
+              저장한 퀘스트가 없습니다.
+            </Text>
+          }
+        />
+      </AutoSkeletonView>
     </SafeAreaView>
   );
 }
@@ -129,7 +131,7 @@ export default function MyBookmark() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   footer: {
     paddingVertical: 20,

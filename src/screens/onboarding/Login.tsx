@@ -90,6 +90,7 @@ export default function Login() {
   const submitLogin = () => {
     validateForm() && mutate();
   };
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <SafeAreaView style={styles.container}>

@@ -15,7 +15,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import Logo from '../../components/Logo';
 import {MyPageNavParamList} from '../../types/navigation';
-import {useState} from 'react';
+import {useState, useCallback, useMemo} from 'react';
 import Config from 'react-native-config';
 import instance from '../../utils/axiosInterceptor';
 import {userStore} from '../../store/userStore';
@@ -26,6 +26,7 @@ import {Team} from '../../types/team.types';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {Dropdown} from 'react-native-element-dropdown';
 import {colors} from '../../styles/theme';
+import {rewardStore} from '../../store/rewardStore';
 
 export default function MyPage() {
   const [error, setError] = useState('');
@@ -33,17 +34,26 @@ export default function MyPage() {
     useNavigation<NativeStackNavigationProp<MyPageNavParamList>>();
   const setAccessToken = tokenStore(state => state.actions.setAccessToken);
   const user = userStore(state => state.user);
-  const [value, setValue] = useState(user?.badge);
+  const markBadgeSeen = rewardStore(state => state.markBadgeSeen);
+  const hasNewBadge = rewardStore(state => state.hasNewBadge);
   const queryClient = useQueryClient();
   const logout = async () => {
     try {
-      await AsyncStorage.clear();
-      setAccessToken(null);
+      Alert.alert('로그아웃', '정말로 로그아웃 하시겠습니까?', [
+        {text: '취소', style: 'cancel'},
+        {
+          text: '로그아웃',
+          onPress: async () => {
+            await AsyncStorage.clear();
+            setAccessToken(null);
+          },
+        },
+      ]);
     } catch (e: any) {
       Alert.alert(e.response.data.message);
     }
   };
-  const {data: badges} = useQuery({
+  const {data: badges, isLoading: badgesLoading} = useQuery({
     queryKey: ['badges'],
     queryFn: async () => {
       try {
@@ -119,39 +129,51 @@ export default function MyPage() {
       queryClient.invalidateQueries({queryKey: ['user']});
     },
     onError: (error: any) => {
-      console.error(error.response.data.message);
+      Alert.alert(error.response.data.message);
     },
   });
 
-  if (myVerificationLoading || myReactionLoading || myBookmarkLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#000" />
-      </SafeAreaView>
-    );
-  }
+  useEffect(() => {
+    if (hasNewBadge) {
+      markBadgeSeen();
+    }
+  }, []);
 
-  const renderBadgeItem = (item: {id: number; name: string}) => {
-    const isCurrentBadge = item.name === user.badge;
-    return (
-      <View
-        style={[
-          styles.dropdownItem,
-          isCurrentBadge && styles.dropdownItemActive,
-        ]}>
-        <Text
+  const renderBadgeItem = useCallback(
+    (item: {id: number; name: string}) => {
+      const isCurrentBadge = item.name === user.badge;
+      return (
+        <View
           style={[
-            styles.dropdownItemText,
-            isCurrentBadge && styles.dropdownItemTextActive,
+            styles.dropdownItem,
+            isCurrentBadge && styles.dropdownItemActive,
           ]}>
-          {item.name}
-        </Text>
-        {isCurrentBadge && (
-          <Ionicons name="checkmark" size={16} color={colors.secondary} />
-        )}
-      </View>
-    );
-  };
+          <Text
+            style={[
+              styles.dropdownItemText,
+              isCurrentBadge && styles.dropdownItemTextActive,
+            ]}>
+            {item.name}
+          </Text>
+          {isCurrentBadge && (
+            <Ionicons name="checkmark" size={16} color={colors.secondary} />
+          )}
+        </View>
+      );
+    },
+    [badges, markBadgeSeen, hasNewBadge],
+  );
+
+  const handleBadgeChange = useCallback(
+    (item: any) => {
+      changeBadgeMutate(item.id);
+    },
+    [changeBadgeMutate],
+  );
+
+  const dropdownData = useMemo(() => {
+    return badges || [];
+  }, [badges]);
 
   const myVerificationCount = myVerification?.totalElements;
   const myReactionCount = myReaction?.totalElements;
@@ -160,6 +182,7 @@ export default function MyPage() {
   const maxExp = Math.round(200 * Math.pow(user?.level, 1.1));
   const levelProgress = (currentExp / maxExp) * 100;
   const nextLevel = (user.level || 1) + 1;
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -239,10 +262,10 @@ export default function MyPage() {
             <Text style={styles.cardTitle}>획득한 칭호</Text>
           </View>
           <Dropdown
-            data={badges}
+            data={dropdownData}
             placeholder={user?.badge ? user.badge : '칭호를 선택해주세요'}
-            placeholderStyle={{color: colors.font}}
-            onChange={item => changeBadgeMutate(item.id)}
+            // placeholderStyle={{color: colors.font}}
+            onChange={handleBadgeChange}
             labelField="name"
             valueField="id"
             style={styles.dropdown}

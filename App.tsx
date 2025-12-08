@@ -4,7 +4,6 @@ if (__DEV__) {
 
 import React from 'react';
 import OnBoardingNav from './src/navigation/OnBoardingNav';
-import BottomNav from './src/navigation/BottomNav';
 import MainNav from './src/navigation/MainNav';
 import {useState, useEffect} from 'react';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
@@ -13,7 +12,6 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {tokenStore} from './src/store/tokenStore';
-import {userStore} from './src/store/userStore';
 import {decodeJwt} from './src/utils/jwtUtils';
 import Config from 'react-native-config';
 import {MenuProvider} from 'react-native-popup-menu';
@@ -23,13 +21,20 @@ import BootSplash from 'react-native-bootsplash';
 import {initializeKakaoSDK} from '@react-native-kakao/core';
 import Toast from 'react-native-toast-message';
 import mobileAds from 'react-native-google-mobile-ads';
+import {useRewardSync} from './src/utils/hooks/useRewardSync';
 
 const queryClient = new QueryClient();
+
+const AppContent = () => {
+  useRewardSync(); // 여기서 훅을 호출합니다.
+  const accessToken = tokenStore(state => state.accessToken);
+  return accessToken ? <MainNav /> : <OnBoardingNav />;
+};
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const setAccessToken = tokenStore(state => state.actions.setAccessToken);
-  const accessToken = tokenStore(state => state.accessToken);
+
   useEffect(() => {
     mobileAds().initialize();
     configureGoogleSignIn();
@@ -95,7 +100,7 @@ const App = () => {
         <NavigationContainer>
           <SafeAreaProvider>
             <GestureHandlerRootView style={{flex: 1}}>
-              {accessToken ? <MainNav /> : <OnBoardingNav />}
+              <AppContent />
             </GestureHandlerRootView>
             <Toast position="bottom" bottomOffset={100} visibilityTime={2000} />
           </SafeAreaProvider>

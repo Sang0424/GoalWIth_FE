@@ -31,5 +31,5 @@ export interface Avatar {
 export interface Badge {
   id: number;
   name: string;
-  image: string;
+  image?: string;
 }
