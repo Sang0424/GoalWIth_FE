@@ -14,8 +14,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {HomeNavParamList} from '../../types/navigation';
 import {Avatar} from '../../types/user.types';
-import {useState} from 'react';
-import {initialUser} from '../../store/mockData';
+import {useState, useEffect} from 'react';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import {useInfiniteQuery, useMutation} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
@@ -23,6 +22,11 @@ import {userStore} from '../../store/userStore';
 import {useQueryClient} from '@tanstack/react-query';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {colors} from '../../styles/theme';
+import {rewardStore} from '../../store/rewardStore';
+import {
+  AutoSkeletonView,
+  AutoSkeletonIgnoreView,
+} from 'react-native-auto-skeleton';
 
 type Props = NativeStackScreenProps<HomeNavParamList, 'CharacterSelection'>;
 
@@ -30,6 +34,7 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
   const {currentCharacter} = route.params;
   const [character, setCharacter] = useState(currentCharacter);
   const user = userStore(state => state.user);
+  const markCharacterSeen = rewardStore(state => state.markCharacterSeen);
   const queryClient = useQueryClient();
 
   const {data, isLoading, refetch, isRefetching, hasNextPage, fetchNextPage} =
@@ -59,15 +64,15 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
     },
     onError: error => {
       Alert.alert('오류', '캐릭터 변경 중 오류가 발생했습니다.');
-      console.log(error);
     },
     onSettled: () => {
       queryClient.invalidateQueries({queryKey: ['characters']});
     },
   });
 
-  if (isLoading)
-    return <ActivityIndicator size="large" color={colors.secondary} />;
+  useEffect(() => {
+    markCharacterSeen();
+  }, []);
 
   const loadMore = () => {
     if (hasNextPage && !isRefetching) {
@@ -93,7 +98,7 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
 
     return (
       <TouchableOpacity
-        style={[styles.characterItem, isSelected && styles.selectedCharacter]}
+        style={[styles.characterItem, character && styles.selectedCharacter]}
         onPress={() => handleSelectCharacter(item.id)}>
         <CharacterAvatar avatar={item.character} size={100} />
         <Text style={styles.characterName}>{item.name}</Text>
@@ -113,20 +118,22 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
           <Text style={styles.completeText}>완료</Text>
         </Pressable>
       </View>
-      <FlatList
-        data={availableCharacters}
-        renderItem={renderCharacterItem}
-        keyExtractor={item => item.id}
-        numColumns={2}
-        contentContainerStyle={styles.listContainer}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.1}
-        ListFooterComponent={
-          hasNextPage ? (
-            <ActivityIndicator size="small" color={colors.secondary} />
-          ) : null
-        }
-      />
+      <AutoSkeletonView isLoading={isLoading}>
+        <FlatList
+          data={availableCharacters}
+          renderItem={renderCharacterItem}
+          keyExtractor={item => item.id}
+          numColumns={2}
+          contentContainerStyle={styles.listContainer}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.1}
+          ListFooterComponent={
+            hasNextPage ? (
+              <ActivityIndicator size="small" color={colors.secondary} />
+            ) : null
+          }
+        />
+      </AutoSkeletonView>
     </SafeAreaView>
   );
 };

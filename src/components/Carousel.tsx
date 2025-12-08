@@ -43,9 +43,10 @@ const ImageCarousel = ({images}: {images: string[]}) => {
             style={{
               width: ITEM_WIDTH,
               height: 300,
-              resizeMode: 'contain',
+              // resizeMode: 'contain',
               borderRadius: 16,
             }}
+            contentFit="contain"
             placeholder={blurhash}
             transition={1000}
           />

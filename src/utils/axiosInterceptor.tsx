@@ -6,7 +6,7 @@ import {tokenStore} from '../store/tokenStore';
 const instance = axios.create({
   baseURL: Config.API_URL,
   timeout: 10000,
-  withCredentials: true,
+  withCredentials: false,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -43,6 +43,8 @@ instance.interceptors.response.use(
   response => response,
   async error => {
     const originalRequest = error.config;
+
+    console.log(error);
 
     if (
       (error.response?.status === 401 || error.response?.status === 403) &&

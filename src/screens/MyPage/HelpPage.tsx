@@ -4,6 +4,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {Platform} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {colors} from '../../styles/theme';
 
 const HelpPage = () => {
   const navigation = useNavigation();
@@ -80,7 +81,7 @@ const HelpPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   scrollView: {
     padding: 20,
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.font,
     marginBottom: 30,
     textAlign: 'center',
   },
@@ -113,13 +114,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.font,
     marginBottom: 10,
   },
   text: {
     fontSize: 14,
     lineHeight: 22,
-    color: '#333',
+    color: colors.font,
   },
   footer: {
     marginTop: 20,
@@ -127,7 +128,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    color: '#666',
+    color: colors.lightGray,
     fontSize: 12,
   },
 });

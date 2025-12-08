@@ -193,7 +193,7 @@ const EditProfile = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     overflow: 'hidden',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.gray,
   },
   avatar: {
     width: '100%',
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 5,
     borderRadius: 20,
-    backgroundColor: '#806A5B',
+    backgroundColor: colors.primary,
   },
   avatarEditButtonText: {
     color: '#fff',
@@ -246,24 +246,24 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: '#333',
+    color: colors.font,
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.gray,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     height: 50,
   },
   errorText: {
-    color: '#ff3b30',
+    color: colors.error,
     marginTop: 10,
     textAlign: 'center',
   },
   saveButton: {
-    backgroundColor: '#806A5B',
+    backgroundColor: colors.primary,
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   saveButtonText: {
-    color: '#fff',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },

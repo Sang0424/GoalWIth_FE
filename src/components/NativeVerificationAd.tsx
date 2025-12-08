@@ -7,16 +7,30 @@ import {
 } from 'react-native-google-mobile-ads';
 import {NativeAd} from 'react-native-google-mobile-ads';
 import {useState, useEffect} from 'react';
-import {Image, Text, TouchableOpacity, View, StyleSheet} from 'react-native';
+import {
+  Image,
+  Text,
+  TouchableOpacity,
+  View,
+  StyleSheet,
+  Platform,
+} from 'react-native';
 import {colors} from '../styles/theme';
+import Config from 'react-native-config';
 
-const NATIVE_VERIFICATION_AD_UNIT = TestIds.NATIVE;
+const NATIVE_AD_ID = Platform.select({
+  ios: Config.ADMOB_NATIVE_ID_IOS,
+  android: Config.ADMOB_NATIVE_ID_ANDROID,
+});
+
+const NATIVE_VERIFICATION_AD_UNIT =
+  Config.ENV === 'development' ? TestIds.NATIVE : NATIVE_AD_ID;
 
 export const NativeVerificationAd = () => {
   const [nativeAd, setNativeAd] = useState<NativeAd>();
 
   useEffect(() => {
-    NativeAd.createForAdRequest(NATIVE_VERIFICATION_AD_UNIT)
+    NativeAd.createForAdRequest(NATIVE_VERIFICATION_AD_UNIT as string)
       .then(setNativeAd)
       .catch(console.error);
   }, []);

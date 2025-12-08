@@ -25,6 +25,8 @@
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string></string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>$(GOOGLE_URL_SCHEME)</string>
@@ -44,7 +46,7 @@
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3479406355847634~5748353999</string>
 	<key>GIDClientID</key>
-	<string>470348844526-k3njci3uh3anrs9fte9a5fqesemkbphr.apps.googleusercontent.com</string>
+	<string>$(GOOGLE_IOS_CLIENT_ID)</string>
 	<key>KAKAO_APP_KEY</key>
 	<string>$(KAKAO_APP_KEY)</string>
 	<key>LSApplicationQueriesSchemes</key>
@@ -59,11 +61,11 @@
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>사용자의 현재 위치를 기반으로 날씨나 장소정보를 제공하기 위해 필요한 권한입니다. </string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>사용자의 사진을 업로드하기 위해 앨범 사용을 허용합니다.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>광고 맞춤 추천 및 분석을 위해 사용자 데이터를 사용합니다.</string>
 	<key>RCTNewArchEnabled</key>

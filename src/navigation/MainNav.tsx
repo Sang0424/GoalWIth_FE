@@ -1,7 +1,7 @@
 import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import type {MainNavParamList} from '../types/navigation';
-
+import {useRewardSync} from '../utils/hooks/useRewardSync';
 // 기존 컴포넌트들 import
 import BottomNav from './BottomNav';
 import QuestVerification from '../screens/verification/QuestVerification';

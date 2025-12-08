@@ -27,7 +27,10 @@ import {useDebounce} from '../../utils/hooks/useDebounce';
 import {colors} from '../../styles/theme';
 import VerificationCard from '../../components/VerificationCard';
 import NativeVerificationAd from '../../components/NativeVerificationAd';
-
+import {
+  AutoSkeletonView,
+  AutoSkeletonIgnoreView,
+} from 'react-native-auto-skeleton';
 const TAB_LIST = [
   {key: 'realtime', label: '실시간'},
   {key: 'peers', label: '피어즈'},
@@ -207,7 +210,11 @@ const VerificationFeedScreen = () => {
   }, [filteredFeed]);
 
   if (isLoading || searchVerificationLoading || peersVerificationLoading) {
-    return <ActivityIndicator style={{flex: 1, marginTop: 100}} size="large" />;
+    return (
+      <SafeAreaView>
+        <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -224,7 +231,11 @@ const VerificationFeedScreen = () => {
             }}
           />
           <Text
-            style={{fontSize: 24, fontWeight: 'bold', color: colors.primary}}>
+            style={{
+              fontSize: 24,
+              fontWeight: 'bold',
+              color: colors.primary,
+            }}>
             GoalWith
           </Text>
         </View>
@@ -272,6 +283,7 @@ const VerificationFeedScreen = () => {
           </TouchableOpacity>
         ))}
       </View>
+
       <FlatList
         data={feedWithAds}
         keyExtractor={item =>
@@ -279,7 +291,7 @@ const VerificationFeedScreen = () => {
         }
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
-        renderItem={({item}) => {
+        renderItem={({item}: {item: any}) => {
           if (item.type === 'quest') {
             return <VerificationCard item={item.data} />;
           }

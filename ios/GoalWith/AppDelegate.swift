@@ -64,6 +64,7 @@ class AppDelegate: ExpoAppDelegate {
     ) -> Bool {
         var handled = false
 
+
         // 1. Google Sign-In 처리 시도
         handled = GIDSignIn.sharedInstance.handle(url)
         if handled { return true }

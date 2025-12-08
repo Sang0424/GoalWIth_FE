@@ -20,6 +20,8 @@ import {useState} from 'react';
 import Config from 'react-native-config';
 import VerificationCard from '../../components/VerificationCard';
 import Toast from 'react-native-toast-message';
+import {colors} from '../../styles/theme';
+import {AutoSkeletonView} from 'react-native-auto-skeleton';
 
 const PAGE_SIZE = 10;
 
@@ -69,14 +71,6 @@ export default function MyVerification() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#000" />
-      </SafeAreaView>
-    );
-  }
-
   const myVerification = data?.pages.flatMap(page => page.content);
 
   return (
@@ -94,7 +88,7 @@ export default function MyVerification() {
               Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back-android'
             }
             size={24}
-            color={'#000'}
+            color={colors.font}
           />
         </Pressable>
         <Text style={{fontSize: 24, fontWeight: 'bold', textAlign: 'center'}}>
@@ -102,29 +96,32 @@ export default function MyVerification() {
         </Text>
         <View style={{paddingHorizontal: 16}} />
       </View>
-      <FlatList
-        data={myVerification}
-        renderItem={({item}) => <VerificationCard item={item} />}
-        keyExtractor={item => item.id.toString()}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.1}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListFooterComponent={
-          <View style={styles.footer}>
-            {isFetchingNextPage ? (
-              <ActivityIndicator size="small" color="#000" />
-            ) : null}
-          </View>
-        }
-        contentContainerStyle={{padding: 16, paddingBottom: 32}}
-        ListEmptyComponent={
-          <Text style={{textAlign: 'center', color: '#999', marginTop: 40}}>
-            인증한 퀘스트가 없습니다.
-          </Text>
-        }
-      />
+      <AutoSkeletonView isLoading={isLoading}>
+        <FlatList
+          data={myVerification}
+          renderItem={({item}) => <VerificationCard item={item} />}
+          keyExtractor={item => item.id.toString()}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.1}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListFooterComponent={
+            <View style={styles.footer}>
+              {isFetchingNextPage ? (
+                <ActivityIndicator size="small" color={colors.font} />
+              ) : null}
+            </View>
+          }
+          contentContainerStyle={{padding: 16, paddingBottom: 32}}
+          ListEmptyComponent={
+            <Text
+              style={{textAlign: 'center', color: colors.font, marginTop: 40}}>
+              인증한 퀘스트가 없습니다.
+            </Text>
+          }
+        />
+      </AutoSkeletonView>
     </SafeAreaView>
   );
 }
@@ -132,7 +129,7 @@ export default function MyVerification() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   footer: {
     paddingVertical: 20,

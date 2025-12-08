@@ -15,10 +15,14 @@ export const configureGoogleSignIn = () => {
   GoogleSignin.configure({
     // webClientId는 안드로이드에서 사용되며, strings.xml에 있는 server_client_id를 참조합니다.
     // iOS에서는 iosClientId를 사용합니다.
-    webClientId: Config.GOOGLE_CLIENT_ID,
+    webClientId: Config.GOOGLE_WEB_CLIENT_ID,
+    iosClientId: Config.GOOGLE_IOS_CLIENT_ID,
     offlineAccess: false, // 백엔드에서 토큰을 사용하려면 true로 설정
   });
 };
+
+console.log(Config.GOOGLE_CLIENT_ID);
+console.log(Config.GOOGLE_IOS_CLIENT_ID);
 
 /**
  * Google 계정으로 로그인합니다.

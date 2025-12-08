@@ -1,5 +1,4 @@
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
 import HomeNav from './HomeNav';
 import PeersDrawer from './PeersDrawer';
 import MyPageNav from './MyPageNav';
@@ -7,10 +6,17 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import type {BottomTabParamList} from '../types/navigation';
 import VerificationNav from '../navigation/VerificationNav';
 import TeamNav from '../navigation/TeamNav';
+import {rewardStore} from '../store/rewardStore';
+import {StyleSheet} from 'react-native';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
 export default function BottomNav() {
+  const hasNewCharacter = rewardStore(state => state.hasNewCharacter);
+  const hasNewBadge = rewardStore(state => state.hasNewBadge);
+  const showCharRedDot = hasNewCharacter ? true : false;
+  const showBadgeRedDot = hasNewBadge ? true : false;
+
   return (
     <Tab.Navigator
       initialRouteName={'HomeNav'}
@@ -28,6 +34,8 @@ export default function BottomNav() {
           tabBarIcon: ({color, size}) => (
             <Icon name="home" color={color} size={size} />
           ),
+          tabBarBadge: showCharRedDot ? '' : undefined,
+          tabBarBadgeStyle: styles.redDot,
           tabBarLabel: '홈',
         }}
       />
@@ -69,9 +77,23 @@ export default function BottomNav() {
             // <Icon name="account-circle" color={color} size={size} />
             <Icon name="more-horiz" color={color} size={size} />
           ),
+          tabBarBadge: showBadgeRedDot ? '' : undefined,
+          tabBarBadgeStyle: styles.redDot,
           tabBarLabel: '더보기',
         }}
       />
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  redDot: {
+    position: 'absolute',
+    right: -2,
+    top: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 99,
+    backgroundColor: 'red',
+  },
+});

@@ -12,6 +12,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {Platform} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {colors} from '../../styles/theme';
 
 const AppInfoPage = () => {
   const navigation = useNavigation();
@@ -98,7 +99,7 @@ const AppInfoPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   scrollView: {
     padding: 20,
@@ -118,29 +119,29 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.font,
     marginBottom: 5,
   },
   version: {
     fontSize: 14,
-    color: '#666',
+    color: colors.gray,
   },
   section: {
     marginBottom: 25,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: 'white',
     borderRadius: 10,
     padding: 15,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.font,
     marginBottom: 15,
   },
   description: {
     fontSize: 14,
     lineHeight: 22,
-    color: '#333',
+    color: colors.font,
     marginBottom: 10,
   },
   linkItem: {
@@ -151,21 +152,21 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 15,
-    color: '#333',
+    color: colors.font,
   },
   divider: {
     height: 1,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: colors.gray,
     marginLeft: 5,
   },
   text: {
     fontSize: 14,
-    color: '#333',
+    color: colors.font,
     marginBottom: 5,
   },
   smallText: {
     fontSize: 12,
-    color: '#666',
+    color: colors.gray,
     marginTop: 10,
   },
 });
