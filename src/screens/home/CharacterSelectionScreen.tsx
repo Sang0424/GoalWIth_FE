@@ -13,8 +13,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {HomeNavParamList} from '../../types/navigation';
-import {Avatar} from '../../types/user.types';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useCallback} from 'react';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import {useInfiniteQuery, useMutation} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
@@ -27,6 +26,7 @@ import {
   AutoSkeletonView,
   AutoSkeletonIgnoreView,
 } from 'react-native-auto-skeleton';
+import {useFocusEffect} from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<HomeNavParamList, 'CharacterSelection'>;
 
@@ -35,6 +35,7 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
   const [character, setCharacter] = useState(currentCharacter);
   const user = userStore(state => state.user);
   const markCharacterSeen = rewardStore(state => state.markCharacterSeen);
+  const hasNewCharacter = rewardStore(state => state.hasNewCharacter);
   const queryClient = useQueryClient();
 
   const {data, isLoading, refetch, isRefetching, hasNextPage, fetchNextPage} =
@@ -70,9 +71,13 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
     },
   });
 
-  useEffect(() => {
-    markCharacterSeen();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      if (hasNewCharacter) {
+        markCharacterSeen();
+      }
+    }, [hasNewCharacter, markCharacterSeen]),
+  );
 
   const loadMore = () => {
     if (hasNextPage && !isRefetching) {
@@ -85,7 +90,6 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
 
   const handleSelectCharacter = (character: string) => {
     setCharacter(character);
-    mutate(character);
     // TODO: Update user's selected character in the backend
   };
 
@@ -98,8 +102,11 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
 
     return (
       <TouchableOpacity
-        style={[styles.characterItem, character && styles.selectedCharacter]}
-        onPress={() => handleSelectCharacter(item.id)}>
+        style={[styles.characterItem, isSelected && styles.selectedCharacter]}
+        onPress={() => {
+          handleSelectCharacter(item.character);
+          mutate(item.id);
+        }}>
         <CharacterAvatar avatar={item.character} size={100} />
         <Text style={styles.characterName}>{item.name}</Text>
         {isSelected && <Text style={styles.selectedText}>선택됨</Text>}
@@ -114,7 +121,10 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
           <Icon name="chevron-left" size={32} />
         </Pressable>
         <Text style={styles.title}>캐릭터 선택</Text>
-        <Pressable onPress={() => mutate(character)}>
+        <Pressable
+          onPress={() => {
+            handleSelectCharacter(character);
+          }}>
           <Text style={styles.completeText}>완료</Text>
         </Pressable>
       </View>

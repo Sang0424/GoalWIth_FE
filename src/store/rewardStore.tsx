@@ -1,4 +1,5 @@
-import type {Avatar, Badge} from '@/types/user.types';
+// src/store/rewardStore.tsx
+
 import {create} from 'zustand';
 import {persist, createJSONStorage} from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,18 +13,17 @@ interface RewardStore {
   hasNewBadge: boolean;
   setCharCount(charCount: number): void;
   setBadgeCount(badgeCount: number): void;
-  setServerCounts(charCount: number, badgeCount: number): void;
   markCharacterSeen(): void;
   markBadgeSeen(): void;
 }
 
 export const rewardStore = create<RewardStore>()(
   persist(
-    (set, get) => ({
-      charCount: 0,
-      badgeCount: 0,
-      lastSeenCharacterCount: 0,
-      lastSeenBadgeCount: 0,
+    set => ({
+      charCount: 1,
+      badgeCount: 1,
+      lastSeenCharacterCount: 1,
+      lastSeenBadgeCount: 1,
       hasNewCharacter: false,
       hasNewBadge: false,
 
@@ -38,10 +38,6 @@ export const rewardStore = create<RewardStore>()(
           badgeCount,
           hasNewBadge: badgeCount > state.lastSeenBadgeCount,
         })),
-
-      setServerCounts: (charCount, badgeCount) => {
-        set({charCount, badgeCount});
-      },
 
       markCharacterSeen: () =>
         set(state => ({
@@ -59,6 +55,8 @@ export const rewardStore = create<RewardStore>()(
       name: 'reward-storage',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: state => ({
+        charCount: state.charCount,
+        badgeCount: state.badgeCount,
         lastSeenCharacterCount: state.lastSeenCharacterCount,
         lastSeenBadgeCount: state.lastSeenBadgeCount,
       }),

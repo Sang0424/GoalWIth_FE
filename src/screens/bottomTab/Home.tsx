@@ -37,6 +37,12 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 import {colors} from '../../styles/theme';
+import {
+  requestMultiple,
+  PERMISSIONS,
+  RESULTS,
+  openSettings,
+} from 'react-native-permissions';
 
 export default function Home() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -102,6 +108,62 @@ export default function Home() {
       setQuests(data.quests);
     }
   }, [data]);
+
+  useEffect(() => {
+    const askPermissions = async () => {
+      // 1. 플랫폼별 권한 리스트 정의
+      const permissions = Platform.select({
+        ios: [
+          PERMISSIONS.IOS.APP_TRACKING_TRANSPARENCY,
+          PERMISSIONS.IOS.CAMERA,
+          PERMISSIONS.IOS.PHOTO_LIBRARY, // Library
+        ],
+        android: [
+          PERMISSIONS.ANDROID.CAMERA,
+          // 안드로이드 13(API 33) 이상 여부에 따라 권한이 갈리므로 주의가 필요합니다.
+          PERMISSIONS.ANDROID.READ_MEDIA_IMAGES,
+        ],
+      });
+
+      if (!permissions) return;
+
+      // 2. 일괄 요청
+      const statuses = await requestMultiple(permissions);
+
+      const libraryStatus =
+        Platform.OS === 'ios'
+          ? statuses[PERMISSIONS.IOS.PHOTO_LIBRARY]
+          : statuses[PERMISSIONS.ANDROID.READ_MEDIA_IMAGES];
+
+      if (
+        libraryStatus === RESULTS.BLOCKED ||
+        libraryStatus === RESULTS.DENIED
+      ) {
+        // 사용자가 거부했거나 이미 차단된 경우
+        Alert.alert(
+          '앨범 접근 권한 필요',
+          '글을 올리기 위해서는 앨범 접근 권한이 필수입니다. 설정 -> 개인정보 보호 및 보안에서 접근을 허용해주세요',
+          [
+            {text: '나중에', style: 'cancel'},
+            {
+              text: '설정으로 이동',
+              onPress: () => openSettings(), // 앱 설정 화면으로 이동
+            },
+          ],
+        );
+      }
+
+      // 3. 결과 확인 (디버깅용)
+      console.log('Permission Statuses:', statuses);
+    };
+
+    // 4. 약간의 지연 시간을 주어 화면 전환이 끝난 후 팝업이 뜨게 함 (UX 권장사항)
+    const timer = setTimeout(() => {
+      askPermissions();
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const currentExp = user?.exp || 0;
   const maxExp = Math.round(200 * Math.pow(user?.level, 1.1));

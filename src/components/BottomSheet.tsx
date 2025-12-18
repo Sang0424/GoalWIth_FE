@@ -35,6 +35,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type {Quest} from '../types/quest.types';
 import {colors} from '../styles/theme';
+import crashlytics from '@react-native-firebase/crashlytics';
 
 interface BottomSheetProps {
   todoModalVisible: boolean;
@@ -187,9 +188,16 @@ const BottomSheet = ({
       {
         // 백엔드 연결 로직
         if (questToEdit) {
+          crashlytics().log('API Request: /api/v1/goals');
+          crashlytics().setAttribute('quest_id', questToEdit.id.toString());
           return instance.put(`/quest/${questToEdit.id}`, payload);
         } else {
-          return instance.post(`/quest/create`, payload);
+          try {
+            crashlytics().log('API Request: /api/v1/goals/create');
+            return instance.post(`/quest/create`, payload);
+          } catch (error: any) {
+            crashlytics().recordError(error);
+          }
         }
       }
     },

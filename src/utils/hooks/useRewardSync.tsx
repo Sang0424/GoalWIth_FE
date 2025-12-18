@@ -8,8 +8,7 @@ export const useRewardSync = () => {
   const user = userStore(state => state.user);
   const setCharCount = rewardStore(state => state.setCharCount);
   const setBadgeCount = rewardStore(state => state.setBadgeCount);
-  const charCountRef = useRef(null);
-  const badgeCountRef = useRef(null);
+  const isInitialMount = useRef(true);
 
   const getMyCharacters = async () => {
     const response = await instance.get(`/user/characters/${user.id}`);
@@ -41,16 +40,14 @@ export const useRewardSync = () => {
 
   // 3. [핵심] React Query 데이터가 바뀌면 -> Zustand Store에 즉시 반영
   useEffect(() => {
-    if (charCount != null && charCount !== charCountRef.current) {
+    if (charCount != null) {
       setCharCount(charCount); // Store에 넣으면서 hasNewCharacter 계산됨
-      charCountRef.current = charCount;
     }
   }, [charCount, setCharCount]);
 
   useEffect(() => {
-    if (badgesCount != null && badgesCount !== badgeCountRef.current) {
+    if (badgesCount != null) {
       setBadgeCount(badgesCount); // Store에 넣으면서 hasNewBadge 계산됨
-      badgeCountRef.current = badgesCount;
     }
   }, [badgesCount, setBadgeCount]);
 };

@@ -211,7 +211,8 @@ const VerificationFeedScreen = () => {
 
   if (isLoading || searchVerificationLoading || peersVerificationLoading) {
     return (
-      <SafeAreaView>
+      <SafeAreaView
+        style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" />
       </SafeAreaView>
     );

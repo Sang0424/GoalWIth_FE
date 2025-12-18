@@ -6,10 +6,11 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  ActivityIndicator,
+  Modal,
+  Button,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CharacterAvatar from '../../components/CharacterAvatar';
@@ -27,6 +28,7 @@ import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {Dropdown} from 'react-native-element-dropdown';
 import {colors} from '../../styles/theme';
 import {rewardStore} from '../../store/rewardStore';
+import NetWorkLogger from 'react-native-network-logger';
 
 export default function MyPage() {
   const [error, setError] = useState('');
@@ -37,6 +39,9 @@ export default function MyPage() {
   const markBadgeSeen = rewardStore(state => state.markBadgeSeen);
   const hasNewBadge = rewardStore(state => state.hasNewBadge);
   const queryClient = useQueryClient();
+  const [clickCount, setClickCount] = useState(0);
+  const [showLog, setShowLog] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState(user.badge);
   const logout = async () => {
     try {
       Alert.alert('로그아웃', '정말로 로그아웃 하시겠습니까?', [
@@ -53,7 +58,11 @@ export default function MyPage() {
       Alert.alert(e.response.data.message);
     }
   };
-  const {data: badges, isLoading: badgesLoading} = useQuery({
+  const {
+    data: badges,
+    isLoading: badgesLoading,
+    isSuccess,
+  } = useQuery({
     queryKey: ['badges'],
     queryFn: async () => {
       try {
@@ -133,47 +142,64 @@ export default function MyPage() {
     },
   });
 
-  useEffect(() => {
-    if (hasNewBadge) {
-      markBadgeSeen();
-    }
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      if (isSuccess && hasNewBadge && badges && badges.length > 0) {
+        markBadgeSeen();
+      }
+    }, [isSuccess, hasNewBadge, badges, markBadgeSeen]),
+  );
+
+  // useEffect(() => {
+  //   if (hasNewBadge) {
+  //     markBadgeSeen();
+  //   }
+  // }, []);
 
   const renderBadgeItem = useCallback(
     (item: {id: number; name: string}) => {
-      const isCurrentBadge = item.name === user.badge;
       return (
         <View
           style={[
             styles.dropdownItem,
-            isCurrentBadge && styles.dropdownItemActive,
+            item.name === selectedBadge && styles.dropdownItemActive,
           ]}>
           <Text
             style={[
               styles.dropdownItemText,
-              isCurrentBadge && styles.dropdownItemTextActive,
+              item.name === selectedBadge && styles.dropdownItemTextActive,
             ]}>
             {item.name}
           </Text>
-          {isCurrentBadge && (
+          {item.name === selectedBadge && (
             <Ionicons name="checkmark" size={16} color={colors.secondary} />
           )}
         </View>
       );
     },
-    [badges, markBadgeSeen, hasNewBadge],
+    [badges, markBadgeSeen, hasNewBadge, selectedBadge],
   );
 
   const handleBadgeChange = useCallback(
     (item: any) => {
       changeBadgeMutate(item.id);
+      setSelectedBadge(item.name);
     },
     [changeBadgeMutate],
   );
 
   const dropdownData = useMemo(() => {
     return badges || [];
-  }, [badges]);
+  }, [badges, selectedBadge]);
+
+  const handleVersionClick = () => {
+    setClickCount(prev => prev + 1);
+    if (clickCount >= 4) {
+      // 5번째 클릭 시
+      setShowLog(true);
+      setClickCount(0);
+    }
+  };
 
   const myVerificationCount = myVerification?.totalElements;
   const myReactionCount = myReaction?.totalElements;
@@ -338,8 +364,16 @@ export default function MyPage() {
         <TouchableOpacity style={styles.logoutButton} onPress={logout}>
           <Text style={styles.logoutText}>로그아웃</Text>
         </TouchableOpacity>
-        <Text style={styles.versionText}>버전 1.0.0</Text>
+        <TouchableOpacity onPress={handleVersionClick} style={{marginTop: 50}}>
+          <Text style={styles.versionText}>버전 1.0.0</Text>
+        </TouchableOpacity>
       </ScrollView>
+      <Modal visible={showLog} animationType="slide">
+        <View style={{flex: 1, paddingTop: 50}}>
+          <Button title="닫기" onPress={() => setShowLog(false)} />
+          <NetWorkLogger theme="dark" />
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
