@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {useRef, useEffect, useCallback} from 'react';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -45,6 +45,8 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   const {keyboardHeight} = useKeyboardHeight();
   const scrollViewRef = useRef<ScrollView>(null);
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
+  const TAB_BAR_HEIGHT = 49;
 
   const blurhash =
     '|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[';
@@ -165,7 +167,8 @@ const QuestFeed = ({route}: QuestFeedProps) => {
 
   useEffect(() => {
     const keyboardWillShow = (e: any) => {
-      startAnimation(-e.endCoordinates?.height + 81);
+      const offset = insets.bottom + TAB_BAR_HEIGHT;
+      startAnimation(-e.endCoordinates?.height + offset);
     };
 
     const keyboardWillHide = () => {

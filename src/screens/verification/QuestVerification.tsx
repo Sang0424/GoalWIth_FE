@@ -12,7 +12,7 @@ import {
   Platform,
   Keyboard,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
@@ -60,6 +60,8 @@ const QuestVerification = () => {
   const contentHeight = useRef(0);
   const scrollViewHeight = useRef(0);
   const user = userStore(state => state.user);
+  const insets = useSafeAreaInsets();
+  const TAB_BAR_HEIGHT = 49;
 
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
@@ -86,7 +88,8 @@ const QuestVerification = () => {
 
   useEffect(() => {
     const keyboardWillShow = (e: any) => {
-      startAnimation(-e.endCoordinates?.height + 81);
+      const offset = insets.bottom + TAB_BAR_HEIGHT;
+      startAnimation(-e.endCoordinates?.height + offset);
     };
 
     const keyboardWillHide = () => {
@@ -227,7 +230,7 @@ const QuestVerification = () => {
             fontWeight: 'bold',
             color: colors.font,
           }}>
-          기록이 없습니다
+          기록을 볼 수 없습니다.잠시 후 다시 시도해주세요.
         </Text>
       </SafeAreaView>
     );
