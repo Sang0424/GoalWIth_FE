@@ -176,6 +176,7 @@ export default function CustomDrawerContent(props: any) {
         visible={isProfileVisible}
         onClose={() => setProfileVisible(false)}
         userId={selecteUser}
+        fromContext="drawer"
       />
     </SafeAreaView>
   );

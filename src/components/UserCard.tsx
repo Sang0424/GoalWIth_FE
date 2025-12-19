@@ -238,6 +238,7 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
         visible={isProfileVisible}
         onClose={() => setProfileVisible(false)}
         userId={selecteUser}
+        fromContext="general"
       />
     </View>
   );

@@ -8,6 +8,7 @@ import VerificationNav from '../navigation/VerificationNav';
 import TeamNav from '../navigation/TeamNav';
 import {rewardStore} from '../store/rewardStore';
 import {StyleSheet} from 'react-native';
+import QuestVerification from '../screens/verification/QuestVerification';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -82,6 +83,13 @@ export default function BottomNav() {
           tabBarLabel: '더보기',
         }}
       />
+      {/* <Tab.Screen
+        name={'QuestVerification'}
+        component={QuestVerification}
+        options={{
+          tabBarButton: () => null,
+        }}
+      /> */}
     </Tab.Navigator>
   );
 }

@@ -201,6 +201,7 @@ const VerificationCard = ({item}: {item: any}) => {
         visible={isProfileVisible}
         onClose={() => setProfileVisible(false)}
         userId={selecteUser}
+        fromContext="general"
       />
     </>
   );

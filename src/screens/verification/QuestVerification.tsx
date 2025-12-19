@@ -11,6 +11,7 @@ import {
   Pressable,
   Platform,
   Keyboard,
+  KeyboardAvoidingView,
 } from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -37,6 +38,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {colors} from '../../styles/theme';
 import {userStore} from '../../store/userStore';
+import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<
   QuestVerificationProps,
@@ -61,7 +63,19 @@ const QuestVerification = () => {
   const scrollViewHeight = useRef(0);
   const user = userStore(state => state.user);
   const insets = useSafeAreaInsets();
-  const TAB_BAR_HEIGHT = 49;
+  const TAB_BAR_HEIGHT = Platform.select({
+    ios: 49,
+    android: 0,
+  });
+
+  let tabBarHeight = 0;
+
+  try {
+    // 이 화면이 TabNavigator 안에 있다면 실제 높이를 반환하고, 없으면 에러가 발생합니다.
+    tabBarHeight = useBottomTabBarHeight();
+  } catch (e) {
+    tabBarHeight = 0;
+  }
 
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
@@ -88,7 +102,8 @@ const QuestVerification = () => {
 
   useEffect(() => {
     const keyboardWillShow = (e: any) => {
-      const offset = insets.bottom + TAB_BAR_HEIGHT;
+      const bottomInset = Math.max(insets.bottom, 16);
+      const offset = bottomInset + (TAB_BAR_HEIGHT || 0);
       startAnimation(-e.endCoordinates?.height + offset);
     };
 

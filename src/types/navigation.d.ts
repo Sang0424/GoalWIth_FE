@@ -33,6 +33,7 @@ export type BottomTabParamList = {
   MyPageNav: undefined;
   TeamNav: undefined;
   PeersDrawer: undefined;
+  // QuestVerification: {id: number};
 };
 
 export type HomeNavParamList = {
@@ -73,6 +74,7 @@ export type PeersNavParamList = {
 
 export type PeersDrawerParamList = {
   PeersNav: NavigatorScreenParams<PeersNavParamList>;
+  QuestVerification: {id: number};
 };
 
 export type PeerListProps = NativeStackNavigationProp<
@@ -112,4 +114,5 @@ export type RootStackParamList = {
   VerificationNav: NavigatorScreenParams<VerificationNavParamList>;
   PeersNav: NavigatorScreenParams<PeersNavParamList>;
   QuestVerification: {id: number};
+  PeersDrawer: NavigatorScreenParams<PeersDrawerParamList>;
 };
