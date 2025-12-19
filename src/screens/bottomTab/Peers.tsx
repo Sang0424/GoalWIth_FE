@@ -180,15 +180,6 @@ export default function Peers() {
     );
   };
 
-  if (peersLoading || searchPeersLoading) {
-    return (
-      <SafeAreaView
-        style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-        <ActivityIndicator size="large" />
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView
       style={{
@@ -228,6 +219,9 @@ export default function Peers() {
           />
         )}
       </View>
+      {(peersLoading || searchPeersLoading) && (
+        <ActivityIndicator size="small" color={colors.primary} />
+      )}
       <FlatList
         data={users}
         renderItem={renderItems}

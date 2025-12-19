@@ -209,15 +209,6 @@ const VerificationFeedScreen = () => {
     return injected;
   }, [filteredFeed]);
 
-  if (isLoading || searchVerificationLoading || peersVerificationLoading) {
-    return (
-      <SafeAreaView
-        style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-        <ActivityIndicator size="large" />
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: colors.background}}>
       <View style={{paddingHorizontal: 16}}>
@@ -284,7 +275,13 @@ const VerificationFeedScreen = () => {
           </TouchableOpacity>
         ))}
       </View>
-
+      {(isLoading || peersVerificationLoading || searchVerificationLoading) && (
+        <ActivityIndicator
+          size="small"
+          color={colors.primary}
+          style={{marginRight: 8}}
+        />
+      )}
       <FlatList
         data={feedWithAds}
         keyExtractor={item =>
