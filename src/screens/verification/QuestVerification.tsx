@@ -159,6 +159,9 @@ const QuestVerification = () => {
       queryClient.invalidateQueries({
         queryKey: ['Verification'],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['myVerificationCount'],
+      });
       Alert.alert('인증 댓글이 추가되었습니다.');
     },
     onError: (error: any) => {
@@ -203,6 +206,9 @@ const QuestVerification = () => {
     },
     onSuccess: () => {
       refetch();
+      queryClient.invalidateQueries({
+        queryKey: ['myVerificationCount'],
+      });
       Alert.alert('삭제', '인증 댓글이 삭제되었습니다.');
     },
     onError: (error: any) => {

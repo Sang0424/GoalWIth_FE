@@ -60,7 +60,7 @@ const ProfileBottomSheet = ({
   visible,
   onClose,
   userId,
-  fromContext,
+  fromContext = 'general',
 }: ProfileBottomSheetProps) => {
   const {height: screenHeight} = useWindowDimensions();
   const translateY = useSharedValue(screenHeight);
