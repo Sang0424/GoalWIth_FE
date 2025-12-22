@@ -207,28 +207,9 @@ export default function Home() {
   const canAddMainQuest =
     filter === 'ONGOING' && (!mainQuest || mainQuest.length === 0);
 
-  // const recommendedQuests = [
-  //   {
-  //     id: 1,
-  //     title: '아침 30분 산책하기',
-  //     description: '하루를 상쾌하게 시작해보세요!',
-  //     xp: 50,
-  //   },
-  //   {
-  //     id: 2,
-  //     title: '책 1챕터 읽기',
-  //     description: '지식을 쌓는 시간을 가져보세요',
-  //     category: '자기계발',
-  //     xp: 70,
-  //   },
-  //   {
-  //     id: 3,
-  //     title: '물 8잔 마시기',
-  //     description: '건강한 하루를 위한 필수 미션',
-  //     category: '건강',
-  //     xp: 30,
-  //   },
-  // ];
+  const hasVerifyingQuest = mainQuest?.some(
+    quest => quest.procedure === 'verify',
+  );
 
   // Render empty state
   const renderEmptyState = (isMain: boolean) => (
@@ -249,7 +230,9 @@ export default function Home() {
             ? '인증 중인 메인 퀘스트가 없어요'
             : '인증 중인 서브 퀘스트가 없어요'
           : isMain
-          ? '진행 중인 메인 퀘스트가 없어요'
+          ? hasVerifyingQuest
+            ? '인증 중인 메인 퀘스트가 있어요'
+            : '진행 중인 메인 퀘스트가 없어요'
           : '진행 중인 서브 퀘스트가 없어요'}
       </Text>
       <Text style={styles.emptyStateSubtext}>
@@ -258,7 +241,9 @@ export default function Home() {
           : filter === 'VERIFY'
           ? '인증 중인 퀘스트가 이곳에 표시됩니다'
           : isMain
-          ? '단 하나의 메인 퀘스트만 생성할 수 있습니다'
+          ? hasVerifyingQuest
+            ? '인증이 완료되면 메인 퀘스트를 생성할 수 있습니다'
+            : '단 하나의 메인 퀘스트만 생성할 수 있습니다'
           : '마음껏 서브 퀘스트를 생성해보세요'}
       </Text>
       {filter === 'ONGOING' && (!isMain || canAddMainQuest) && (
@@ -1139,6 +1124,7 @@ const styles = StyleSheet.create({
     color: colors.gray,
     textAlign: 'center',
     marginBottom: 16,
+    marginTop: 12,
   },
   addButton: {
     backgroundColor: colors.primary,

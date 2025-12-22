@@ -401,7 +401,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               <Ionicons name="time-outline" size={50} color={colors.font} />
               <Text style={styles.emptyStateText}>아직 기록이 없습니다.</Text>
               <Text style={styles.emptyStateSubtext}>
-                오늘의 활동을 기록해보세요!
+                {questParam.verificationRequired
+                  ? '기록이 하나 이상이고 완료 날짜가 지나야 인증을 받을 수 있습니다!'
+                  : '기록이 하나 이상이고 완료 날짜가 지나야 완료할 수 있습니다!'}
               </Text>
             </View>
           ) : (
@@ -470,7 +472,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={
-                new Date(quest.endDate) < new Date()
+                questRecord?.length > 0 &&
+                new Date(quest.endDate) < new Date() &&
+                questParam.procedure === 'progress'
                   ? [styles.actionButton, styles.completeButton]
                   : [
                       styles.actionButton,
@@ -487,10 +491,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               disabled={
                 questRecord?.length === 0 ||
                 new Date(quest.endDate) > new Date() ||
-                questParam.procedure === 'verify'
-                  ? questParam.verificationCount <
-                    questParam.requiredVerification
-                  : false
+                (questParam.procedure === 'verify' &&
+                  questParam.verificationCount <
+                    questParam.requiredVerification)
               }>
               <Ionicons name="checkmark-circle" size={18} color="white" />
               {questParam.verificationRequired &&
@@ -629,15 +632,16 @@ const styles = StyleSheet.create({
     color: colors.font,
   },
   emptyStateSubtext: {
-    marginTop: 5,
+    marginTop: 12,
     fontSize: 14,
-    color: colors.font,
+    color: colors.gray,
+    textAlign: 'center',
   },
   recordCard: {
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 15,
-    marginBottom: 12,
+    marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
@@ -661,9 +665,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   recordText: {
-    fontSize: 14,
+    fontSize: 18,
     lineHeight: 22,
     color: colors.font,
+    marginTop: 12,
   },
   inputContainer: {
     position: 'absolute',

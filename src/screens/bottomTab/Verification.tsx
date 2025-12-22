@@ -36,7 +36,7 @@ const TAB_LIST = [
   {key: 'peers', label: '피어즈'},
 ];
 
-const AD_FREQUENCY = 1;
+const AD_FREQUENCY = 3;
 
 const VerificationFeedScreen = () => {
   const PAGE_SIZE = 5;
@@ -57,12 +57,12 @@ const VerificationFeedScreen = () => {
     hasNextPage,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ['Verification'],
+    queryKey: ['Verification', debouncedSearchQuery],
     initialPageParam: 0,
     queryFn: async ({pageParam = 0}) => {
       try {
         const response = await instance.get(
-          `/quest/verification?page=${pageParam}&size=${PAGE_SIZE}`,
+          `/quest/verification?search=${debouncedSearchQuery}&page=${pageParam}&size=${PAGE_SIZE}`,
         );
         return response.data;
       } catch (e: any) {
@@ -76,32 +76,32 @@ const VerificationFeedScreen = () => {
     enabled: Config.API_URL != '',
   });
 
-  const {
-    data: searchVerificationData,
-    isLoading: searchVerificationLoading,
-    isFetchingNextPage: searchVerificationIsFetchingNextPage,
-    fetchNextPage: searchVerificationFetchNextPage,
-    hasNextPage: searchVerificationHasNextPage,
-    refetch: searchVerificationRefetch,
-  } = useInfiniteQuery({
-    queryKey: ['searchVerification', debouncedSearchQuery],
-    initialPageParam: 0,
-    queryFn: async ({pageParam = 0}) => {
-      try {
-        const response = await instance.get(
-          `/search/quest/verification?search=${debouncedSearchQuery}&page=${pageParam}&size=${PAGE_SIZE}`,
-        );
-        return response.data;
-      } catch (e: any) {
-        setSearchError(e.response.data.message);
-        return {items: [], nextPage: null};
-      }
-    },
-    getNextPageParam: (lastPage, allPages) => {
-      return lastPage.hasNext ? allPages.length : undefined;
-    },
-    enabled: debouncedSearchQuery.length > 0,
-  });
+  // const {
+  //   data: searchVerificationData,
+  //   isLoading: searchVerificationLoading,
+  //   isFetchingNextPage: searchVerificationIsFetchingNextPage,
+  //   fetchNextPage: searchVerificationFetchNextPage,
+  //   hasNextPage: searchVerificationHasNextPage,
+  //   refetch: searchVerificationRefetch,
+  // } = useInfiniteQuery({
+  //   queryKey: ['searchVerification', debouncedSearchQuery],
+  //   initialPageParam: 0,
+  //   queryFn: async ({pageParam = 0}) => {
+  //     try {
+  //       const response = await instance.get(
+  //         `/search/quest/verification?search=${debouncedSearchQuery}&page=${pageParam}&size=${PAGE_SIZE}`,
+  //       );
+  //       return response.data;
+  //     } catch (e: any) {
+  //       setSearchError(e.response.data.message);
+  //       return {items: [], nextPage: null};
+  //     }
+  //   },
+  //   getNextPageParam: (lastPage, allPages) => {
+  //     return lastPage.hasNext ? allPages.length : undefined;
+  //   },
+  //   enabled: debouncedSearchQuery.length > 0,
+  // });
 
   const {
     data: peersVerificationData,
@@ -111,12 +111,12 @@ const VerificationFeedScreen = () => {
     hasNextPage: peersVerificationHasNextPage,
     refetch: peersVerificationRefetch,
   } = useInfiniteQuery({
-    queryKey: ['PeersVerification'],
+    queryKey: ['PeersVerification', debouncedSearchQuery],
     initialPageParam: 0,
     queryFn: async ({pageParam = 0}) => {
       try {
         const response = await instance.get(
-          `/quest/verification/peers?page=${pageParam}&size=${PAGE_SIZE}`,
+          `/quest/verification/peers?search=${debouncedSearchQuery}&page=${pageParam}&size=${PAGE_SIZE}`,
         );
         return response.data;
       } catch (e: any) {
@@ -131,28 +131,14 @@ const VerificationFeedScreen = () => {
   });
 
   const verificationQuests = React.useMemo(() => {
-    return debouncedSearchQuery.length > 0
-      ? searchVerificationData?.pages.flatMap(page => page.content) || []
-      : data?.pages.flatMap(page => page.content) || [];
+    return data?.pages.flatMap(page => page.content) || [];
   }, [data, page, debouncedSearchQuery]);
 
   const peersVerificationQuests = React.useMemo(() => {
-    return debouncedSearchQuery.length > 0
-      ? searchVerificationData?.pages.flatMap(page => page.content) || []
-      : peersVerificationData?.pages.flatMap(page => page.content) || [];
+    return peersVerificationData?.pages.flatMap(page => page.content) || [];
   }, [peersVerificationData, page, debouncedSearchQuery]);
 
-  const hasMore =
-    activeTab === 'realtime'
-      ? verificationQuests.length < (page + 1) * PAGE_SIZE
-      : peersVerificationQuests.length < (page + 1) * PAGE_SIZE;
-
   const handleLoadMore = () => {
-    if (Config.API_URL == '') {
-      if (hasMore) {
-        setPage(page => page + 1);
-      }
-    }
     if (activeTab === 'realtime') {
       if (hasNextPage && !isFetchingNextPage) {
         fetchNextPage();
@@ -165,12 +151,6 @@ const VerificationFeedScreen = () => {
       ) {
         peersVerificationFetchNextPage();
       }
-    }
-    if (
-      searchVerificationHasNextPage &&
-      !searchVerificationIsFetchingNextPage
-    ) {
-      searchVerificationFetchNextPage();
     }
   };
 
@@ -185,9 +165,7 @@ const VerificationFeedScreen = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    debouncedSearchQuery.length > 0
-      ? await searchVerificationRefetch()
-      : activeTab === 'realtime'
+    activeTab === 'realtime'
       ? await refetch()
       : await peersVerificationRefetch();
     setRefreshing(false);
@@ -275,7 +253,7 @@ const VerificationFeedScreen = () => {
           </TouchableOpacity>
         ))}
       </View>
-      {(isLoading || peersVerificationLoading || searchVerificationLoading) && (
+      {(isLoading || peersVerificationLoading) && (
         <ActivityIndicator
           size="small"
           color={colors.primary}
@@ -296,8 +274,8 @@ const VerificationFeedScreen = () => {
           return <NativeVerificationAd />;
         }}
         ListFooterComponent={
-          debouncedSearchQuery.length > 0 ? (
-            searchVerificationIsFetchingNextPage ? (
+          activeTab === 'peers' ? (
+            peersVerificationIsFetchingNextPage ? (
               <ActivityIndicator size="small" color="#000" />
             ) : null
           ) : isFetchingNextPage ? (
@@ -326,6 +304,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     marginBottom: 16,
+    marginTop: 16,
   },
   searchIcon: {
     marginRight: 8,

@@ -285,6 +285,7 @@ const QuestVerification = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
+        keyboardDismissMode="on-drag"
         ref={scrollViewRef}
         onContentSizeChange={(_, height) => {
           contentHeight.current = height;
@@ -633,9 +634,10 @@ const styles = StyleSheet.create({
     color: colors.gray,
   },
   recordText: {
-    fontSize: 16,
+    fontSize: 18,
     lineHeight: 22,
     color: colors.font,
+    marginTop: 12,
   },
   timelineSection: {
     padding: 16,

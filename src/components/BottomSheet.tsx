@@ -365,6 +365,7 @@ const BottomSheet = ({
                           onChange={onStartDateChange}
                           locale="ko-KR"
                           textColor="#333"
+                          minimumDate={questToEdit ? undefined : new Date()}
                         />
                       )}
 
