@@ -61,6 +61,7 @@ export const useAddReaction = (
       queryClient.invalidateQueries({queryKey});
       queryClient.invalidateQueries({queryKey: ['recordReactions', targetId]});
       queryClient.invalidateQueries({queryKey: ['reactions', targetId]});
+      queryClient.invalidateQueries({queryKey: ['myReactionCount']});
     },
   });
 };

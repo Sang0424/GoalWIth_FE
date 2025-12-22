@@ -182,6 +182,7 @@ const PeerListScreen = () => {
         visible={isProfileVisible}
         onClose={() => setProfileVisible(false)}
         userId={selecteUser}
+        fromContext="general"
       />
     </SafeAreaView>
   );

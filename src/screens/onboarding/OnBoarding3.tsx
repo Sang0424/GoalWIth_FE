@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     borderRadius: 10,
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.gray,
     justifyContent: 'center',
     marginTop: 8,
     alignItems: 'center',

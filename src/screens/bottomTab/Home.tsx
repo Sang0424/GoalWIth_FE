@@ -37,6 +37,12 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 import {colors} from '../../styles/theme';
+import {
+  requestMultiple,
+  PERMISSIONS,
+  RESULTS,
+  openSettings,
+} from 'react-native-permissions';
 
 export default function Home() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -103,6 +109,62 @@ export default function Home() {
     }
   }, [data]);
 
+  useEffect(() => {
+    const askPermissions = async () => {
+      // 1. 플랫폼별 권한 리스트 정의
+      const permissions = Platform.select({
+        ios: [
+          PERMISSIONS.IOS.APP_TRACKING_TRANSPARENCY,
+          PERMISSIONS.IOS.CAMERA,
+          PERMISSIONS.IOS.PHOTO_LIBRARY, // Library
+        ],
+        android: [
+          PERMISSIONS.ANDROID.CAMERA,
+          // 안드로이드 13(API 33) 이상 여부에 따라 권한이 갈리므로 주의가 필요합니다.
+          PERMISSIONS.ANDROID.READ_MEDIA_IMAGES,
+        ],
+      });
+
+      if (!permissions) return;
+
+      // 2. 일괄 요청
+      const statuses = await requestMultiple(permissions);
+
+      const libraryStatus =
+        Platform.OS === 'ios'
+          ? statuses[PERMISSIONS.IOS.PHOTO_LIBRARY]
+          : statuses[PERMISSIONS.ANDROID.READ_MEDIA_IMAGES];
+
+      if (
+        libraryStatus === RESULTS.BLOCKED ||
+        libraryStatus === RESULTS.DENIED
+      ) {
+        // 사용자가 거부했거나 이미 차단된 경우
+        Alert.alert(
+          '앨범 접근 권한 필요',
+          '글을 올리기 위해서는 앨범 접근 권한이 필수입니다. 설정 -> 개인정보 보호 및 보안에서 접근을 허용해주세요',
+          [
+            {text: '나중에', style: 'cancel'},
+            {
+              text: '설정으로 이동',
+              onPress: () => openSettings(), // 앱 설정 화면으로 이동
+            },
+          ],
+        );
+      }
+
+      // 3. 결과 확인 (디버깅용)
+      console.log('Permission Statuses:', statuses);
+    };
+
+    // 4. 약간의 지연 시간을 주어 화면 전환이 끝난 후 팝업이 뜨게 함 (UX 권장사항)
+    const timer = setTimeout(() => {
+      askPermissions();
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const currentExp = user?.exp || 0;
   const maxExp = Math.round(200 * Math.pow(user?.level, 1.1));
   const levelProgress = (currentExp / maxExp) * 100;
@@ -145,28 +207,9 @@ export default function Home() {
   const canAddMainQuest =
     filter === 'ONGOING' && (!mainQuest || mainQuest.length === 0);
 
-  // const recommendedQuests = [
-  //   {
-  //     id: 1,
-  //     title: '아침 30분 산책하기',
-  //     description: '하루를 상쾌하게 시작해보세요!',
-  //     xp: 50,
-  //   },
-  //   {
-  //     id: 2,
-  //     title: '책 1챕터 읽기',
-  //     description: '지식을 쌓는 시간을 가져보세요',
-  //     category: '자기계발',
-  //     xp: 70,
-  //   },
-  //   {
-  //     id: 3,
-  //     title: '물 8잔 마시기',
-  //     description: '건강한 하루를 위한 필수 미션',
-  //     category: '건강',
-  //     xp: 30,
-  //   },
-  // ];
+  const hasVerifyingQuest = mainQuest?.some(
+    quest => quest.procedure === 'verify',
+  );
 
   // Render empty state
   const renderEmptyState = (isMain: boolean) => (
@@ -187,7 +230,9 @@ export default function Home() {
             ? '인증 중인 메인 퀘스트가 없어요'
             : '인증 중인 서브 퀘스트가 없어요'
           : isMain
-          ? '진행 중인 메인 퀘스트가 없어요'
+          ? hasVerifyingQuest
+            ? '인증 중인 메인 퀘스트가 있어요'
+            : '진행 중인 메인 퀘스트가 없어요'
           : '진행 중인 서브 퀘스트가 없어요'}
       </Text>
       <Text style={styles.emptyStateSubtext}>
@@ -196,7 +241,9 @@ export default function Home() {
           : filter === 'VERIFY'
           ? '인증 중인 퀘스트가 이곳에 표시됩니다'
           : isMain
-          ? '단 하나의 메인 퀘스트만 생성할 수 있습니다'
+          ? hasVerifyingQuest
+            ? '인증이 완료되면 메인 퀘스트를 생성할 수 있습니다'
+            : '단 하나의 메인 퀘스트만 생성할 수 있습니다'
           : '마음껏 서브 퀘스트를 생성해보세요'}
       </Text>
       {filter === 'ONGOING' && (!isMain || canAddMainQuest) && (
@@ -1077,6 +1124,7 @@ const styles = StyleSheet.create({
     color: colors.gray,
     textAlign: 'center',
     marginBottom: 16,
+    marginTop: 12,
   },
   addButton: {
     backgroundColor: colors.primary,

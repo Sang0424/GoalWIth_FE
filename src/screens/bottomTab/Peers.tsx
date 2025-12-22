@@ -8,10 +8,11 @@ import {
   ActivityIndicator,
   FlatList,
   Button,
+  TouchableOpacity,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {useState, useCallback} from 'react';
+import {useState, useCallback, useMemo} from 'react';
 import UserCard from '../../components/UserCard';
 import {
   useInfiniteQuery,
@@ -30,33 +31,92 @@ import {AutoSkeletonView} from 'react-native-auto-skeleton';
 
 const PAGE_SIZE = 10;
 
+const TAB_LIST = [
+  {key: 'myPeers', label: '나의 동료'},
+  {key: 'recommendPeers', label: '추천 동료'},
+  {key: 'requestedPeers', label: '받은 요청'},
+];
+
 export default function Peers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    'myPeers' | 'recommendPeers' | 'requestedPeers'
+  >('myPeers');
   const queryClient = useQueryClient();
 
   const debouncedSearchQuery = useDebounce(searchQuery.toLowerCase(), 300);
 
-  const {data: requestedPeersData} = useQuery({
-    queryKey: ['requestedPeersCount'],
-    queryFn: async () => {
-      const response = await instance.get<RequestedPeers>(
-        `/peer/requested?page=0&size=${PAGE_SIZE}`,
+  // const {data: requestedPeersData} = useQuery({
+  //   queryKey: ['requestedPeersCount'],
+  //   queryFn: async () => {
+  //     const response = await instance.get<RequestedPeers>(
+  //       `/peer/requested?page=0&size=${PAGE_SIZE}`,
+  //     );
+  //     return response.data;
+  //   },
+  //   enabled: Config.API_URL !== '',
+  // });
+
+  const {
+    data: myPeersData,
+    isLoading: myPeersLoading,
+    hasNextPage: myPeersHasNextPage,
+    isFetchingNextPage: myPeersIsFetchingNextPage,
+    fetchNextPage: myPeersFetchNextPage,
+    refetch: myPeersRefetch,
+  } = useInfiniteQuery({
+    queryKey: ['myPeers', debouncedSearchQuery],
+    queryFn: async ({pageParam = 0}) => {
+      const response = await instance.get(
+        `/peer?search=${debouncedSearchQuery}&page=${pageParam}&size=${PAGE_SIZE}`,
       );
       return response.data;
     },
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.number < lastPage.totalPages) {
+        return lastPage.number + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 0,
+    enabled: Config.API_URL !== '',
+  });
+
+  const {
+    data: requestedPeersData,
+    isLoading: requestedPeersLoading,
+    hasNextPage: requestedPeersHasNextPage,
+    isFetchingNextPage: requestedPeersIsFetchingNextPage,
+    fetchNextPage: requestedPeersFetchNextPage,
+    refetch: requestedPeersRefetch,
+  } = useInfiniteQuery({
+    queryKey: ['requestedPeers', debouncedSearchQuery],
+    queryFn: async ({pageParam = 0}) => {
+      const response = await instance.get(
+        `/peer/requested?search=${debouncedSearchQuery}&page=${pageParam}&size=${PAGE_SIZE}`,
+      );
+      return response.data;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.number < lastPage.totalPages) {
+        return lastPage.number + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 0,
     enabled: Config.API_URL !== '',
   });
 
   const {
     data: peersData,
     isLoading: peersLoading,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
-    refetch,
+    hasNextPage: peersHasNextPage,
+    fetchNextPage: peersFetchNextPage,
+    isFetchingNextPage: peersIsFetchingNextPage,
+    refetch: peersRefetch,
   } = useInfiniteQuery({
-    queryKey: ['recommendPeers'],
+    queryKey: ['recommendPeers', debouncedSearchQuery],
     queryFn: async ({pageParam = 0}) => {
       const response = await instance.get(
         `/peer/recommend?page=${pageParam}&size=${PAGE_SIZE}`,
@@ -97,79 +157,80 @@ export default function Peers() {
       return undefined;
     },
     initialPageParam: 0,
-    enabled: debouncedSearchQuery.length > 0,
+    enabled: debouncedSearchQuery.length > 0 && activeTab === 'recommendPeers',
     placeholderData: previousData => previousData,
   });
-  const users =
-    debouncedSearchQuery.length > 0
-      ? searchPeersData?.pages.flatMap(page => page.content) || []
-      : peersData?.pages.flatMap(page => page.content) || [];
 
-  const requestedPeersCount =
-    Config.API_URL === '' ? 0 : requestedPeersData?.totalElements || 0;
+  const users = useMemo(() => {
+    return activeTab === 'myPeers'
+      ? myPeersData?.pages.flatMap(page => page.content) || []
+      : activeTab === 'recommendPeers'
+      ? debouncedSearchQuery.length > 0
+        ? searchPeersData?.pages.flatMap(page => page.content) || []
+        : peersData?.pages.flatMap(page => page.content) || []
+      : activeTab === 'requestedPeers'
+      ? requestedPeersData?.pages.flatMap(page => page.content) || []
+      : [];
+  }, [activeTab, debouncedSearchQuery, peersData, requestedPeersData]);
+
+  const requestedPeersCount = requestedPeersData?.pages[0].totalElements;
 
   const navigation =
     useNavigation<NativeStackNavigationProp<PeersNavParamList>>();
 
   const loadMorePeers = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+    if (activeTab === 'myPeers') {
+      if (myPeersHasNextPage && !myPeersIsFetchingNextPage) {
+        myPeersFetchNextPage();
+      }
     }
-    if (searchHasNextPage && !searchIsFetchingNextPage) {
-      searchFetchNextPage();
+    if (activeTab === 'recommendPeers') {
+      if (debouncedSearchQuery.length > 0) {
+        if (searchHasNextPage && !searchIsFetchingNextPage) {
+          searchFetchNextPage();
+        }
+      } else {
+        if (peersHasNextPage && !peersIsFetchingNextPage) {
+          peersFetchNextPage();
+        }
+      }
+    }
+    if (activeTab === 'requestedPeers') {
+      if (requestedPeersHasNextPage && !requestedPeersIsFetchingNextPage) {
+        requestedPeersFetchNextPage();
+      }
     }
   }, [
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
+    peersHasNextPage,
+    peersIsFetchingNextPage,
+    peersFetchNextPage,
+    requestedPeersHasNextPage,
+    requestedPeersIsFetchingNextPage,
+    requestedPeersFetchNextPage,
     searchHasNextPage,
     searchIsFetchingNextPage,
     searchFetchNextPage,
+    myPeersHasNextPage,
+    myPeersIsFetchingNextPage,
   ]);
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
-    debouncedSearchQuery !== '' ? searchRefetch() : refetch();
+    activeTab === 'myPeers'
+      ? myPeersRefetch()
+      : activeTab === 'recommendPeers'
+      ? peersRefetch()
+      : activeTab === 'requestedPeers'
+      ? requestedPeersRefetch()
+      : peersRefetch();
     setIsRefreshing(false);
-  }, [refetch, searchRefetch]);
+  }, [peersRefetch, requestedPeersRefetch]);
 
-  // if (peersLoading || searchPeersLoading) {
+  // const renderHeader = () => {
   //   return (
-  //     <SafeAreaView
-  //       style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-  //       <ActivityIndicator size="large" />
-  //     </SafeAreaView>
-  //   );
-  // }
 
-  const renderHeader = () => {
-    return (
-      <>
-        <View>
-          <Pressable
-            style={styles.request}
-            onPress={() => navigation.navigate('PeerRequest')}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginBottom: 8,
-              }}>
-              <Text style={{fontSize: 16}}>받은 요청</Text>
-              {requestedPeersCount > 0 && (
-                <View style={styles.requestCount}>
-                  <Text style={{color: '#FFFFFF', fontSize: 12}}>
-                    {requestedPeersCount}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <Icon name="chevron-right" size={24} />
-          </Pressable>
-        </View>
-      </>
-    );
-  };
+  //   );
+  // };
 
   const renderItems = (item: any) => {
     return (
@@ -179,15 +240,6 @@ export default function Peers() {
       </View>
     );
   };
-
-  if (peersLoading || searchPeersLoading) {
-    return (
-      <SafeAreaView
-        style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-        <ActivityIndicator size="large" />
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView
@@ -204,43 +256,82 @@ export default function Peers() {
         <Text style={{fontSize: 24}}>동료 맺기</Text>
         <View style={{width: 20}} />
       </View>
-      <View style={styles.searchContainer}>
-        <Icon
-          name="search"
-          size={32}
-          color={'#000000'}
-          style={styles.searchIcon}
-        />
-        <TextInput
-          placeholder="검색어를 입력해주세요"
-          placeholderTextColor={colors.gray}
-          style={[styles.searchInput]}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery.length > 0 && (
+      <>
+        <View style={styles.tabRow}>
+          {TAB_LIST.map(tab => {
+            const isRequestTab = tab.key === 'requestedPeers';
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={[
+                  styles.tabBtn,
+                  activeTab === tab.key && styles.activeTabBtn,
+                ]}
+                onPress={() =>
+                  setActiveTab(
+                    tab.key as 'myPeers' | 'recommendPeers' | 'requestedPeers',
+                  )
+                }>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      activeTab === tab.key && styles.activeTabLabel,
+                    ]}>
+                    {tab.label}
+                  </Text>
+                  {isRequestTab && requestedPeersCount > 0 && (
+                    <View style={styles.requestCount}>
+                      <Text style={{color: '#FFFFFF', fontSize: 12}}>
+                        {requestedPeersCount}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <View style={styles.searchContainer}>
           <Icon
+            name="search"
+            size={32}
+            color={'#000000'}
             style={styles.searchIcon}
-            name="cancel"
-            size={24}
-            color="#a1a1a1"
-            onPress={() => setSearchQuery('')}
           />
+          <TextInput
+            placeholder="검색어를 입력해주세요"
+            placeholderTextColor={colors.gray}
+            style={[styles.searchInput]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <Icon
+              style={styles.searchIcon}
+              name="cancel"
+              size={24}
+              color="#a1a1a1"
+              onPress={() => setSearchQuery('')}
+            />
+          )}
+        </View>
+        {(peersLoading || myPeersLoading || requestedPeersLoading) && (
+          <ActivityIndicator size="small" color={colors.primary} />
         )}
-      </View>
+      </>
       <FlatList
         data={users}
         renderItem={renderItems}
         keyExtractor={item => item.id}
         onRefresh={handleRefresh}
         refreshing={isRefreshing}
-        ListHeaderComponent={searchQuery.length > 0 ? null : renderHeader}
         contentContainerStyle={[{paddingHorizontal: 16, paddingTop: 8}]}
         showsVerticalScrollIndicator={false}
         onEndReached={loadMorePeers}
         onEndReachedThreshold={0.1}
         ListFooterComponent={
-          !hasNextPage ? <View style={{height: 80}} /> : null
+          !peersHasNextPage ? <View style={{height: 80}} /> : null
         }
         numColumns={2}
         columnWrapperStyle={{
@@ -248,7 +339,15 @@ export default function Peers() {
           marginBottom: 16,
         }}
         ListEmptyComponent={
-          <Text style={{textAlign: 'center'}}>동료가 없습니다.</Text>
+          <View
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: 300,
+            }}>
+            <Text style={{textAlign: 'center'}}>동료가 없습니다.</Text>
+          </View>
         }
         extraData={searchQuery}
       />
@@ -297,8 +396,34 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 99,
-    marginLeft: 12,
+    marginLeft: 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  tabRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.switchBG,
+    marginTop: 24,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTabBtn: {
+    borderBottomColor: colors.accent,
+  },
+  tabLabel: {
+    fontSize: 16,
+    color: colors.gray,
+    fontWeight: 'bold',
+  },
+  activeTabLabel: {
+    color: colors.accent,
+    fontWeight: 'bold',
   },
 });

@@ -37,6 +37,7 @@ const VerificationCard = ({item}: {item: any}) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: ['verification']});
+      queryClient.invalidateQueries({queryKey: ['myBookmarkCount']});
       Toast.show({type: 'success', text1: '저장되었습니다'});
     },
     onError: (error: any) => {
@@ -51,6 +52,7 @@ const VerificationCard = ({item}: {item: any}) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: ['verification']});
+      queryClient.invalidateQueries({queryKey: ['myBookmarkCount']});
       Toast.show({type: 'success', text1: '저장이 취소되었습니다'});
     },
     onError: (error: any) => {
@@ -201,6 +203,7 @@ const VerificationCard = ({item}: {item: any}) => {
         visible={isProfileVisible}
         onClose={() => setProfileVisible(false)}
         userId={selecteUser}
+        fromContext="general"
       />
     </>
   );

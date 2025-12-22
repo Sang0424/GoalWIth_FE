@@ -23,7 +23,7 @@ import instance from '../utils/axiosInterceptor';
 import {useQuery} from '@tanstack/react-query';
 import {colors} from '../styles/theme';
 import type {RootStackParamList} from '../types/navigation';
-import {useNavigation} from '@react-navigation/native';
+import {StackActions, useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 // --- Type Definitions ---
@@ -52,6 +52,7 @@ interface ProfileBottomSheetProps {
   visible: boolean;
   onClose: () => void;
   userId: number | undefined;
+  fromContext: 'drawer' | 'general';
 }
 
 // --- Component ---
@@ -59,6 +60,7 @@ const ProfileBottomSheet = ({
   visible,
   onClose,
   userId,
+  fromContext = 'general',
 }: ProfileBottomSheetProps) => {
   const {height: screenHeight} = useWindowDimensions();
   const translateY = useSharedValue(screenHeight);
@@ -182,13 +184,17 @@ const ProfileBottomSheet = ({
                         style={styles.questCard}
                         onPress={() => {
                           closeModalWithAnimation();
-                          // navigation.navigate('VerificationNav', {
-                          //   screen: 'QuestVerification',
-                          //   params: {id: user.main_quest.id},
-                          // });
-                          navigation.navigate('QuestVerification', {
-                            id: user.main_quest.id,
-                          });
+                          fromContext === 'drawer'
+                            ? navigation.navigate('PeersDrawer', {
+                                screen: 'PeersNav',
+                                params: {
+                                  screen: 'QuestVerification',
+                                  params: {id: user.main_quest.id},
+                                },
+                              })
+                            : navigation.navigate('QuestVerification', {
+                                id: user.main_quest.id,
+                              });
                         }}>
                         <Text style={styles.questTitle}>
                           {user.main_quest.title}

@@ -2,6 +2,7 @@ import React from 'react';
 import {createDrawerNavigator} from '@react-navigation/drawer';
 import CustomDrawerContent from '../screens/peers/CustomDrawerContent';
 import PeersNav from './PeersNav';
+import QuestVerification from '../screens/verification/QuestVerification';
 import {PeersDrawerParamList} from '../types/navigation';
 
 const Drawer = createDrawerNavigator<PeersDrawerParamList>();

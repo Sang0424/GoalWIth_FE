@@ -11,7 +11,6 @@
 		37B6E3C2131C8408FB760AC6 /* Pods_GoalWith.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C105CCF4421A2AC5B4A6C24 /* Pods_GoalWith.framework */; };
 		3E98432B9A2BBEA8DCB5762C /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73445A2FF24B00A17B92CF29 /* ExpoModulesProvider.swift */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
-		9A422B852ECF220500DF3C10 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9A422B842ECF220500DF3C10 /* GoogleService-Info.plist */; };
 		B974771CF5B941A48352D837 /* BootSplash.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = BE05BCD0F0224B859091F6B4 /* BootSplash.storyboard */; };
 		BA4B9E393DA2702AC189E80E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		CFE3E141742C407CA20B4B4C /* Colors.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A59B8C56E224FDB9097E455 /* Colors.xcassets */; };
@@ -27,7 +26,6 @@
 		738A9380AB0710756AF94531 /* Pods-GoalWith.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GoalWith.debug.xcconfig"; path = "Target Support Files/Pods-GoalWith/Pods-GoalWith.debug.xcconfig"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = GoalWith/AppDelegate.swift; sourceTree = "<group>"; };
 		7C105CCF4421A2AC5B4A6C24 /* Pods_GoalWith.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GoalWith.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		9A422B842ECF220500DF3C10 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		9A8886FD2ECDD14300AFA972 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		9A8886FE2ECDD15000AFA972 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		9ABB2E3D2E8D2959002640AC /* GoalWith-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "GoalWith-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -96,7 +94,6 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				9A422B842ECF220500DF3C10 /* GoogleService-Info.plist */,
 				9ABB2E3D2E8D2959002640AC /* GoalWith-Bridging-Header.h */,
 				13B07FAE1A68108700A75B9A /* GoalWith */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
@@ -140,13 +137,14 @@
 				6729B1A7A31B73A17063629F /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
-				9AB2A0CF2ECE0EF8001A3A47 /* Copy GoogleService-Info.plist */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
+				9AB2A0CF2ECE0EF8001A3A47 /* Copy GoogleService-Info.plist */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				435EF84C68C48D9E5EF91A8A /* [CP] Embed Pods Frameworks */,
 				D76D0445EB3FC30CED0094AC /* [CP] Copy Pods Resources */,
 				9FB9BD07A078AC1513AEAC05 /* [CP-User] [RNFB] Core Configuration */,
 				D144063AC822CA7842B965AC /* [CP-User] [RNGoogleMobileAds] Configuration */,
+				37EED40B9D66DF0A881D5A75 /* [CP-User] [RNFB] Crashlytics Configuration */,
 			);
 			buildRules = (
 			);
@@ -196,7 +194,6 @@
 			files = (
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				BA4B9E393DA2702AC189E80E /* PrivacyInfo.xcprivacy in Resources */,
-				9A422B852ECF220500DF3C10 /* GoogleService-Info.plist in Resources */,
 				B974771CF5B941A48352D837 /* BootSplash.storyboard in Resources */,
 				CFE3E141742C407CA20B4B4C /* Colors.xcassets in Resources */,
 			);
@@ -220,6 +217,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "if [[ -f \"$PODS_ROOT/../.xcode.env\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env\"\nfi\nif [[ -f \"$PODS_ROOT/../.xcode.env.local\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.local\"\nfi\n\n# The project root by default is one level up from the ios directory\nexport PROJECT_ROOT=\"$PROJECT_DIR\"/..\n\nif [[ \"$CONFIGURATION\" = *Debug* ]]; then\n  export SKIP_BUNDLING=1\nfi\nif [[ -z \"$ENTRY_FILE\" ]]; then\n  # Set the entry JS file using the bundler's entry resolution.\n  export ENTRY_FILE=\"$(\"$NODE_BINARY\" -e \"require('expo/scripts/resolveAppEntry')\" \"$PROJECT_ROOT\" ios absolute | tail -n 1)\"\nfi\n\nif [[ -z \"$CLI_PATH\" ]]; then\n  # Use Expo CLI\n  export CLI_PATH=\"$(\"$NODE_BINARY\" --print \"require.resolve('@expo/cli')\")\"\nfi\nif [[ -z \"$BUNDLE_COMMAND\" ]]; then\n  # Default Expo CLI command for bundling\n  export BUNDLE_COMMAND=\"export:embed\"\nfi\n\n`\"$NODE_BINARY\" --print \"require('path').dirname(require.resolve('react-native/package.json')) + '/scripts/react-native-xcode.sh'\"`\n";
+		};
+		37EED40B9D66DF0A881D5A75 /* [CP-User] [RNFB] Crashlytics Configuration */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}",
+				"$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)",
+			);
+			name = "[CP-User] [RNFB] Crashlytics Configuration";
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/usr/bin/env bash\n#\n# Copyright (c) 2016-present Invertase Limited & Contributors\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this library except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#   http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n#\nset -e\n\nif [[ ${PODS_ROOT} ]]; then\n  echo \"info: Exec FirebaseCrashlytics Run from Pods\"\n  \"${PODS_ROOT}/FirebaseCrashlytics/run\"\nelse\n  echo \"info: Exec FirebaseCrashlytics Run from framework\"\n  \"${PROJECT_DIR}/FirebaseCrashlytics.framework/run\"\nfi\n";
 		};
 		435EF84C68C48D9E5EF91A8A /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -277,7 +288,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\ncase \"${CONFIGURATION}\" in\n    \"Dev\")\n        cp \"${SRCROOT}/Config/GoogleService-Info-Dev.plist\" \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\n        ;;\n    \"Prod\")\n        cp \"${SRCROOT}/Config/GoogleService-Info-Prod.plist\" \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\n        ;;\nesac\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\ncase \"${CONFIGURATION}\" in\n    \"Debug\")\n        cp \"${SRCROOT}/GoogleService-Info-Dev.plist\" \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\n        ;;\n    \"Release\")\n        cp \"${SRCROOT}/GoogleService-Info-Prod.plist\" \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\n        ;;\nesac\n";
 		};
 		9FB9BD07A078AC1513AEAC05 /* [CP-User] [RNFB] Core Configuration */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -369,7 +380,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 7;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 7WDTV4D6JN;
 				DISPLAY_NAME = GoalWith_Debug;
@@ -408,7 +419,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 7;
 				DEAD_CODE_STRIPPING = YES;
 				DISPLAY_NAME = GoalWith;
 				ENABLE_HARDENED_RUNTIME = YES;

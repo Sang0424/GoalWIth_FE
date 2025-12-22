@@ -95,18 +95,81 @@ PODS:
     - Yoga
   - fast_float (8.0.0)
   - FBLazyVector (0.81.4)
-  - Firebase/CoreOnly (12.4.0):
-    - FirebaseCore (~> 12.4.0)
-  - FirebaseCore (12.4.0):
-    - FirebaseCoreInternal (~> 12.4.0)
+  - Firebase/CoreOnly (12.6.0):
+    - FirebaseCore (~> 12.6.0)
+  - Firebase/Crashlytics (12.6.0):
+    - Firebase/CoreOnly
+    - FirebaseCrashlytics (~> 12.6.0)
+  - FirebaseAnalytics/Core (12.6.0):
+    - FirebaseCore (~> 12.6.0)
+    - FirebaseInstallations (~> 12.6.0)
+    - GoogleAppMeasurement/Core (= 12.6.0)
+    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
+    - GoogleUtilities/MethodSwizzler (~> 8.1)
+    - GoogleUtilities/Network (~> 8.1)
+    - "GoogleUtilities/NSData+zlib (~> 8.1)"
+    - nanopb (~> 3.30910.0)
+  - FirebaseAnalytics/IdentitySupport (12.6.0):
+    - FirebaseCore (~> 12.6.0)
+    - FirebaseInstallations (~> 12.6.0)
+    - GoogleAppMeasurement/IdentitySupport (= 12.6.0)
+    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
+    - GoogleUtilities/MethodSwizzler (~> 8.1)
+    - GoogleUtilities/Network (~> 8.1)
+    - "GoogleUtilities/NSData+zlib (~> 8.1)"
+    - nanopb (~> 3.30910.0)
+  - FirebaseCore (12.6.0):
+    - FirebaseCoreInternal (~> 12.6.0)
     - GoogleUtilities/Environment (~> 8.1)
     - GoogleUtilities/Logger (~> 8.1)
-  - FirebaseCoreInternal (12.4.0):
+  - FirebaseCoreExtension (12.6.0):
+    - FirebaseCore (~> 12.6.0)
+  - FirebaseCoreInternal (12.6.0):
     - "GoogleUtilities/NSData+zlib (~> 8.1)"
+  - FirebaseCrashlytics (12.6.0):
+    - FirebaseCore (~> 12.6.0)
+    - FirebaseInstallations (~> 12.6.0)
+    - FirebaseRemoteConfigInterop (~> 12.6.0)
+    - FirebaseSessions (~> 12.6.0)
+    - GoogleDataTransport (~> 10.1)
+    - GoogleUtilities/Environment (~> 8.1)
+    - nanopb (~> 3.30910.0)
+    - PromisesObjC (~> 2.4)
+  - FirebaseInstallations (12.6.0):
+    - FirebaseCore (~> 12.6.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
+    - PromisesObjC (~> 2.4)
+  - FirebaseRemoteConfigInterop (12.6.0)
+  - FirebaseSessions (12.6.0):
+    - FirebaseCore (~> 12.6.0)
+    - FirebaseCoreExtension (~> 12.6.0)
+    - FirebaseInstallations (~> 12.6.0)
+    - GoogleDataTransport (~> 10.1)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
+    - nanopb (~> 3.30910.0)
+    - PromisesSwift (~> 2.1)
   - fmt (11.0.2)
   - glog (0.3.5)
   - Google-Mobile-Ads-SDK (12.11.0):
     - GoogleUserMessagingPlatform (>= 1.1)
+  - GoogleAppMeasurement/Core (12.6.0):
+    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
+    - GoogleUtilities/MethodSwizzler (~> 8.1)
+    - GoogleUtilities/Network (~> 8.1)
+    - "GoogleUtilities/NSData+zlib (~> 8.1)"
+    - nanopb (~> 3.30910.0)
+  - GoogleAppMeasurement/IdentitySupport (12.6.0):
+    - GoogleAppMeasurement/Core (= 12.6.0)
+    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
+    - GoogleUtilities/MethodSwizzler (~> 8.1)
+    - GoogleUtilities/Network (~> 8.1)
+    - "GoogleUtilities/NSData+zlib (~> 8.1)"
+    - nanopb (~> 3.30910.0)
+  - GoogleDataTransport (10.1.0):
+    - nanopb (~> 3.30910.0)
+    - PromisesObjC (~> 2.4)
   - GoogleSignIn (9.0.0):
     - AppAuth (~> 2.0)
     - AppCheckCore (~> 11.0)
@@ -188,7 +251,14 @@ PODS:
   - libwebp/sharpyuv (1.5.0)
   - libwebp/webp (1.5.0):
     - libwebp/sharpyuv
+  - nanopb (3.30910.0):
+    - nanopb/decode (= 3.30910.0)
+    - nanopb/encode (= 3.30910.0)
+  - nanopb/decode (3.30910.0)
+  - nanopb/encode (3.30910.0)
   - PromisesObjC (2.4.0)
+  - PromisesSwift (2.4.0):
+    - PromisesObjC (= 2.4.0)
   - RCT-Folly (2024.11.18.00):
     - boost
     - DoubleConversion
@@ -2589,9 +2659,19 @@ PODS:
     - Yoga
   - RNDateTimePicker (8.4.5):
     - React-Core
-  - RNFBApp (23.5.0):
-    - Firebase/CoreOnly (= 12.4.0)
+  - RNFBAnalytics (23.7.0):
+    - FirebaseAnalytics/Core (= 12.6.0)
+    - FirebaseAnalytics/IdentitySupport (= 12.6.0)
     - React-Core
+    - RNFBApp
+  - RNFBApp (23.7.0):
+    - Firebase/CoreOnly (= 12.6.0)
+    - React-Core
+  - RNFBCrashlytics (23.7.0):
+    - Firebase/Crashlytics (= 12.6.0)
+    - FirebaseCoreExtension
+    - React-Core
+    - RNFBApp
   - RNGestureHandler (2.28.0):
     - boost
     - DoubleConversion
@@ -2652,6 +2732,8 @@ PODS:
     - Yoga
   - RNGoogleSignin (16.0.0):
     - GoogleSignIn (~> 9.0)
+    - React-Core
+  - RNPermissions (5.4.4):
     - React-Core
   - RNReanimated (3.19.4):
     - boost
@@ -2859,9 +2941,9 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - SDWebImage (5.21.4):
-    - SDWebImage/Core (= 5.21.4)
-  - SDWebImage/Core (5.21.4)
+  - SDWebImage (5.21.5):
+    - SDWebImage/Core (= 5.21.5)
+  - SDWebImage/Core (5.21.5)
   - SDWebImageAVIFCoder (0.11.1):
     - libavif/core (>= 0.11.0)
     - SDWebImage (~> 5.10)
@@ -2968,10 +3050,13 @@ DEPENDENCIES:
   - "RNCKakaoCore (from `../node_modules/@react-native-kakao/core`)"
   - "RNCKakaoUser (from `../node_modules/@react-native-kakao/user`)"
   - "RNDateTimePicker (from `../node_modules/@react-native-community/datetimepicker`)"
+  - "RNFBAnalytics (from `../node_modules/@react-native-firebase/analytics`)"
   - "RNFBApp (from `../node_modules/@react-native-firebase/app`)"
+  - "RNFBCrashlytics (from `../node_modules/@react-native-firebase/crashlytics`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - RNGoogleMobileAds (from `../node_modules/react-native-google-mobile-ads`)
   - "RNGoogleSignin (from `../node_modules/@react-native-google-signin/google-signin`)"
+  - RNPermissions (from `../node_modules/react-native-permissions`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNVectorIcons (from `../node_modules/react-native-vector-icons`)
@@ -2984,9 +3069,17 @@ SPEC REPOS:
     - AppAuth
     - AppCheckCore
     - Firebase
+    - FirebaseAnalytics
     - FirebaseCore
+    - FirebaseCoreExtension
     - FirebaseCoreInternal
+    - FirebaseCrashlytics
+    - FirebaseInstallations
+    - FirebaseRemoteConfigInterop
+    - FirebaseSessions
     - Google-Mobile-Ads-SDK
+    - GoogleAppMeasurement
+    - GoogleDataTransport
     - GoogleSignIn
     - GoogleUserMessagingPlatform
     - GoogleUtilities
@@ -2998,7 +3091,9 @@ SPEC REPOS:
     - libavif
     - libdav1d
     - libwebp
+    - nanopb
     - PromisesObjC
+    - PromisesSwift
     - SDWebImage
     - SDWebImageAVIFCoder
     - SDWebImageSVGCoder
@@ -3185,14 +3280,20 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-kakao/user"
   RNDateTimePicker:
     :path: "../node_modules/@react-native-community/datetimepicker"
+  RNFBAnalytics:
+    :path: "../node_modules/@react-native-firebase/analytics"
   RNFBApp:
     :path: "../node_modules/@react-native-firebase/app"
+  RNFBCrashlytics:
+    :path: "../node_modules/@react-native-firebase/crashlytics"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
   RNGoogleMobileAds:
     :path: "../node_modules/react-native-google-mobile-ads"
   RNGoogleSignin:
     :path: "../node_modules/@react-native-google-signin/google-signin"
+  RNPermissions:
+    :path: "../node_modules/react-native-permissions"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
@@ -3219,12 +3320,20 @@ SPEC CHECKSUMS:
   ExpoModulesCore: 693b89b05dce9a2f14c2688bd870e8251a9c1cac
   fast_float: b32c788ed9c6a8c584d114d0047beda9664e7cc6
   FBLazyVector: 941bef1c8eeabd9fe1f501e30a5220beee913886
-  Firebase: f07b15ae5a6ec0f93713e30b923d9970d144af3e
-  FirebaseCore: bb595f3114953664e3c1dc032f008a244147cfd3
-  FirebaseCoreInternal: d7f5a043c2cd01a08103ab586587c1468047bca6
+  Firebase: a451a7b61536298fd5cbfe3a746fd40443a50679
+  FirebaseAnalytics: d0a97a0db6425e5a5d966340b87f92ca7b13a557
+  FirebaseCore: 0e38ad5d62d980a47a64b8e9301ffa311457be04
+  FirebaseCoreExtension: 032fd6f8509e591fda8cb76f6651f20d926b121f
+  FirebaseCoreInternal: 69bf1306a05b8ac43004f6cc1f804bb7b05b229e
+  FirebaseCrashlytics: 3d6248c50726ee7832aef0e53cb84c9e64d9fa7e
+  FirebaseInstallations: 631b38da2e11a83daa4bfb482f79d286a5dfa7ad
+  FirebaseRemoteConfigInterop: 3443b8cb8fffd76bb3e03b2a84bfd3db952fcda4
+  FirebaseSessions: 2e8f808347e665dff3e5843f275715f07045297d
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
   Google-Mobile-Ads-SDK: b833c723759e32bbaf06edaaf2293f08ed898232
+  GoogleAppMeasurement: 3bf40aff49a601af5da1c3345702fcb4991d35ee
+  GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleSignIn: c7f09cfbc85a1abf69187be091997c317cc33b77
   GoogleUserMessagingPlatform: f8d0cdad3ca835406755d0a69aa634f00e76d576
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
@@ -3237,7 +3346,9 @@ SPEC CHECKSUMS:
   libavif: 84bbb62fb232c3018d6f1bab79beea87e35de7b7
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
+  nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  PromisesSwift: 9d77319bbe72ebf6d872900551f7eeba9bce2851
   RCT-Folly: 59ec0ac1f2f39672a0c6e6cecdd39383b764646f
   RCTDeprecation: c0ed3249a97243002615517dff789bf4666cf585
   RCTRequired: 58719f5124f9267b5f9649c08bf23d9aea845b23
@@ -3311,20 +3422,23 @@ SPEC CHECKSUMS:
   RNCKakaoCore: 500540b239b9c5fd77c8a7869fa2ad35658edca0
   RNCKakaoUser: df383dcdcd60f219f42c2b944fc913b6a6eabb53
   RNDateTimePicker: e1e3719be6e3f88077c44037f44070ff6c476bac
-  RNFBApp: a349eebf3b10a0b9104ed5cf262732678eacd2a5
+  RNFBAnalytics: e9bef9ce5bd12e1c5fdac9e0a8a51fc81b2c7592
+  RNFBApp: 29f12d21b6166565e03b4ae36bc070498d6e159d
+  RNFBCrashlytics: 2683f284707fe5d6f0c1fb3748b844fac5610240
   RNGestureHandler: 45e64176c38c837aac6b4c77fe621d6fdb96ec69
   RNGoogleMobileAds: 2d04d095a134101879164bfc5f75eb3c08b63eef
   RNGoogleSignin: 148238e1591197de5a07d7621f23e52136820a73
+  RNPermissions: 786974f1d5c517c169d476db8f76aca5dad41998
   RNReanimated: d190df3a49e472abd15ffc8a2e05b81141d5e6f6
   RNScreens: 06b6abfbc4f5e456cd3dbdf8b4d8b9f1e0d9c833
   RNVectorIcons: 84bfd4353c8686c1615768a738510191a6bc8a34
-  SDWebImage: d0184764be51240d49c761c37f53dd017e1ccaaf
+  SDWebImage: e9c98383c7572d713c1a0d7dd2783b10599b9838
   SDWebImageAVIFCoder: afe194a084e851f70228e4be35ef651df0fc5c57
   SDWebImageSVGCoder: 15a300a97ec1c8ac958f009c02220ac0402e936c
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 9b30b783a17681321b52ac507a37219d7d795ace
 
-PODFILE CHECKSUM: 650a1f62c2abb195654660db68e62bead4a60c22
+PODFILE CHECKSUM: d96e1332685725b9c201c7dc2b78697f121444b1
 
 COCOAPODS: 1.16.2

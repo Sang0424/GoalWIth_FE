@@ -11,8 +11,9 @@ import {
   Pressable,
   Platform,
   Keyboard,
+  KeyboardAvoidingView,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
@@ -37,6 +38,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {colors} from '../../styles/theme';
 import {userStore} from '../../store/userStore';
+import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<
   QuestVerificationProps,
@@ -60,6 +62,20 @@ const QuestVerification = () => {
   const contentHeight = useRef(0);
   const scrollViewHeight = useRef(0);
   const user = userStore(state => state.user);
+  const insets = useSafeAreaInsets();
+  const TAB_BAR_HEIGHT = Platform.select({
+    ios: 49,
+    android: 0,
+  });
+
+  let tabBarHeight = 0;
+
+  try {
+    // 이 화면이 TabNavigator 안에 있다면 실제 높이를 반환하고, 없으면 에러가 발생합니다.
+    tabBarHeight = useBottomTabBarHeight();
+  } catch (e) {
+    tabBarHeight = 0;
+  }
 
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
@@ -86,7 +102,9 @@ const QuestVerification = () => {
 
   useEffect(() => {
     const keyboardWillShow = (e: any) => {
-      startAnimation(-e.endCoordinates?.height + 81);
+      const bottomInset = Math.max(insets.bottom, 16);
+      const offset = bottomInset + (TAB_BAR_HEIGHT || 0);
+      startAnimation(-e.endCoordinates?.height + offset);
     };
 
     const keyboardWillHide = () => {
@@ -141,6 +159,9 @@ const QuestVerification = () => {
       queryClient.invalidateQueries({
         queryKey: ['Verification'],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['myVerificationCount'],
+      });
       Alert.alert('인증 댓글이 추가되었습니다.');
     },
     onError: (error: any) => {
@@ -185,6 +206,9 @@ const QuestVerification = () => {
     },
     onSuccess: () => {
       refetch();
+      queryClient.invalidateQueries({
+        queryKey: ['myVerificationCount'],
+      });
       Alert.alert('삭제', '인증 댓글이 삭제되었습니다.');
     },
     onError: (error: any) => {
@@ -227,7 +251,7 @@ const QuestVerification = () => {
             fontWeight: 'bold',
             color: colors.font,
           }}>
-          기록이 없습니다
+          기록을 볼 수 없습니다.잠시 후 다시 시도해주세요.
         </Text>
       </SafeAreaView>
     );
@@ -261,6 +285,7 @@ const QuestVerification = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
+        keyboardDismissMode="on-drag"
         ref={scrollViewRef}
         onContentSizeChange={(_, height) => {
           contentHeight.current = height;
@@ -609,9 +634,10 @@ const styles = StyleSheet.create({
     color: colors.gray,
   },
   recordText: {
-    fontSize: 16,
+    fontSize: 18,
     lineHeight: 22,
     color: colors.font,
+    marginTop: 12,
   },
   timelineSection: {
     padding: 16,

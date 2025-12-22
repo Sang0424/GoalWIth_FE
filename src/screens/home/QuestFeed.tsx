@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {useRef, useEffect, useCallback} from 'react';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -45,6 +45,8 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   const {keyboardHeight} = useKeyboardHeight();
   const scrollViewRef = useRef<ScrollView>(null);
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
+  const TAB_BAR_HEIGHT = 49;
 
   const blurhash =
     '|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[';
@@ -165,7 +167,8 @@ const QuestFeed = ({route}: QuestFeedProps) => {
 
   useEffect(() => {
     const keyboardWillShow = (e: any) => {
-      startAnimation(-e.endCoordinates?.height + 81);
+      const offset = insets.bottom + TAB_BAR_HEIGHT;
+      startAnimation(-e.endCoordinates?.height + offset);
     };
 
     const keyboardWillHide = () => {
@@ -398,7 +401,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               <Ionicons name="time-outline" size={50} color={colors.font} />
               <Text style={styles.emptyStateText}>아직 기록이 없습니다.</Text>
               <Text style={styles.emptyStateSubtext}>
-                오늘의 활동을 기록해보세요!
+                {questParam.verificationRequired
+                  ? '기록이 하나 이상이고 완료 날짜가 지나야 인증을 받을 수 있습니다!'
+                  : '기록이 하나 이상이고 완료 날짜가 지나야 완료할 수 있습니다!'}
               </Text>
             </View>
           ) : (
@@ -467,7 +472,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={
-                new Date(quest.endDate) < new Date()
+                questRecord?.length > 0 &&
+                new Date(quest.endDate) < new Date() &&
+                questParam.procedure === 'progress'
                   ? [styles.actionButton, styles.completeButton]
                   : [
                       styles.actionButton,
@@ -484,10 +491,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               disabled={
                 questRecord?.length === 0 ||
                 new Date(quest.endDate) > new Date() ||
-                questParam.procedure === 'verify'
-                  ? questParam.verificationCount <
-                    questParam.requiredVerification
-                  : false
+                (questParam.procedure === 'verify' &&
+                  questParam.verificationCount <
+                    questParam.requiredVerification)
               }>
               <Ionicons name="checkmark-circle" size={18} color="white" />
               {questParam.verificationRequired &&
@@ -626,15 +632,16 @@ const styles = StyleSheet.create({
     color: colors.font,
   },
   emptyStateSubtext: {
-    marginTop: 5,
+    marginTop: 12,
     fontSize: 14,
-    color: colors.font,
+    color: colors.gray,
+    textAlign: 'center',
   },
   recordCard: {
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 15,
-    marginBottom: 12,
+    marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
@@ -658,9 +665,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   recordText: {
-    fontSize: 14,
+    fontSize: 18,
     lineHeight: 22,
     color: colors.font,
+    marginTop: 12,
   },
   inputContainer: {
     position: 'absolute',

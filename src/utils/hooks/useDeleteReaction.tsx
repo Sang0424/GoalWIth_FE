@@ -64,6 +64,7 @@ export const useDeleteReaction = (
       queryClient.invalidateQueries({queryKey});
       queryClient.invalidateQueries({queryKey: ['reactions', targetId]});
       queryClient.invalidateQueries({queryKey: ['recordReactions', targetId]});
+      queryClient.invalidateQueries({queryKey: ['myReactionCount']});
     },
   });
 };

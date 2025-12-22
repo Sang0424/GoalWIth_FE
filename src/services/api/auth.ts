@@ -21,9 +21,6 @@ export const configureGoogleSignIn = () => {
   });
 };
 
-console.log(Config.GOOGLE_CLIENT_ID);
-console.log(Config.GOOGLE_IOS_CLIENT_ID);
-
 /**
  * Google 계정으로 로그인합니다.
  * @returns {Promise<string | null>} 성공 시 idToken, 실패 시 null을 반환합니다.
