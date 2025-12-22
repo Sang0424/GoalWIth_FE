@@ -24,18 +24,22 @@ export const useRewardSync = () => {
   const {data: charCount} = useQuery({
     queryKey: ['myCharacters'],
     queryFn: getMyCharacters,
-    staleTime: 1000 * 60 * 5, // 5분 정도는 캐시 유지 (너무 자주 호출 방지)
     enabled: user.id >= 0,
-    refetchOnWindowFocus: false,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchInterval: 1000 * 60 * 5,
+    refetchOnWindowFocus: true,
   });
 
   // 2. 배지 데이터 감시
   const {data: badgesCount} = useQuery({
     queryKey: ['myBadges'],
     queryFn: getMyBadges,
-    staleTime: 1000 * 60 * 5,
     enabled: user.id >= 0,
-    refetchOnWindowFocus: false,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchInterval: 1000 * 60 * 5,
+    refetchOnWindowFocus: true,
   });
 
   // 3. [핵심] React Query 데이터가 바뀌면 -> Zustand Store에 즉시 반영

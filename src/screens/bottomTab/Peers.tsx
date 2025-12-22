@@ -33,7 +33,7 @@ const PAGE_SIZE = 10;
 
 const TAB_LIST = [
   {key: 'myPeers', label: '나의 동료'},
-  {key: 'recommendPeers', label: '추천 동료'},
+  {key: 'searchPeers', label: '동료 검색'},
   {key: 'requestedPeers', label: '받은 요청'},
 ];
 
@@ -41,7 +41,7 @@ export default function Peers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'myPeers' | 'recommendPeers' | 'requestedPeers'
+    'myPeers' | 'searchPeers' | 'requestedPeers'
   >('myPeers');
   const queryClient = useQueryClient();
 
@@ -157,14 +157,14 @@ export default function Peers() {
       return undefined;
     },
     initialPageParam: 0,
-    enabled: debouncedSearchQuery.length > 0 && activeTab === 'recommendPeers',
+    enabled: debouncedSearchQuery.length > 0 && activeTab === 'searchPeers',
     placeholderData: previousData => previousData,
   });
 
   const users = useMemo(() => {
     return activeTab === 'myPeers'
       ? myPeersData?.pages.flatMap(page => page.content) || []
-      : activeTab === 'recommendPeers'
+      : activeTab === 'searchPeers'
       ? debouncedSearchQuery.length > 0
         ? searchPeersData?.pages.flatMap(page => page.content) || []
         : peersData?.pages.flatMap(page => page.content) || []
@@ -184,7 +184,7 @@ export default function Peers() {
         myPeersFetchNextPage();
       }
     }
-    if (activeTab === 'recommendPeers') {
+    if (activeTab === 'searchPeers') {
       if (debouncedSearchQuery.length > 0) {
         if (searchHasNextPage && !searchIsFetchingNextPage) {
           searchFetchNextPage();
@@ -218,7 +218,7 @@ export default function Peers() {
     setIsRefreshing(true);
     activeTab === 'myPeers'
       ? myPeersRefetch()
-      : activeTab === 'recommendPeers'
+      : activeTab === 'searchPeers'
       ? peersRefetch()
       : activeTab === 'requestedPeers'
       ? requestedPeersRefetch()
@@ -236,6 +236,17 @@ export default function Peers() {
     return (
       <View
         style={{marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>
+        {activeTab === 'searchPeers' ? (
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: 'bold',
+              color: colors.font,
+              marginBottom: 16,
+            }}>
+            추천 동료
+          </Text>
+        ) : undefined}
         <UserCard user={item.item} from="peers" />
       </View>
     );
@@ -269,7 +280,7 @@ export default function Peers() {
                 ]}
                 onPress={() =>
                   setActiveTab(
-                    tab.key as 'myPeers' | 'recommendPeers' | 'requestedPeers',
+                    tab.key as 'myPeers' | 'searchPeers' | 'requestedPeers',
                   )
                 }>
                 <View style={{flexDirection: 'row', alignItems: 'center'}}>
@@ -393,10 +404,10 @@ const styles = StyleSheet.create({
   },
   requestCount: {
     backgroundColor: colors.primary,
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
     borderRadius: 99,
-    marginLeft: 8,
+    marginLeft: 4,
     justifyContent: 'center',
     alignItems: 'center',
   },

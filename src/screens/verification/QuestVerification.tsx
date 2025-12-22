@@ -39,6 +39,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {colors} from '../../styles/theme';
 import {userStore} from '../../store/userStore';
 import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
+import Separator from '../../components/Separator';
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<
   QuestVerificationProps,
@@ -161,6 +162,12 @@ const QuestVerification = () => {
       });
       queryClient.invalidateQueries({
         queryKey: ['myVerificationCount'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['myCharacters'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['myBadges'],
       });
       Alert.alert('인증 댓글이 추가되었습니다.');
     },
@@ -385,6 +392,7 @@ const QuestVerification = () => {
               {record.images.length > 0 ? (
                 <ImageCarousel images={record.images} />
               ) : null}
+              <Separator />
               <Text style={styles.recordText}>{record.text}</Text>
               <Text style={styles.recordDate}>
                 {formatRelativeTime(record.createdAt.toString() || '')}

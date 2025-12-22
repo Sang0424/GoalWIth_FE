@@ -108,11 +108,14 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       Alert.alert('성공', '기록이 추가되었습니다!');
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
+      queryClient.invalidateQueries({queryKey: ['myBadges']});
+      queryClient.invalidateQueries({queryKey: ['myCharacters']});
     },
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
-      queryClient.invalidateQueries({queryKey: ['badges']});
+      queryClient.invalidateQueries({queryKey: ['myBadges']});
+      queryClient.invalidateQueries({queryKey: ['myCharacters']});
     },
   });
 
@@ -125,7 +128,8 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       navigation.goBack();
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
-      queryClient.invalidateQueries({queryKey: ['badges']});
+      queryClient.invalidateQueries({queryKey: ['myBadges']});
+      queryClient.invalidateQueries({queryKey: ['myCharacters']});
     },
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);

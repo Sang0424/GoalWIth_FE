@@ -14,7 +14,6 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {useTeamStore, useQuestStore} from '../../store/mockData';
 import {Team} from '../../types/team.types';
 import {Quest} from '@/types/quest.types';
 import {TeamNavParamList} from '@/types/navigation';
@@ -50,14 +49,9 @@ const TeamScreen = () => {
   const swipeableRef = useRef<any>(null);
   const queryClient = useQueryClient();
   const isMockData = Config.API_URL == '';
-  const mockTeams = useTeamStore(state => state.teams);
 
   const {mutate} = useMutation({
     mutationFn: async (teamId: number) => {
-      if (Config.API_URL === '') {
-        useTeamStore.getState().deleteTeam(teamId);
-        return;
-      }
       await instance.delete(`/team/${teamId}`);
     },
     onSuccess: () => {
@@ -144,10 +138,6 @@ const TeamScreen = () => {
 
   let recommendedTeams =
     recommendedTeam?.pages.flatMap(page => page.content) || [];
-
-  if (isMockData) {
-    teams = mockTeams;
-  }
 
   const handleDeleteTeam = (teamId: number) => {
     Alert.alert('팀 삭제!', '팀을 삭제하시겠습니까?', [
@@ -370,10 +360,6 @@ const TeamScreen = () => {
   };
 
   const onRefresh = async () => {
-    if (isMockData) {
-      teams = mockTeams;
-      return;
-    }
     setIsRefreshing(true);
     debouncedSearchQuery !== '' ? await searchRefetch() : await refetch();
     setIsRefreshing(false);

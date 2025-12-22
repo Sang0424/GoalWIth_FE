@@ -35,7 +35,7 @@ export default function BottomNav() {
           tabBarIcon: ({color, size}) => (
             <Icon name="home" color={color} size={size} />
           ),
-          tabBarBadge: showCharRedDot ? '' : undefined,
+          tabBarBadge: showCharRedDot ? ' ' : undefined,
           tabBarBadgeStyle: styles.redDot,
           tabBarLabel: '홈',
         }}
@@ -78,7 +78,7 @@ export default function BottomNav() {
             // <Icon name="account-circle" color={color} size={size} />
             <Icon name="more-horiz" color={color} size={size} />
           ),
-          tabBarBadge: showBadgeRedDot ? '' : undefined,
+          tabBarBadge: showBadgeRedDot ? ' ' : undefined,
           tabBarBadgeStyle: styles.redDot,
           tabBarLabel: '더보기',
         }}
