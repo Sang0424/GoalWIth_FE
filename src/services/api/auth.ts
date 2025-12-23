@@ -7,6 +7,7 @@ import {Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {tokenStore} from '../../store/tokenStore';
 import Config from 'react-native-config';
+import instance from '../../utils/axiosInterceptor';
 /**
  * Google Sign-In을 설정합니다.
  * 앱 시작 시 한 번만 호출하면 됩니다.
@@ -83,4 +84,66 @@ export const getCurrentGoogleUser = async () => {
     }
     return null;
   }
+};
+
+// src/services/api/auth.ts
+
+export const deleteAccount = async (): Promise<boolean> => {
+  try {
+    const loginType = await AsyncStorage.getItem('loginType');
+    switch (loginType) {
+      case 'google':
+        await handleGoogleAccountDeletion();
+        break;
+      // case 'apple':
+      //   await handleAppleAccountDeletion();
+      //   break;
+      // Custom email/password or other methods
+      default:
+        await handleCustomAccountDeletion();
+    }
+
+    await instance.post('/user/revoke');
+
+    await clearUserData();
+
+    return true;
+  } catch (error) {
+    console.error('Account deletion failed:', error);
+    throw error;
+  }
+};
+
+const handleGoogleAccountDeletion = async () => {
+  try {
+    await GoogleSignin.revokeAccess();
+    await GoogleSignin.signOut();
+  } catch (error) {
+    console.warn(
+      'Google account revocation failed, continuing with deletion',
+      error,
+    );
+  }
+};
+
+// const handleAppleAccountDeletion = async () => {
+//   try {
+//     // For Apple, we can revoke the token
+//     const appleAuthRequestResponse = await appleAuth.performRequest({
+//       requestedOperation: appleAuth.Operation.REVOKE,
+//       // You might need to include the user's Apple ID here
+//     });
+//     // Apple doesn't provide a direct way to programmatically revoke
+//     // The above might not work in all cases, so document this limitation
+//   } catch (error) {
+//     console.warn('Apple account revocation failed, continuing with deletion', error);
+//   }
+// };
+
+const handleCustomAccountDeletion = async () => {};
+
+const clearUserData = async () => {
+  await AsyncStorage.clear();
+  const setAccessToken = tokenStore(state => state.actions.setAccessToken);
+  setAccessToken(null);
 };
