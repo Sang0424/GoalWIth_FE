@@ -11,7 +11,7 @@ import {colors} from '../styles/theme';
 interface CharacterAvatarProps {
   size?: number;
   level?: number;
-  avatar: string;
+  avatar: string | undefined;
   style?: ViewStyle;
   onPress?: () => void;
 }

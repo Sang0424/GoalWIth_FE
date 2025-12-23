@@ -11,14 +11,12 @@ import {
   Pressable,
   Platform,
   Keyboard,
-  KeyboardAvoidingView,
 } from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {
-  Quest,
   QuestRecord,
   QuestVerification as Verification,
 } from '../../types/quest.types';
@@ -40,6 +38,7 @@ import {colors} from '../../styles/theme';
 import {userStore} from '../../store/userStore';
 import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
 import Separator from '../../components/Separator';
+import ReplyBottomSheet from '../../components/ReplyBottomSheet';
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<
   QuestVerificationProps,
@@ -53,6 +52,9 @@ const QuestVerification = () => {
   const [verificationText, setVerificationText] = useState('');
   const [record, setRecord] = useState<QuestRecord | null>(null);
   const [isCommentUpdate, setIsCommentUpdate] = useState(false);
+  const [replyVisible, setReplyVisible] = useState(false);
+  const [replyVerificationInfo, setReplyVerificationInfo] =
+    useState<Verification | null>(null);
   const [commentId, setCommentId] = useState<number | null>(null);
   const {keyboardHeight} = useKeyboardHeight();
   const queryClient = useQueryClient();
@@ -463,9 +465,29 @@ const QuestVerification = () => {
                   )}
                 </View>
                 <Text style={styles.commentText}>{verification.comment}</Text>
-                <Text style={styles.commentDate}>
-                  {formatRelativeTime(verification.createdAt.toString() || '')}
-                </Text>
+                <View style={styles.commentFooter}>
+                  <Text style={styles.commentDate}>
+                    {formatRelativeTime(
+                      verification.createdAt.toString() || '',
+                    )}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.replyButton}
+                    onPress={() => {
+                      setReplyVisible(true);
+                      setCommentId(verification.id);
+                      setReplyVerificationInfo(verification);
+                    }}>
+                    <Ionicons
+                      name="chatbubble-outline"
+                      size={20}
+                      color={colors.gray}
+                    />
+                    <Text style={styles.commentCount}>
+                      {verification.replyCount}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ))
           ) : (
@@ -512,6 +534,16 @@ const QuestVerification = () => {
           </Text>
         </TouchableOpacity>
       </Animated.View>
+      <ReplyBottomSheet
+        visible={replyVisible}
+        onClose={() => {
+          setReplyVisible(false);
+          setCommentId(null);
+          setReplyVerificationInfo(null);
+        }}
+        verificationId={commentId}
+        verification={replyVerificationInfo}
+      />
     </SafeAreaView>
   );
 };
@@ -739,6 +771,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: colors.font,
     paddingHorizontal: 8,
+    marginTop: 12,
   },
   commentHeader: {
     flexDirection: 'row',
@@ -750,10 +783,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  commentFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  replyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  commentCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontSize: 14,
+    color: colors.gray,
+    paddingHorizontal: 8,
+  },
   commentDate: {
     fontSize: 14,
     color: colors.gray,
-    marginTop: 12,
     paddingHorizontal: 8,
     textAlign: 'right',
   },

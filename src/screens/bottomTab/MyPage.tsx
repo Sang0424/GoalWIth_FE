@@ -290,7 +290,6 @@ export default function MyPage() {
           <Dropdown
             data={dropdownData}
             placeholder={user?.badge ? user.badge : '칭호를 선택해주세요'}
-            // placeholderStyle={{color: colors.font}}
             onChange={handleBadgeChange}
             labelField="name"
             valueField="id"
@@ -306,23 +305,6 @@ export default function MyPage() {
             <View style={styles.settingLeft}>
               <Ionicons name="person-outline" size={22} color="#666" />
               <Text style={styles.settingText}>프로필 수정</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#999" />
-          </TouchableOpacity>
-          <View style={styles.divider} />
-          {/* <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('HelpPage')}>
-            <View style={styles.settingLeft}>
-              <Ionicons name="notifications-outline" size={22} color="#666" />
-              <Text style={styles.settingText}>알림 설정</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#999" />
-          </TouchableOpacity> */}
-          <TouchableOpacity
-            style={styles.settingItem}
-            onPress={() => Alert.alert('Coming Soon! 조금만 기다려주세요!')}>
-            <View style={styles.settingLeft}>
-              <Ionicons name="cart-outline" size={22} color="#666" />
-              <Text style={styles.settingText}>상점</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#999" />
           </TouchableOpacity>

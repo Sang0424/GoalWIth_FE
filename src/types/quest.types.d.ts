@@ -32,6 +32,7 @@ export interface QuestVerification {
   character: string;
   createdAt: Date;
   user_id: number;
+  replyCount: number;
 }
 
 export interface RouteParams {
