@@ -28,6 +28,7 @@
 		7C105CCF4421A2AC5B4A6C24 /* Pods_GoalWith.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GoalWith.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A8886FD2ECDD14300AFA972 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		9A8886FE2ECDD15000AFA972 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		9AA909192EFAB0210058B1BA /* GoalWith.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = GoalWith.entitlements; path = GoalWith/GoalWith.entitlements; sourceTree = "<group>"; };
 		9ABB2E3D2E8D2959002640AC /* GoalWith-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "GoalWith-Bridging-Header.h"; sourceTree = "<group>"; };
 		BE05BCD0F0224B859091F6B4 /* BootSplash.storyboard */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = BootSplash.storyboard; path = GoalWith/BootSplash.storyboard; sourceTree = "<group>"; };
 		D603BC12926941DE32E65463 /* Pods-GoalWith.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GoalWith.release.xcconfig"; path = "Target Support Files/Pods-GoalWith/Pods-GoalWith.release.xcconfig"; sourceTree = "<group>"; };
@@ -49,6 +50,7 @@
 		13B07FAE1A68108700A75B9A /* GoalWith */ = {
 			isa = PBXGroup;
 			children = (
+				9AA909192EFAB0210058B1BA /* GoalWith.entitlements */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
@@ -260,6 +262,7 @@
 			inputPaths = (
 				"$(SRCROOT)/.xcode.env",
 				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/GoalWith/GoalWith.entitlements",
 				"$(SRCROOT)/Pods/Target Support Files/Pods-GoalWith/expo-configure-project.sh",
 			);
 			name = "[Expo] Configure project";
@@ -377,6 +380,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				BUNDLE_IDENTIFIER = "com.goalwith.goalwith-dev";
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = GoalWith/GoalWith.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -416,11 +420,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				BUNDLE_IDENTIFIER = com.goalwith.goalwith;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = GoalWith/GoalWith.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 7;
 				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 7WDTV4D6JN;
 				DISPLAY_NAME = GoalWith;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = GoalWith/Info.plist;

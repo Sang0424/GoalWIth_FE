@@ -1,12 +1,23 @@
-import { View, StyleSheet, Dimensions } from 'react-native';
+import {View, StyleSheet, Dimensions} from 'react-native';
+import {colors} from '../styles/theme';
 
-export const Separator = () => <View style={styles.separator} />;
+export const Separator = ({
+  paddingHorizontal = 0,
+}: {
+  paddingHorizontal?: number;
+}) => (
+  <View
+    style={[
+      styles.separator,
+      {width: Dimensions.get('window').width - paddingHorizontal},
+    ]}
+  />
+);
 
 const styles = StyleSheet.create({
   separator: {
-    width: Dimensions.get('window').width,
     height: 2,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.switchBG,
     marginVertical: 16,
   },
 });

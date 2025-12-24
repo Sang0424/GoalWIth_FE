@@ -6,6 +6,7 @@ import {
   Pressable,
   useWindowDimensions,
   Alert,
+  Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import BigLogo from '../../components/Logo';
@@ -19,6 +20,10 @@ import {signInWithGoogle} from '../../services/api/auth';
 import {useMutation} from '@tanstack/react-query';
 import {tokenStore} from '../../store/tokenStore';
 import {login} from '@react-native-kakao/user';
+import {
+  appleAuth,
+  AppleButton,
+} from '@invertase/react-native-apple-authentication';
 
 export default function Onboarding1() {
   const {height, width} = useWindowDimensions();
@@ -30,7 +35,7 @@ export default function Onboarding1() {
       const response = await instance.post('/user/google-login', {
         token: idToken,
       });
-      return response.data; // { isNewUser, accessToken?, refreshToken?, email?, name? }
+      return response.data;
     },
     onSuccess: async data => {
       if (data.newer) {
@@ -44,59 +49,78 @@ export default function Onboarding1() {
           },
           accessToken,
           refreshToken,
+          isGoogle: true,
         });
       } else {
         // 기존 유저
         const {accessToken, refreshToken} = data;
         setAccessToken(accessToken);
         await AsyncStorage.setItem('refreshToken', refreshToken);
-        // navigation.navigate('MainNav');
+        await AsyncStorage.setItem('loginType', 'google');
       }
     },
     onError: (error: any) => {
-      console.error(error?.response?.data?.message);
+      Alert.alert(error?.response?.data?.message);
     },
   });
 
-  const {mutate: kakaoLoginMutate} = useMutation({
-    mutationFn: async ({
-      kakaoAccessToken,
-      idToken,
-    }: {
-      kakaoAccessToken: string;
-      idToken: string;
-    }) => {
-      const response = await instance.post('/user/kakao-login', {
-        accessToken: kakaoAccessToken,
-        token: idToken,
+  async function onAppleButtonPress() {
+    const appleAuthRequestResponse = await appleAuth.performRequest({
+      requestedOperation: appleAuth.Operation.LOGIN,
+      requestedScopes: [appleAuth.Scope.FULL_NAME, appleAuth.Scope.EMAIL],
+    });
+
+    const credentialState = await appleAuth.getCredentialStateForUser(
+      appleAuthRequestResponse.user,
+    );
+
+    if (credentialState === appleAuth.State.AUTHORIZED) {
+      const response = await instance.post('/user/apple-login', {
+        token: appleAuthRequestResponse.identityToken,
       });
-      return response.data; // { isNewUser, accessToken?, refreshToken?, email?, name? }
-    },
-    onSuccess: async data => {
-      if (data.newer) {
-        // 신규 유저
-        const {accessToken, refreshToken} = data;
-        navigation.navigate('OnBoarding3', {
-          isSocial: true,
-          registerForm: {
-            email: data.email,
-            name: data.name,
-          },
-          accessToken,
-          refreshToken,
-        });
-      } else {
-        // 기존 유저
-        const {accessToken, refreshToken} = data;
-        setAccessToken(accessToken);
-        await AsyncStorage.setItem('refreshToken', refreshToken);
-        navigation.navigate('MainNav');
-      }
-    },
-    onError: error => {
-      console.error(error);
-    },
-  });
+      return response.data;
+    }
+  }
+
+  // const {mutate: kakaoLoginMutate} = useMutation({
+  //   mutationFn: async ({
+  //     kakaoAccessToken,
+  //     idToken,
+  //   }: {
+  //     kakaoAccessToken: string;
+  //     idToken: string;
+  //   }) => {
+  //     const response = await instance.post('/user/kakao-login', {
+  //       accessToken: kakaoAccessToken,
+  //       token: idToken,
+  //     });
+  //     return response.data; // { isNewUser, accessToken?, refreshToken?, email?, name? }
+  //   },
+  //   onSuccess: async data => {
+  //     if (data.newer) {
+  //       // 신규 유저
+  //       const {accessToken, refreshToken} = data;
+  //       navigation.navigate('OnBoarding3', {
+  //         isKakao: true,
+  //         registerForm: {
+  //           email: data.email,
+  //           name: data.name,
+  //         },
+  //         accessToken,
+  //         refreshToken,
+  //       });
+  //     } else {
+  //       // 기존 유저
+  //       const {accessToken, refreshToken} = data;
+  //       setAccessToken(accessToken);
+  //       await AsyncStorage.setItem('refreshToken', refreshToken);
+  //       navigation.navigate('MainNav');
+  //     }
+  //   },
+  //   onError: error => {
+  //     console.error(error);
+  //   },
+  // });
 
   const handleGoogleLogin = async () => {
     const idToken = await signInWithGoogle();
@@ -105,33 +129,13 @@ export default function Onboarding1() {
     }
   };
 
-  const handleKakaoLogin = async () => {
-    const {accessToken, idToken} = await login();
-    if (accessToken && idToken) {
-      kakaoLoginMutate({kakaoAccessToken: accessToken, idToken});
-    }
-  };
+  // const handleKakaoLogin = async () => {
+  //   const {accessToken, idToken} = await login();
+  //   if (accessToken && idToken) {
+  //     kakaoLoginMutate({kakaoAccessToken: accessToken, idToken});
+  //   }
+  // };
 
-  // const loadUser = userStore(state => state.loadUser);
-  // const guestLogin = async () => {
-  //   const response = await instance.post(`/users/guestLogin`);
-  //   const {access_token, refresh_token} = response.data;
-  //   setAccessToken(access_token);
-  //   await AsyncStorage.setItem('refresh_token', refresh_token);
-  //   await loadUser();
-  // };
-  // const {mutate} = useMutation({
-  //   mutationFn: guestLogin,
-  //   onSuccess: () => {
-  //     navigation.navigate('BottomNav');
-  //   },
-  //   onError: error => {
-  //     console.error(error);
-  //   },
-  // });
-  // const submitGuest = () => {
-  //   mutate();
-  // };
   return (
     <SafeAreaView style={styles.container}>
       <View
@@ -165,12 +169,25 @@ export default function Onboarding1() {
             style={{resizeMode: 'stretch', width: width - 54, height: 72}}
           />
         </Pressable>
-        <Pressable style={styles.oauthBtn} onPress={() => handleKakaoLogin()}>
+        {/* <Pressable style={styles.oauthBtn} onPress={() => handleKakaoLogin()}>
           <Image
             source={require('../../assets/images/kakao_login.png')}
             style={{resizeMode: 'stretch', width: width - 54, height: 72}}
           />
-        </Pressable>
+        </Pressable> */}
+        {Platform.OS === 'ios' && (
+          <View>
+            <AppleButton
+              buttonStyle={AppleButton.Style.WHITE}
+              buttonType={AppleButton.Type.SIGN_IN}
+              style={{
+                width: width - 54,
+                height: 72,
+              }}
+              onPress={() => onAppleButtonPress()}
+            />
+          </View>
+        )}
         <DividerWithText text={'또는'} />
         <Pressable
           style={[styles.registerBtnWrapper, {width: width - 54, height: 64}]}
@@ -185,16 +202,6 @@ export default function Onboarding1() {
             <Text style={{color: '#007aff'}}> 로그인하기</Text>
           </Text>
         </Pressable>
-        {/* <Pressable
-          onPress={() => {
-            submitGuest();
-          }}
-          style={{ marginTop: 24 }}
-        >
-          <Text style={{ color: '#a1a1a1', textDecorationLine: 'underline' }}>
-            로그인 없이 시작하기
-          </Text>
-        </Pressable> */}
       </View>
       <View style={{flex: 1}}></View>
     </SafeAreaView>

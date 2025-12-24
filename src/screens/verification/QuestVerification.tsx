@@ -11,14 +11,12 @@ import {
   Pressable,
   Platform,
   Keyboard,
-  KeyboardAvoidingView,
 } from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {
-  Quest,
   QuestRecord,
   QuestVerification as Verification,
 } from '../../types/quest.types';
@@ -39,6 +37,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {colors} from '../../styles/theme';
 import {userStore} from '../../store/userStore';
 import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
+import Separator from '../../components/Separator';
+import ReplyBottomSheet from '../../components/ReplyBottomSheet';
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<
   QuestVerificationProps,
@@ -52,6 +52,9 @@ const QuestVerification = () => {
   const [verificationText, setVerificationText] = useState('');
   const [record, setRecord] = useState<QuestRecord | null>(null);
   const [isCommentUpdate, setIsCommentUpdate] = useState(false);
+  const [replyVisible, setReplyVisible] = useState(false);
+  const [replyVerificationInfo, setReplyVerificationInfo] =
+    useState<Verification | null>(null);
   const [commentId, setCommentId] = useState<number | null>(null);
   const {keyboardHeight} = useKeyboardHeight();
   const queryClient = useQueryClient();
@@ -161,6 +164,12 @@ const QuestVerification = () => {
       });
       queryClient.invalidateQueries({
         queryKey: ['myVerificationCount'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['myCharacters'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['myBadges'],
       });
       Alert.alert('인증 댓글이 추가되었습니다.');
     },
@@ -382,18 +391,17 @@ const QuestVerification = () => {
           </View>
           {data.records.map((record: any) => (
             <View key={record.id} style={styles.recordCard}>
-              {record.images.length > 0 ? (
-                <ImageCarousel images={record.images} />
-              ) : null}
-              <Text style={styles.recordText}>{record.text}</Text>
               <Text style={styles.recordDate}>
                 {formatRelativeTime(record.createdAt.toString() || '')}
               </Text>
+              {record.images.length > 0 ? (
+                <ImageCarousel images={record.images} />
+              ) : null}
+              {record.images.length > 0 && <Separator paddingHorizontal={64} />}
+              <Text style={styles.recordText}>{record.text}</Text>
             </View>
           ))}
         </View>
-
-        {/* Section 2: Verification Comments */}
         <View style={styles.commentsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>인증 댓글</Text>
@@ -455,9 +463,37 @@ const QuestVerification = () => {
                   )}
                 </View>
                 <Text style={styles.commentText}>{verification.comment}</Text>
-                <Text style={styles.commentDate}>
-                  {formatRelativeTime(verification.createdAt.toString() || '')}
-                </Text>
+                <View style={styles.commentFooter}>
+                  <Text style={styles.commentDate}>
+                    {formatRelativeTime(
+                      verification.createdAt.toString() || '',
+                    )}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.replyButton}
+                    onPress={() => {
+                      setReplyVisible(true);
+                      setCommentId(verification.id);
+                      setReplyVerificationInfo(verification);
+                    }}>
+                    <Ionicons
+                      name="chatbubble-outline"
+                      size={20}
+                      color={colors.gray}
+                    />
+                    <Text style={styles.commentCount}>
+                      {verification.replyCount}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <ReplyBottomSheet
+                  visible={replyVisible}
+                  onClose={() => {
+                    setReplyVisible(false);
+                  }}
+                  verificationId={verification.id}
+                  verification={verification}
+                />
               </View>
             ))
           ) : (
@@ -468,7 +504,6 @@ const QuestVerification = () => {
         </View>
       </ScrollView>
 
-      {/* Fixed verification form at bottom */}
       <Animated.View
         style={[
           styles.verificationForm,
@@ -575,7 +610,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   progressText: {
-    marginLeft: 8,
+    marginLeft: 2,
     fontSize: 12,
     color: colors.font,
     minWidth: 50,
@@ -629,15 +664,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   recordDate: {
-    marginTop: 14,
-    fontSize: 12,
-    color: colors.gray,
+    marginBottom: 14,
+    fontSize: 18,
+    color: colors.font,
   },
   recordText: {
-    fontSize: 18,
+    fontSize: 16,
     lineHeight: 22,
     color: colors.font,
-    marginTop: 12,
   },
   timelineSection: {
     padding: 16,
@@ -731,21 +765,41 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: colors.font,
     paddingHorizontal: 8,
+    marginTop: 12,
   },
   commentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
     justifyContent: 'space-between',
   },
   userContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  commentFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  replyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  commentCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontSize: 14,
+    color: colors.gray,
+    paddingHorizontal: 8,
+  },
   commentDate: {
     fontSize: 14,
     color: colors.gray,
-    marginTop: 12,
     paddingHorizontal: 8,
     textAlign: 'right',
   },

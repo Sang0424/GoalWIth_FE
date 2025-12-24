@@ -161,7 +161,6 @@ const ProfileBottomSheet = ({
                       <Text style={styles.userType}>{user.userType}</Text>
                     </View>
                   </View>
-
                   <View style={styles.statsContainer}>
                     <View style={styles.statItem}>
                       <Text style={styles.statLabel}>Lv.</Text>

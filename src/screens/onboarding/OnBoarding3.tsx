@@ -48,7 +48,15 @@ const PRIVACY_URL =
 export default function OnBoarding3({route}: OnBoarding3Props) {
   const [selectedUserType, setSelectedUserType] = useState<string | null>(null);
 
-  const {registerForm, isSocial, accessToken, refreshToken} = route.params;
+  const {
+    registerForm,
+    isSocial,
+    accessToken,
+    refreshToken,
+    isGoogle,
+    isKakao,
+    isApple,
+  } = route.params;
   const {width} = useWindowDimensions();
   const navigation =
     useNavigation<NativeStackNavigationProp<OnBoardingStackParamList>>();
@@ -112,6 +120,9 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
     if (isSocial) {
       setAccessToken(accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);
+      isGoogle ? await AsyncStorage.setItem('loginType', 'google') : null;
+      isKakao ? await AsyncStorage.setItem('loginType', 'kakao') : null;
+      isApple ? await AsyncStorage.setItem('loginType', 'apple') : null;
       loadUser();
       // 소셜 로그인 추가 정보 입력
       await instance.put('/user/info', {

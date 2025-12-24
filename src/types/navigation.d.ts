@@ -18,6 +18,9 @@ export type OnBoardingStackParamList = {
     isSocial?: boolean; // 소셜 로그인 여부 플래그
     accessToken?: string;
     refreshToken?: string;
+    isGoogle?: boolean;
+    isKakao?: boolean;
+    isApple?: boolean;
   };
   Login: undefined;
   MainNav: undefined;

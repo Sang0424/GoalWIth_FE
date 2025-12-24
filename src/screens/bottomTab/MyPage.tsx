@@ -22,13 +22,12 @@ import instance from '../../utils/axiosInterceptor';
 import {userStore} from '../../store/userStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {tokenStore} from '../../store/tokenStore';
-import {User} from '../../types/user.types';
-import {Team} from '../../types/team.types';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {Dropdown} from 'react-native-element-dropdown';
 import {colors} from '../../styles/theme';
 import {rewardStore} from '../../store/rewardStore';
 import NetWorkLogger from 'react-native-network-logger';
+import {deleteAccount} from '../../services/api/auth';
 
 export default function MyPage() {
   const [error, setError] = useState('');
@@ -150,12 +149,6 @@ export default function MyPage() {
     }, [isSuccess, hasNewBadge, badges, markBadgeSeen]),
   );
 
-  // useEffect(() => {
-  //   if (hasNewBadge) {
-  //     markBadgeSeen();
-  //   }
-  // }, []);
-
   const renderBadgeItem = useCallback(
     (item: {id: number; name: string}) => {
       return (
@@ -199,6 +192,21 @@ export default function MyPage() {
       setShowLog(true);
       setClickCount(0);
     }
+  };
+
+  const handleRevoke = async () => {
+    Alert.alert(
+      '정말 탈퇴하시겠습니까?',
+      '계정을 삭제하시면 GoalWith에서 활동하신 모든 내역이 소멸됩니다. 탈퇴 후에는 동일한 소셜 계정으로 재가입하더라도 이전 데이터를 복구할 수 없으니 신중하게 결정해 주세요. 결제 내역이나 유료 구독 서비스가 있는 경우, 탈퇴 전 반드시 확인 부탁드립니다.',
+      [
+        {text: '취소', style: 'cancel'},
+        {
+          text: '탈퇴하기',
+          style: 'destructive',
+          onPress: () => deleteAccount(),
+        },
+      ],
+    );
   };
 
   const myVerificationCount = myVerification?.totalElements;
@@ -290,7 +298,6 @@ export default function MyPage() {
           <Dropdown
             data={dropdownData}
             placeholder={user?.badge ? user.badge : '칭호를 선택해주세요'}
-            // placeholderStyle={{color: colors.font}}
             onChange={handleBadgeChange}
             labelField="name"
             valueField="id"
@@ -306,23 +313,6 @@ export default function MyPage() {
             <View style={styles.settingLeft}>
               <Ionicons name="person-outline" size={22} color="#666" />
               <Text style={styles.settingText}>프로필 수정</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#999" />
-          </TouchableOpacity>
-          <View style={styles.divider} />
-          {/* <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('HelpPage')}>
-            <View style={styles.settingLeft}>
-              <Ionicons name="notifications-outline" size={22} color="#666" />
-              <Text style={styles.settingText}>알림 설정</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#999" />
-          </TouchableOpacity> */}
-          <TouchableOpacity
-            style={styles.settingItem}
-            onPress={() => Alert.alert('Coming Soon! 조금만 기다려주세요!')}>
-            <View style={styles.settingLeft}>
-              <Ionicons name="cart-outline" size={22} color="#666" />
-              <Text style={styles.settingText}>상점</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#999" />
           </TouchableOpacity>
@@ -363,6 +353,9 @@ export default function MyPage() {
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={logout}>
           <Text style={styles.logoutText}>로그아웃</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleRevoke}>
+          <Text style={styles.revokeText}>회원탈퇴</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleVersionClick} style={{marginTop: 50}}>
           <Text style={styles.versionText}>버전 1.0.0</Text>
@@ -554,13 +547,21 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: colors.error,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'regular',
+    marginTop: 16,
   },
   versionText: {
     textAlign: 'center',
     color: colors.font,
     fontSize: 12,
     marginBottom: 20,
+  },
+  revokeText: {
+    color: colors.warning,
+    fontSize: 14,
+    fontWeight: 'regular',
+    marginTop: 16,
+    textAlign: 'center',
   },
 });

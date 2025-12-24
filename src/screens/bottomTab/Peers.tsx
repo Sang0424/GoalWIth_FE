@@ -14,11 +14,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useState, useCallback, useMemo} from 'react';
 import UserCard from '../../components/UserCard';
-import {
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import {useInfiniteQuery, useQueryClient} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
 import {useNavigation, DrawerActions} from '@react-navigation/native';
 import {PeersNavParamList} from '../../types/navigation';
@@ -33,15 +29,15 @@ const PAGE_SIZE = 10;
 
 const TAB_LIST = [
   {key: 'myPeers', label: '나의 동료'},
-  {key: 'recommendPeers', label: '추천 동료'},
   {key: 'requestedPeers', label: '받은 요청'},
+  {key: 'searchPeers', label: '동료 검색'},
 ];
 
 export default function Peers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'myPeers' | 'recommendPeers' | 'requestedPeers'
+    'myPeers' | 'requestedPeers' | 'searchPeers'
   >('myPeers');
   const queryClient = useQueryClient();
 
@@ -157,14 +153,14 @@ export default function Peers() {
       return undefined;
     },
     initialPageParam: 0,
-    enabled: debouncedSearchQuery.length > 0 && activeTab === 'recommendPeers',
+    enabled: debouncedSearchQuery.length > 0 && activeTab === 'searchPeers',
     placeholderData: previousData => previousData,
   });
 
   const users = useMemo(() => {
     return activeTab === 'myPeers'
       ? myPeersData?.pages.flatMap(page => page.content) || []
-      : activeTab === 'recommendPeers'
+      : activeTab === 'searchPeers'
       ? debouncedSearchQuery.length > 0
         ? searchPeersData?.pages.flatMap(page => page.content) || []
         : peersData?.pages.flatMap(page => page.content) || []
@@ -184,7 +180,7 @@ export default function Peers() {
         myPeersFetchNextPage();
       }
     }
-    if (activeTab === 'recommendPeers') {
+    if (activeTab === 'searchPeers') {
       if (debouncedSearchQuery.length > 0) {
         if (searchHasNextPage && !searchIsFetchingNextPage) {
           searchFetchNextPage();
@@ -218,7 +214,7 @@ export default function Peers() {
     setIsRefreshing(true);
     activeTab === 'myPeers'
       ? myPeersRefetch()
-      : activeTab === 'recommendPeers'
+      : activeTab === 'searchPeers'
       ? peersRefetch()
       : activeTab === 'requestedPeers'
       ? requestedPeersRefetch()
@@ -236,6 +232,17 @@ export default function Peers() {
     return (
       <View
         style={{marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>
+        {/* {activeTab === 'searchPeers' ? (
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: 'bold',
+              color: colors.font,
+              marginBottom: 16,
+            }}>
+            추천 동료
+          </Text>
+        ) : undefined} */}
         <UserCard user={item.item} from="peers" />
       </View>
     );
@@ -269,7 +276,7 @@ export default function Peers() {
                 ]}
                 onPress={() =>
                   setActiveTab(
-                    tab.key as 'myPeers' | 'recommendPeers' | 'requestedPeers',
+                    tab.key as 'myPeers' | 'requestedPeers' | 'searchPeers',
                   )
                 }>
                 <View style={{flexDirection: 'row', alignItems: 'center'}}>
@@ -318,6 +325,18 @@ export default function Peers() {
         </View>
         {(peersLoading || myPeersLoading || requestedPeersLoading) && (
           <ActivityIndicator size="small" color={colors.primary} />
+        )}
+        {activeTab === 'searchPeers' && debouncedSearchQuery.length == 0 && (
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: 'bold',
+              color: colors.font,
+              textAlign: 'center',
+              marginTop: 8,
+            }}>
+            추천 동료
+          </Text>
         )}
       </>
       <FlatList
@@ -393,10 +412,10 @@ const styles = StyleSheet.create({
   },
   requestCount: {
     backgroundColor: colors.primary,
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
     borderRadius: 99,
-    marginLeft: 8,
+    marginLeft: 4,
     justifyContent: 'center',
     alignItems: 'center',
   },
