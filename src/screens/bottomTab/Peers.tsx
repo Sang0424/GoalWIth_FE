@@ -14,11 +14,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useState, useCallback, useMemo} from 'react';
 import UserCard from '../../components/UserCard';
-import {
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import {useInfiniteQuery, useQueryClient} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
 import {useNavigation, DrawerActions} from '@react-navigation/native';
 import {PeersNavParamList} from '../../types/navigation';
@@ -33,15 +29,15 @@ const PAGE_SIZE = 10;
 
 const TAB_LIST = [
   {key: 'myPeers', label: '나의 동료'},
-  {key: 'searchPeers', label: '동료 검색'},
   {key: 'requestedPeers', label: '받은 요청'},
+  {key: 'searchPeers', label: '동료 검색'},
 ];
 
 export default function Peers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'myPeers' | 'searchPeers' | 'requestedPeers'
+    'myPeers' | 'requestedPeers' | 'searchPeers'
   >('myPeers');
   const queryClient = useQueryClient();
 
@@ -236,7 +232,7 @@ export default function Peers() {
     return (
       <View
         style={{marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>
-        {activeTab === 'searchPeers' ? (
+        {/* {activeTab === 'searchPeers' ? (
           <Text
             style={{
               fontSize: 16,
@@ -246,7 +242,7 @@ export default function Peers() {
             }}>
             추천 동료
           </Text>
-        ) : undefined}
+        ) : undefined} */}
         <UserCard user={item.item} from="peers" />
       </View>
     );
@@ -280,7 +276,7 @@ export default function Peers() {
                 ]}
                 onPress={() =>
                   setActiveTab(
-                    tab.key as 'myPeers' | 'searchPeers' | 'requestedPeers',
+                    tab.key as 'myPeers' | 'requestedPeers' | 'searchPeers',
                   )
                 }>
                 <View style={{flexDirection: 'row', alignItems: 'center'}}>
@@ -329,6 +325,18 @@ export default function Peers() {
         </View>
         {(peersLoading || myPeersLoading || requestedPeersLoading) && (
           <ActivityIndicator size="small" color={colors.primary} />
+        )}
+        {activeTab === 'searchPeers' && debouncedSearchQuery.length == 0 && (
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: 'bold',
+              color: colors.font,
+              textAlign: 'center',
+              marginTop: 8,
+            }}>
+            추천 동료
+          </Text>
         )}
       </>
       <FlatList

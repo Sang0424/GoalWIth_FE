@@ -355,7 +355,7 @@ export default function MyPage() {
           <Text style={styles.logoutText}>로그아웃</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleRevoke}>
-          <Text style={styles.logoutText}>회원탈퇴</Text>
+          <Text style={styles.revokeText}>회원탈퇴</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleVersionClick} style={{marginTop: 50}}>
           <Text style={styles.versionText}>버전 1.0.0</Text>
@@ -556,5 +556,12 @@ const styles = StyleSheet.create({
     color: colors.font,
     fontSize: 12,
     marginBottom: 20,
+  },
+  revokeText: {
+    color: colors.warning,
+    fontSize: 14,
+    fontWeight: 'regular',
+    marginTop: 16,
+    textAlign: 'center',
   },
 });

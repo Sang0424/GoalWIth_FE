@@ -391,19 +391,17 @@ const QuestVerification = () => {
           </View>
           {data.records.map((record: any) => (
             <View key={record.id} style={styles.recordCard}>
-              {record.images.length > 0 ? (
-                <ImageCarousel images={record.images} />
-              ) : null}
-              <Separator />
-              <Text style={styles.recordText}>{record.text}</Text>
               <Text style={styles.recordDate}>
                 {formatRelativeTime(record.createdAt.toString() || '')}
               </Text>
+              {record.images.length > 0 ? (
+                <ImageCarousel images={record.images} />
+              ) : null}
+              {record.images.length > 0 && <Separator paddingHorizontal={64} />}
+              <Text style={styles.recordText}>{record.text}</Text>
             </View>
           ))}
         </View>
-
-        {/* Section 2: Verification Comments */}
         <View style={styles.commentsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>인증 댓글</Text>
@@ -488,6 +486,14 @@ const QuestVerification = () => {
                     </Text>
                   </TouchableOpacity>
                 </View>
+                <ReplyBottomSheet
+                  visible={replyVisible}
+                  onClose={() => {
+                    setReplyVisible(false);
+                  }}
+                  verificationId={verification.id}
+                  verification={verification}
+                />
               </View>
             ))
           ) : (
@@ -498,7 +504,6 @@ const QuestVerification = () => {
         </View>
       </ScrollView>
 
-      {/* Fixed verification form at bottom */}
       <Animated.View
         style={[
           styles.verificationForm,
@@ -534,16 +539,6 @@ const QuestVerification = () => {
           </Text>
         </TouchableOpacity>
       </Animated.View>
-      <ReplyBottomSheet
-        visible={replyVisible}
-        onClose={() => {
-          setReplyVisible(false);
-          setCommentId(null);
-          setReplyVerificationInfo(null);
-        }}
-        verificationId={commentId}
-        verification={replyVerificationInfo}
-      />
     </SafeAreaView>
   );
 };
@@ -615,7 +610,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   progressText: {
-    marginLeft: 8,
+    marginLeft: 2,
     fontSize: 12,
     color: colors.font,
     minWidth: 50,
@@ -669,15 +664,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   recordDate: {
-    marginTop: 14,
-    fontSize: 12,
-    color: colors.gray,
+    marginBottom: 14,
+    fontSize: 18,
+    color: colors.font,
   },
   recordText: {
-    fontSize: 18,
+    fontSize: 16,
     lineHeight: 22,
     color: colors.font,
-    marginTop: 12,
   },
   timelineSection: {
     padding: 16,
@@ -776,7 +770,7 @@ const styles = StyleSheet.create({
   commentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
     justifyContent: 'space-between',
   },
   userContainer: {

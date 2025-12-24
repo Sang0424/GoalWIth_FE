@@ -8,6 +8,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {tokenStore} from '../../store/tokenStore';
 import Config from 'react-native-config';
 import instance from '../../utils/axiosInterceptor';
+import {
+  appleAuth,
+  AppleButton,
+} from '@invertase/react-native-apple-authentication';
+
 /**
  * Google Sign-In을 설정합니다.
  * 앱 시작 시 한 번만 호출하면 됩니다.
@@ -95,15 +100,14 @@ export const deleteAccount = async (): Promise<boolean> => {
       case 'google':
         await handleGoogleAccountDeletion();
         break;
-      // case 'apple':
-      //   await handleAppleAccountDeletion();
-      //   break;
-      // Custom email/password or other methods
+      case 'apple':
+        await handleAppleAccountDeletion();
+        break;
       default:
         await handleCustomAccountDeletion();
     }
 
-    await instance.post('/user/revoke');
+    await instance.delete('/user/revoke');
 
     await clearUserData();
 
@@ -126,19 +130,23 @@ const handleGoogleAccountDeletion = async () => {
   }
 };
 
-// const handleAppleAccountDeletion = async () => {
-//   try {
-//     // For Apple, we can revoke the token
-//     const appleAuthRequestResponse = await appleAuth.performRequest({
-//       requestedOperation: appleAuth.Operation.REVOKE,
-//       // You might need to include the user's Apple ID here
-//     });
-//     // Apple doesn't provide a direct way to programmatically revoke
-//     // The above might not work in all cases, so document this limitation
-//   } catch (error) {
-//     console.warn('Apple account revocation failed, continuing with deletion', error);
-//   }
-// };
+const handleAppleAccountDeletion = async () => {
+  try {
+    // For Apple, we can revoke the token
+    appleAuth.onCredentialRevoked(async () => {
+      console.warn(
+        'If this function executes, User Credentials have been Revoked',
+      );
+    });
+    // Apple doesn't provide a direct way to programmatically revoke
+    // The above might not work in all cases, so document this limitation
+  } catch (error) {
+    console.warn(
+      'Apple account revocation failed, continuing with deletion',
+      error,
+    );
+  }
+};
 
 const handleCustomAccountDeletion = async () => {};
 

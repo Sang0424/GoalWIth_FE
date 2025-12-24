@@ -6,6 +6,7 @@ import {
   Pressable,
   useWindowDimensions,
   Alert,
+  Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import BigLogo from '../../components/Logo';
@@ -19,6 +20,10 @@ import {signInWithGoogle} from '../../services/api/auth';
 import {useMutation} from '@tanstack/react-query';
 import {tokenStore} from '../../store/tokenStore';
 import {login} from '@react-native-kakao/user';
+import {
+  appleAuth,
+  AppleButton,
+} from '@invertase/react-native-apple-authentication';
 
 export default function Onboarding1() {
   const {height, width} = useWindowDimensions();
@@ -58,6 +63,24 @@ export default function Onboarding1() {
       Alert.alert(error?.response?.data?.message);
     },
   });
+
+  async function onAppleButtonPress() {
+    const appleAuthRequestResponse = await appleAuth.performRequest({
+      requestedOperation: appleAuth.Operation.LOGIN,
+      requestedScopes: [appleAuth.Scope.FULL_NAME, appleAuth.Scope.EMAIL],
+    });
+
+    const credentialState = await appleAuth.getCredentialStateForUser(
+      appleAuthRequestResponse.user,
+    );
+
+    if (credentialState === appleAuth.State.AUTHORIZED) {
+      const response = await instance.post('/user/apple-login', {
+        token: appleAuthRequestResponse.identityToken,
+      });
+      return response.data;
+    }
+  }
 
   // const {mutate: kakaoLoginMutate} = useMutation({
   //   mutationFn: async ({
@@ -152,6 +175,19 @@ export default function Onboarding1() {
             style={{resizeMode: 'stretch', width: width - 54, height: 72}}
           />
         </Pressable> */}
+        {Platform.OS === 'ios' && (
+          <View>
+            <AppleButton
+              buttonStyle={AppleButton.Style.WHITE}
+              buttonType={AppleButton.Type.SIGN_IN}
+              style={{
+                width: width - 54,
+                height: 72,
+              }}
+              onPress={() => onAppleButtonPress()}
+            />
+          </View>
+        )}
         <DividerWithText text={'또는'} />
         <Pressable
           style={[styles.registerBtnWrapper, {width: width - 54, height: 64}]}

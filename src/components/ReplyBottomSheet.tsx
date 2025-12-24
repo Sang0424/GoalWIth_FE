@@ -25,13 +25,8 @@ import {
   runOnJS,
 } from 'react-native-reanimated';
 import instance from '../utils/axiosInterceptor';
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query';
+import {useMutation, useQueryClient, useQuery} from '@tanstack/react-query';
 import {colors} from '../styles/theme';
-import Config from 'react-native-config';
 import type {QuestVerification as Verification} from '../types/quest.types';
 import CharacterAvatar from './CharacterAvatar';
 import {formatRelativeTime} from '../utils/dateUtils';
@@ -68,11 +63,12 @@ const ReplyBottomSheet = ({
   const [error, setError] = useState<string | null>(null);
   const {keyboardHeight} = useKeyboardHeight();
   const [reply, setReply] = useState('');
+  const [isReplyUpdate, setIsReplyUpdate] = useState<boolean>(false);
+  const [replyId, setReplyId] = useState<number | null>(null);
 
   const queryClient = useQueryClient();
 
   const user = userStore(state => state.user);
-
   const insets = useSafeAreaInsets();
   const TAB_BAR_HEIGHT = Platform.select({
     ios: 49,
@@ -90,31 +86,44 @@ const ReplyBottomSheet = ({
 
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    fetchNextPage,
-    hasNextPage,
-    refetch,
-  } = useInfiniteQuery({
-    queryKey: ['reply', verificationId],
-    initialPageParam: 0,
-    queryFn: async ({pageParam = 0}) => {
+  //   const {
+  //     data,
+  //     isLoading,
+  //     isFetchingNextPage,
+  //     fetchNextPage,
+  //     hasNextPage,
+  //     refetch,
+  //   } = useInfiniteQuery({
+  //     queryKey: ['reply', verificationId],
+  //     initialPageParam: 0,
+  //     queryFn: async ({pageParam = 0}) => {
+  //       try {
+  //         const response = await instance.get(
+  //           `/quest/verification/comment/${verificationId}?page=${pageParam}&size=${PAGE_SIZE}`,
+  //         );
+  //         return response.data;
+  //       } catch (e: any) {
+  //         setError(e.response.data.message);
+  //         return {items: [], nextPage: null};
+  //       }
+  //     },
+  //     getNextPageParam: (lastPage, allPages) => {
+  //       return lastPage.hasNext ? allPages.length : undefined;
+  //     },
+  //     enabled: Config.API_URL != '',
+  //   });
+  const {data, isLoading, refetch} = useQuery({
+    queryKey: ['Reply', verificationId],
+    queryFn: async () => {
       try {
         const response = await instance.get(
-          `/quest/verification/comment/${verificationId}?page=${pageParam}&size=${PAGE_SIZE}`,
+          `/quest/verification/comment/${verificationId}`,
         );
         return response.data;
       } catch (e: any) {
-        setError(e.response.data.message);
-        return {items: [], nextPage: null};
+        Alert.alert(e.response.data.message);
       }
     },
-    getNextPageParam: (lastPage, allPages) => {
-      return lastPage.hasNext ? allPages.length : undefined;
-    },
-    enabled: Config.API_URL != '',
   });
 
   const {mutate} = useMutation({
@@ -123,7 +132,7 @@ const ReplyBottomSheet = ({
         const response = await instance.post(
           `/quest/verification/comment/${verificationId}`,
           {
-            reply,
+            comment: reply,
           },
         );
         return response.data;
@@ -138,6 +147,69 @@ const ReplyBottomSheet = ({
       queryClient.invalidateQueries({
         queryKey: ['myVerificationCount'],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['Reply', verificationId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['QuestVerification'],
+      });
+      Alert.alert('답글이 추가되었습니다.');
+      setReply('');
+      setIsReplyUpdate(false);
+      setReplyId(null);
+      Keyboard.dismiss();
+    },
+  });
+
+  const {mutate: editReply} = useMutation({
+    mutationFn: async ({id, comment}: {id: number | null; comment: string}) => {
+      try {
+        const response = await instance.put(`quest/verifications/${id}`, {
+          comment,
+        });
+        return response.data;
+      } catch (e: any) {
+        Alert.alert(e.response.data.message);
+      }
+    },
+    onSuccess: () => {
+      refetch();
+      queryClient.invalidateQueries({
+        queryKey: ['Verification'],
+      });
+      Alert.alert('답글이 수정되었습니다.');
+      setReply('');
+      setIsReplyUpdate(false);
+      setReplyId(null);
+    },
+    onError: (error: any) => {
+      Alert.alert(error.response.data.message);
+    },
+  });
+
+  const {mutate: deleteReply} = useMutation({
+    mutationFn: async (id: number) => {
+      try {
+        const response = await instance.delete(`quest/verifications/${id}`);
+        return response.data;
+      } catch (e: any) {
+        Alert.alert(e.response.data.message);
+      }
+    },
+    onSuccess: () => {
+      refetch();
+      queryClient.invalidateQueries({
+        queryKey: ['Verification'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['QuestVerification'],
+      });
+      Alert.alert('답글이 삭제되었습니다.');
+      setIsReplyUpdate(false);
+      setReplyId(null);
+    },
+    onError: (error: any) => {
+      Alert.alert(error.response.data.message);
     },
   });
 
@@ -180,19 +252,17 @@ const ReplyBottomSheet = ({
       transform: [{translateY: translateY.value}],
     };
   });
-
   const startAnimation = (toValue: number) =>
     Animated.timing(keyboardOffset, {
       toValue,
       duration: 200,
       useNativeDriver: false,
     }).start();
-
   useEffect(() => {
     const keyboardWillShow = (e: any) => {
       const bottomInset = Math.max(insets.bottom, 16);
       const offset = bottomInset + (TAB_BAR_HEIGHT || 0);
-      startAnimation(-e.endCoordinates?.height + offset);
+      startAnimation(-e.endCoordinates?.height + keyboardHeight);
     };
 
     const keyboardWillHide = () => {
@@ -234,6 +304,8 @@ const ReplyBottomSheet = ({
     );
   }
 
+  const replies = data || [];
+
   return (
     <SafeAreaView>
       <TouchableWithoutFeedback onPress={() => closeModalWithAnimation}>
@@ -255,7 +327,14 @@ const ReplyBottomSheet = ({
               <SafeAreaView style={styles.safeArea}>
                 <View style={styles.grabber} />
                 <View style={styles.header}>
-                  <Text>답글</Text>
+                  <Text
+                    style={{
+                      fontSize: 24,
+                      color: colors.font,
+                      textAlign: 'center',
+                    }}>
+                    답글
+                  </Text>
                   <Ionicons
                     name="close"
                     size={24}
@@ -276,48 +355,6 @@ const ReplyBottomSheet = ({
                           {verification?.username}
                         </Text>
                       </View>
-                      {/* {verification.user_id === user?.id && (
-                    <Menu>
-                      <MenuTrigger>
-                        <View>
-                          <Ionicons
-                            name="ellipsis-horizontal"
-                            size={20}
-                            color={colors.gray}
-                          />
-                        </View>
-                      </MenuTrigger>
-                      <MenuOptions optionsContainerStyle={styles.menuOptions}>
-                        <MenuOption
-                          onSelect={() => {
-                            setVerificationText(verification.comment);
-                            setIsCommentUpdate(true);
-                            setCommentId(verification.id);
-                          }}
-                          style={styles.menuOption}>
-                          <Text>수정</Text>
-                        </MenuOption>
-                        <MenuOption
-                          onSelect={() => {
-                            Alert.alert('삭제', '정말로 삭제하시겠습니까?', [
-                              {
-                                text: '취소',
-                                onPress: () => {},
-                              },
-                              {
-                                text: '삭제',
-                                onPress: () => {
-                                  deleteVerification(verification.id);
-                                },
-                              },
-                            ]);
-                          }}
-                          style={[styles.menuOption, styles.deleteOption]}>
-                          <Text style={styles.deleteText}>삭제</Text>
-                        </MenuOption>
-                      </MenuOptions>
-                    </Menu>
-                  )} */}
                     </View>
                     <Text style={styles.commentText}>
                       {verification?.comment}
@@ -331,11 +368,75 @@ const ReplyBottomSheet = ({
                     </View>
                   </View>
                   <Separator />
-                  <View>
-                    {/* {data?.replies?.map((reply: Verification) => (
-                      <View></View>
-                    ))} */}
-                  </View>
+                  {replies.length > 0 ? (
+                    replies.map((reply: Verification) => (
+                      <View key={reply.id} style={styles.commentCard}>
+                        <View style={styles.commentHeader}>
+                          <View style={styles.userContainer}>
+                            <CharacterAvatar
+                              avatar={reply.character}
+                              size={40}
+                              onPress={() => {}}
+                            />
+                            <Text style={{marginLeft: 8}}>
+                              {reply.username}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={styles.commentText}>{reply.comment}</Text>
+                        <View style={styles.commentFooter}>
+                          <Text style={styles.commentDate}>
+                            {formatRelativeTime(
+                              reply.createdAt.toString() || '',
+                            )}
+                          </Text>
+                          {reply.user_id === user?.id && (
+                            <View style={styles.editContainer}>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setReply(reply.comment);
+                                  setIsReplyUpdate(true);
+                                  setReplyId(reply.id);
+                                }}>
+                                <Text
+                                  style={{color: colors.gray, fontSize: 14}}>
+                                  수정
+                                </Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  Alert.alert(
+                                    '삭제',
+                                    '정말로 삭제하시겠습니까?',
+                                    [
+                                      {
+                                        text: '취소',
+                                        onPress: () => {},
+                                      },
+                                      {
+                                        text: '삭제',
+                                        onPress: () => {
+                                          deleteReply(reply.id);
+                                        },
+                                      },
+                                    ],
+                                  );
+                                }}>
+                                <Text
+                                  style={{color: colors.gray, fontSize: 14}}>
+                                  삭제
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.noCommentsText}>
+                      아직 답글이 없습니다.
+                    </Text>
+                  )}
                 </ScrollView>
                 <Animated.View
                   style={[
@@ -357,8 +458,14 @@ const ReplyBottomSheet = ({
                       reply.length === 0 && styles.disabledButton,
                     ]}
                     disabled={reply.length === 0}
-                    onPress={() => mutate(reply)}>
-                    <Text style={styles.submitButtonText}>작성</Text>
+                    onPress={
+                      isReplyUpdate
+                        ? () => editReply({id: replyId, comment: reply})
+                        : () => mutate(reply)
+                    }>
+                    <Text style={styles.submitButtonText}>
+                      {isReplyUpdate ? '수정' : '작성'}
+                    </Text>
                   </TouchableOpacity>
                 </Animated.View>
               </SafeAreaView>
@@ -385,7 +492,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   bottomSheetContainer: {
-    height: '90%',
+    height: '80%',
     width: '100%',
     backgroundColor: colors.background,
     borderTopLeftRadius: 16,
@@ -398,6 +505,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+    paddingBottom: 80,
   },
   grabber: {
     width: 40,
@@ -434,7 +542,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: colors.font,
     paddingHorizontal: 8,
-    marginTop: 12,
+    marginTop: 8,
   },
   commentFooter: {
     flexDirection: 'row',
@@ -460,6 +568,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     flexDirection: 'row',
     padding: 12,
+    paddingBottom: 32,
     borderTopWidth: 1,
     borderTopColor: '#eee',
     backgroundColor: 'white',
@@ -491,6 +600,49 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: '#cccccc',
+  },
+  commentCard: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  menuOptions: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    width: 100,
+    padding: 5,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  menuOption: {
+    padding: 10,
+  },
+  deleteOption: {
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  deleteText: {
+    color: 'red',
+  },
+  noCommentsText: {
+    textAlign: 'center',
+    color: colors.gray,
+    marginVertical: 20,
+  },
+  editContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    gap: 16,
   },
 });
 

@@ -35,6 +35,7 @@ import {colors} from '../../styles/theme';
 import {formatRelativeTime} from '../../utils/dateUtils';
 import {Image as ImageCompressor} from 'react-native-compressor';
 import {Image} from 'expo-image';
+import Separator from '../../components/Separator';
 
 const QuestFeed = ({route}: QuestFeedProps) => {
   const navigation = useNavigation();
@@ -416,6 +417,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                 {record.images && record.images?.length > 0 && (
                   <ImageCarousel images={record.images} />
                 )}
+                {record.images && record.images?.length > 0 && (
+                  <Separator paddingHorizontal={64} />
+                )}
                 <Text style={styles.recordText}>{record.text}</Text>
                 <Text style={styles.recordDate}>
                   {formatRelativeTime(record.createdAt.toString())}
@@ -666,13 +670,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 200,
     borderRadius: 8,
-    marginBottom: 10,
+    // marginBottom: 10,
   },
   recordText: {
-    fontSize: 18,
+    fontSize: 16,
     lineHeight: 22,
     color: colors.font,
-    marginTop: 12,
+    marginTop: 4,
   },
   inputContainer: {
     position: 'absolute',
