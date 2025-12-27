@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useMemo} from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Pressable,
   Platform,
   Keyboard,
+  useWindowDimensions,
 } from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -39,6 +40,7 @@ import {userStore} from '../../store/userStore';
 import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
 import Separator from '../../components/Separator';
 import ReplyBottomSheet from '../../components/ReplyBottomSheet';
+import {groupRecordsByDate} from '../../utils/dateUtils';
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<
   QuestVerificationProps,
@@ -56,8 +58,12 @@ const QuestVerification = () => {
   const [replyVerificationInfo, setReplyVerificationInfo] =
     useState<Verification | null>(null);
   const [commentId, setCommentId] = useState<number | null>(null);
+  const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
   const {keyboardHeight} = useKeyboardHeight();
   const queryClient = useQueryClient();
+  const {width} = useWindowDimensions();
+
+  const CARD_WIDTH = width - 32;
 
   // 1. State for tracking scroll position and verification status
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
@@ -242,6 +248,17 @@ const QuestVerification = () => {
     editVerification({id, comment});
   };
 
+  const allRecords = data?.records ? [...data.records].reverse() : [];
+  const visibleRecords = isTimelineExpanded
+    ? allRecords
+    : allRecords.slice(0, 5);
+  const hiddenCount = Math.max(0, allRecords.length - visibleRecords.length);
+
+  const groupedSections = useMemo(() => {
+    if (!visibleRecords) return [];
+    return groupRecordsByDate(visibleRecords);
+  }, [visibleRecords]);
+
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.container, styles.loadingContainer]}>
@@ -266,9 +283,6 @@ const QuestVerification = () => {
     );
   }
 
-  // 모든 인증 메시지(댓글) 리스트 추출
-  const allVerifications = data.verifications;
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.getFullYear()}년 ${
@@ -277,7 +291,7 @@ const QuestVerification = () => {
   };
 
   const calculateProgressPercentage = () => {
-    if (!data.startDate || !data.endDate) return 0;
+    if (!data?.startDate || !data?.endDate) return 0;
 
     const start = new Date(data.startDate).getTime();
     const end = new Date(data.endDate).getTime();
@@ -290,6 +304,63 @@ const QuestVerification = () => {
   };
 
   const percentage = calculateProgressPercentage();
+
+  const renderQuestHeader = () => (
+    <View>
+      <View
+        style={[
+          styles.header,
+          data.isMain ? styles.mainQuestHeader : styles.subQuestHeader,
+        ]}>
+        <View style={styles.headerContent}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              width: CARD_WIDTH,
+            }}>
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={{padding: 10}}>
+              <Icon
+                name={
+                  Platform.OS === 'ios'
+                    ? 'arrow-back-ios'
+                    : 'arrow-back-android'
+                }
+                size={20}
+                color={colors.font}
+              />
+            </Pressable>
+            <Text style={styles.questTitle}>{data.title}</Text>
+            <View style={{width: 40}} />
+          </View>
+          <Text style={styles.questDate}>
+            {formatDate(data.startDate.toString())} -{' '}
+            {formatDate(data.endDate.toString())}
+          </Text>
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {width: `${calculateProgressPercentage()}%`},
+                  {backgroundColor: data.isMain ? '#4a90e2' : '#a0a0a0'},
+                ]}
+              />
+            </View>
+            <Text style={styles.progressText}>
+              {Math.floor(
+                (Date.now() - new Date(data.startDate).getTime()) / 86400000,
+              ) + 1}
+              일차
+            </Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -322,93 +393,99 @@ const QuestVerification = () => {
           styles.scrollView,
           !!keyboardHeight && {marginBottom: keyboardHeight + 20},
         ]}>
-        {/* Section 1: Timeline Records */}
+        {renderQuestHeader()}
         <View
-          style={[
-            styles.header,
-            data.isMain ? styles.mainQuestHeader : styles.subQuestHeader,
-          ]}>
-          <View style={styles.headerContent}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-                width: '100%',
-              }}>
-              <Pressable
-                onPress={() => navigation.goBack()}
-                style={{padding: 10}}>
-                <Icon
-                  name={
-                    Platform.OS === 'ios'
-                      ? 'arrow-back-ios'
-                      : 'arrow-back-android'
-                  }
-                  size={20}
-                  color={'#000'}
-                />
-              </Pressable>
-              <Text style={styles.questTitle}>{data.title}</Text>
-              <View style={{width: 40}} />
-            </View>
-            <Text style={styles.questDate}>
-              {formatDate(data.startDate.toString())} -{' '}
-              {formatDate(data.endDate.toString())}
-            </Text>
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    {
-                      width: `${Math.min(100, Math.max(0, percentage))}%`,
-                      backgroundColor: colors.accent,
-                    },
-                  ]}
-                />
-              </View>
-              <Text style={styles.progressText}>
-                {Math.floor(
-                  (Date.now() - new Date(data.startDate).getTime()) / 86400000,
-                ) + 1}
-                일차
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            paddingHorizontal: 20,
+            paddingTop: 20,
+          }}>
+          <Text style={styles.sectionTitle}>기록 타임라인</Text>
+          {!hasScrolledToBottom && (
+            <View style={styles.scrollPrompt}>
+              <Text style={styles.scrollPromptText}>
+                아래로 스크롤하여 인증하기
               </Text>
+              <Icon name="arrow-downward" size={16} color="#666" />
             </View>
-          </View>
+          )}
         </View>
         <View style={styles.timelineSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>퀘스트 타임라인</Text>
-            {!hasScrolledToBottom && (
-              <View style={styles.scrollPrompt}>
-                <Text style={styles.scrollPromptText}>
-                  아래로 스크롤하여 인증하기
-                </Text>
-                <Icon name="arrow-downward" size={16} color="#666" />
+          {groupedSections.map(section => (
+            <View key={section.title}>
+              {/* 날짜 헤더 (배지 스타일) */}
+              <View style={styles.dateHeaderContainer}>
+                <View style={styles.dateBadge}>
+                  <Text style={styles.dateHeaderText}>{section.title}</Text>
+                </View>
               </View>
-            )}
-          </View>
-          {data.records.map((record: any) => (
-            <View key={record.id} style={styles.recordCard}>
-              <Text style={styles.recordDate}>
-                {formatRelativeTime(record.createdAt.toString() || '')}
-              </Text>
-              {record.images.length > 0 ? (
-                <ImageCarousel images={record.images} />
-              ) : null}
-              {record.images.length > 0 && <Separator paddingHorizontal={64} />}
-              <Text style={styles.recordText}>{record.text}</Text>
+
+              {/* 해당 날짜의 기록들 카드 렌더링 */}
+              {section.data.map((record: any) => {
+                const hasImages = record.images && record.images.length > 0;
+                return (
+                  <View key={record.id} style={styles.recordItemContainer}>
+                    <View style={styles.recordCard}>
+                      {hasImages && (
+                        <View style={styles.cardImageContainer}>
+                          <ImageCarousel
+                            images={record.images}
+                            containerWidth={CARD_WIDTH}
+                          />
+                        </View>
+                      )}
+
+                      <View
+                        style={[
+                          styles.cardContentContainer,
+                          !hasImages && styles.cardContentNoImage,
+                        ]}>
+                        <Text style={styles.recordText}>{record.text}</Text>
+                        <Text style={styles.recordDateText}>
+                          {formatRelativeTime(
+                            record.createdAt.toString() || '',
+                          )}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
             </View>
           ))}
+          {!isTimelineExpanded && hiddenCount > 0 && (
+            <TouchableOpacity
+              style={styles.expandButton}
+              onPress={() => setIsTimelineExpanded(true)}>
+              <Text style={styles.expandButtonText}>
+                이전 기록 {hiddenCount}개 더 보기
+              </Text>
+              <Ionicons name="chevron-down" size={16} color={colors.gray} />
+            </TouchableOpacity>
+          )}
+
+          {/* [추가] 접기 버튼 (선택사항) */}
+          {isTimelineExpanded && allRecords.length > 3 && (
+            <TouchableOpacity
+              style={styles.expandButton}
+              onPress={() => {
+                setIsTimelineExpanded(false);
+                // 접었을 때 스크롤 위치 조정이 필요할 수 있음
+              }}>
+              <Text style={styles.expandButtonText}>접기</Text>
+              <Ionicons name="chevron-up" size={16} color={colors.gray} />
+            </TouchableOpacity>
+          )}
         </View>
         <View style={styles.commentsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>인증 댓글</Text>
           </View>
 
-          {allVerifications && allVerifications.length > 0 ? (
-            allVerifications.map((verification: Verification) => (
+          {data?.verifications && data.verifications.length > 0 ? (
+            data.verifications.map((verification: Verification) => (
               <View key={verification.id} style={styles.commentCard}>
                 <View style={styles.commentHeader}>
                   <View style={styles.userContainer}>
@@ -486,14 +563,6 @@ const QuestVerification = () => {
                     </Text>
                   </TouchableOpacity>
                 </View>
-                <ReplyBottomSheet
-                  visible={replyVisible}
-                  onClose={() => {
-                    setReplyVisible(false);
-                  }}
-                  verificationId={verification.id}
-                  verification={verification}
-                />
               </View>
             ))
           ) : (
@@ -539,6 +608,14 @@ const QuestVerification = () => {
           </Text>
         </TouchableOpacity>
       </Animated.View>
+      <ReplyBottomSheet
+        visible={replyVisible}
+        onClose={() => {
+          setReplyVisible(false);
+        }}
+        verificationId={commentId}
+        verification={replyVerificationInfo}
+      />
     </SafeAreaView>
   );
 };
@@ -550,13 +627,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
@@ -572,10 +649,10 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   mainQuestHeader: {
-    backgroundColor: '#B9B69B',
+    backgroundColor: colors.primary,
   },
   subQuestHeader: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   headerContent: {
     alignItems: 'center',
@@ -617,7 +694,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   section: {
-    padding: 20,
+    padding: 16,
   },
   sectionTitle: {
     fontSize: 18,
@@ -647,17 +724,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
   },
-  recordCard: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
   recordHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -668,15 +734,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: colors.font,
   },
-  recordText: {
-    fontSize: 16,
-    lineHeight: 22,
-    color: colors.font,
-  },
   timelineSection: {
-    padding: 16,
     borderBottomWidth: 8,
-    borderBottomColor: '#f5f5f5',
+    borderBottomColor: colors.background,
   },
   commentsSection: {
     padding: 16,
@@ -827,6 +887,78 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     color: 'red',
+  },
+  expandButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  expandButtonText: {
+    color: colors.gray,
+    marginRight: 4,
+    fontSize: 14,
+  },
+  dateHeaderContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    alignItems: 'flex-start',
+  },
+  dateBadge: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  dateHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.font,
+  },
+  recordItemContainer: {
+    paddingHorizontal: 16, // 카드 좌우 여백
+  },
+  recordCard: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  cardImageContainer: {
+    width: '100%',
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  cardContentContainer: {
+    padding: 16,
+  },
+  cardContentNoImage: {
+    paddingTop: 24,
+  },
+  recordText: {
+    fontSize: 15,
+    lineHeight: 24,
+    color: '#333333',
+    letterSpacing: -0.2,
+  },
+  recordDateText: {
+    // 기존 recordDate와 이름 충돌 방지 및 스타일 변경
+    marginTop: 14,
+    fontSize: 12,
+    color: colors.gray,
   },
 });
 

@@ -13,17 +13,11 @@ import {
   AppleButton,
 } from '@invertase/react-native-apple-authentication';
 
-/**
- * Google Sign-In을 설정합니다.
- * 앱 시작 시 한 번만 호출하면 됩니다.
- */
 export const configureGoogleSignIn = () => {
   GoogleSignin.configure({
-    // webClientId는 안드로이드에서 사용되며, strings.xml에 있는 server_client_id를 참조합니다.
-    // iOS에서는 iosClientId를 사용합니다.
     webClientId: Config.GOOGLE_WEB_CLIENT_ID,
     iosClientId: Config.GOOGLE_IOS_CLIENT_ID,
-    offlineAccess: false, // 백엔드에서 토큰을 사용하려면 true로 설정
+    offlineAccess: false,
   });
 };
 
@@ -90,8 +84,6 @@ export const getCurrentGoogleUser = async () => {
     return null;
   }
 };
-
-// src/services/api/auth.ts
 
 export const deleteAccount = async (): Promise<boolean> => {
   try {

@@ -15,8 +15,6 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {User} from '../../types/user.types';
-import {initialUser} from '../../store/mockData';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {MyPageNavParamList} from '../../types/navigation';
@@ -26,6 +24,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
 import {Dropdown} from 'react-native-element-dropdown';
 import {colors} from '../../styles/theme';
+import {deleteAccount} from '../../services/api/auth';
 
 interface EditProfileProps {
   nickname: string;
@@ -110,6 +109,21 @@ const EditProfile = () => {
     }
   };
 
+  const handleRevoke = async () => {
+    Alert.alert(
+      '정말 탈퇴하시겠습니까?',
+      '계정을 삭제하시면 GoalWith에서 활동하신 모든 내역이 소멸됩니다. 탈퇴 후에는 동일한 소셜 계정으로 재가입하더라도 이전 데이터를 복구할 수 없으니 신중하게 결정해 주세요. 결제 내역이나 유료 구독 서비스가 있는 경우, 탈퇴 전 반드시 확인 부탁드립니다.',
+      [
+        {text: '취소', style: 'cancel'},
+        {
+          text: '탈퇴하기',
+          style: 'destructive',
+          onPress: () => deleteAccount(),
+        },
+      ],
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -182,6 +196,11 @@ const EditProfile = () => {
               <Text style={styles.saveButtonText}>
                 {loading ? '업데이트 중...' : '프로필 변경'}
               </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.revokeButton}
+              onPress={handleRevoke}>
+              <Text style={styles.revokeText}>회원탈퇴</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -276,6 +295,19 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  revokeText: {
+    color: '#FF0000',
+    fontSize: 14,
+    fontWeight: 'regular',
+    textAlign: 'center',
+  },
+  revokeButton: {
+    backgroundColor: colors.lightGray,
+    padding: 12,
+    borderRadius: 4,
+    alignItems: 'center',
+    marginTop: 24,
   },
 });
 

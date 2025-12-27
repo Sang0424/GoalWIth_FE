@@ -183,6 +183,8 @@ export default function Onboarding1() {
               style={{
                 width: width - 54,
                 height: 72,
+                borderWidth: 1,
+                borderColor: '#000000',
               }}
               onPress={() => onAppleButtonPress()}
             />

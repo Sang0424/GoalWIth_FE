@@ -16,7 +16,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {GestureDetector, Gesture} from 'react-native-gesture-handler';
 import {
   useAnimatedStyle,
@@ -32,14 +32,7 @@ import CharacterAvatar from './CharacterAvatar';
 import {formatRelativeTime} from '../utils/dateUtils';
 import {userStore} from '../store/userStore';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {
-  Menu,
-  MenuOptions,
-  MenuOption,
-  MenuTrigger,
-} from 'react-native-popup-menu';
 import useKeyboardHeight from '../utils/hooks/useKeyboardHeight';
-import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
 import Separator from './Separator';
 
 interface ReplyBottomSheetProps {
@@ -69,49 +62,9 @@ const ReplyBottomSheet = ({
   const queryClient = useQueryClient();
 
   const user = userStore(state => state.user);
-  const insets = useSafeAreaInsets();
-  const TAB_BAR_HEIGHT = Platform.select({
-    ios: 49,
-    android: 0,
-  });
-
-  let tabBarHeight = 0;
-
-  try {
-    // 이 화면이 TabNavigator 안에 있다면 실제 높이를 반환하고, 없으면 에러가 발생합니다.
-    tabBarHeight = useBottomTabBarHeight();
-  } catch (e) {
-    tabBarHeight = 0;
-  }
 
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
-  //   const {
-  //     data,
-  //     isLoading,
-  //     isFetchingNextPage,
-  //     fetchNextPage,
-  //     hasNextPage,
-  //     refetch,
-  //   } = useInfiniteQuery({
-  //     queryKey: ['reply', verificationId],
-  //     initialPageParam: 0,
-  //     queryFn: async ({pageParam = 0}) => {
-  //       try {
-  //         const response = await instance.get(
-  //           `/quest/verification/comment/${verificationId}?page=${pageParam}&size=${PAGE_SIZE}`,
-  //         );
-  //         return response.data;
-  //       } catch (e: any) {
-  //         setError(e.response.data.message);
-  //         return {items: [], nextPage: null};
-  //       }
-  //     },
-  //     getNextPageParam: (lastPage, allPages) => {
-  //       return lastPage.hasNext ? allPages.length : undefined;
-  //     },
-  //     enabled: Config.API_URL != '',
-  //   });
   const {data, isLoading, refetch} = useQuery({
     queryKey: ['Reply', verificationId],
     queryFn: async () => {
@@ -124,6 +77,7 @@ const ReplyBottomSheet = ({
         Alert.alert(e.response.data.message);
       }
     },
+    enabled: visible,
   });
 
   const {mutate} = useMutation({
@@ -260,8 +214,6 @@ const ReplyBottomSheet = ({
     }).start();
   useEffect(() => {
     const keyboardWillShow = (e: any) => {
-      const bottomInset = Math.max(insets.bottom, 16);
-      const offset = bottomInset + (TAB_BAR_HEIGHT || 0);
       startAnimation(-e.endCoordinates?.height + keyboardHeight);
     };
 
@@ -287,22 +239,6 @@ const ReplyBottomSheet = ({
   }, []);
 
   if (!visible || !verificationId) return null;
-
-  if (!data) {
-    return (
-      <SafeAreaView style={[styles.container, styles.loadingContainer]}>
-        <Text
-          style={{
-            textAlign: 'center',
-            fontSize: 24,
-            fontWeight: 'bold',
-            color: colors.font,
-          }}>
-          답글을 볼 수 없습니다.잠시 후 다시 시도해주세요.
-        </Text>
-      </SafeAreaView>
-    );
-  }
 
   const replies = data || [];
 

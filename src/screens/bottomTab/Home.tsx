@@ -116,12 +116,13 @@ export default function Home() {
         ios: [
           PERMISSIONS.IOS.APP_TRACKING_TRANSPARENCY,
           PERMISSIONS.IOS.CAMERA,
-          PERMISSIONS.IOS.PHOTO_LIBRARY, // Library
+          PERMISSIONS.IOS.PHOTO_LIBRARY,
         ],
         android: [
           PERMISSIONS.ANDROID.CAMERA,
-          // 안드로이드 13(API 33) 이상 여부에 따라 권한이 갈리므로 주의가 필요합니다.
           PERMISSIONS.ANDROID.READ_MEDIA_IMAGES,
+          PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE,
+          PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE,
         ],
       });
 
@@ -134,6 +135,11 @@ export default function Home() {
         Platform.OS === 'ios'
           ? statuses[PERMISSIONS.IOS.PHOTO_LIBRARY]
           : statuses[PERMISSIONS.ANDROID.READ_MEDIA_IMAGES];
+
+      const storageStatus =
+        Platform.OS === 'ios'
+          ? statuses[PERMISSIONS.IOS.PHOTO_LIBRARY]
+          : statuses[PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE];
 
       if (
         libraryStatus === RESULTS.BLOCKED ||
