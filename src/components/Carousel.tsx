@@ -13,14 +13,13 @@ import {
   FlatList,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Asset} from 'react-native-image-picker';
 import {colors} from '../styles/theme';
 import {Image} from 'expo-image';
 import Gallery from 'react-native-awesome-gallery';
 
 interface ImageCarouselProps {
   images: string[];
-  containerWidth?: number; // 선택적 prop으로 변경
+  containerWidth?: number;
 }
 
 const ImageCarousel = ({images, containerWidth}: ImageCarouselProps) => {
@@ -75,7 +74,7 @@ const ImageCarousel = ({images, containerWidth}: ImageCarouselProps) => {
                 height: imageHeight,
                 // resizeMode: 'contain',
               }}
-              contentFit="cover"
+              contentFit="contain"
               placeholder={blurhash}
               transition={1000}
             />

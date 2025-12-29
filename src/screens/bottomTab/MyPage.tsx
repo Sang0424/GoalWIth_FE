@@ -47,6 +47,7 @@ export default function MyPage() {
         {
           text: '로그아웃',
           onPress: async () => {
+            rewardStore.getState().reset();
             await AsyncStorage.clear();
             setAccessToken(null);
           },

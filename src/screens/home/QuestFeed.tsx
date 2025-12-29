@@ -275,52 +275,56 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   };
 
   const handleCamera = async () => {
-    const options: CameraOptions = {
-      mediaType: 'photo',
-      cameraType: 'back',
-      saveToPhotos: true,
-      quality: 1,
-      includeBase64: false,
-    };
+    setIsModalVisible(false);
 
-    try {
-      const response = await new Promise<ImagePickerResponse>(resolve =>
-        launchCamera(options, resolve),
-      );
-      if (response.didCancel) {
-        Alert.alert('이미지 촬영을 취소했습니다.');
-      }
-      if (response.errorCode) {
-        Alert.alert('이미지 촬영 중 오류가 발생했습니다.');
-      }
-      if (response.assets?.length) {
-        const compressedImages = await Promise.all(
-          response.assets.map(async (asset: Asset) => {
-            try {
-              const result = await ImageCompressor.compress(asset.uri || '', {
-                maxWidth: 1000,
-                maxHeight: 1000,
-                quality: 0.8,
-                input: 'uri',
-              });
-              return {
-                ...asset,
-                uri: result,
-              };
-            } catch (error) {
-              console.error(error);
-            }
-          }),
+    setTimeout(async () => {
+      const options: CameraOptions = {
+        mediaType: 'photo',
+        cameraType: 'back',
+        saveToPhotos: true,
+        quality: 1,
+        includeBase64: false,
+      };
+
+      try {
+        const response = await new Promise<ImagePickerResponse>(resolve =>
+          launchCamera(options, resolve),
         );
-        const validCompressedImages = compressedImages.filter(
-          img => img !== undefined,
-        );
-        setImages(prev => [...prev, ...validCompressedImages].slice(0, 5));
+        if (response.didCancel) {
+          Alert.alert('이미지 촬영을 취소했습니다.');
+        }
+        if (response.errorCode) {
+          Alert.alert('이미지 촬영 중 오류가 발생했습니다.');
+        }
+        if (response.assets?.length) {
+          const compressedImages = await Promise.all(
+            response.assets.map(async (asset: Asset) => {
+              try {
+                const result = await ImageCompressor.compress(asset.uri || '', {
+                  maxWidth: 1000,
+                  maxHeight: 1000,
+                  quality: 0.8,
+                  input: 'uri',
+                });
+                return {
+                  ...asset,
+                  uri: result,
+                };
+              } catch (error) {
+                console.error(error);
+              }
+            }),
+          );
+          const validCompressedImages = compressedImages.filter(
+            img => img !== undefined,
+          );
+          setImages(prev => [...prev, ...validCompressedImages].slice(0, 5));
+        }
+      } catch (error) {
+        console.error(error);
+        Alert.alert('이미지 처리하는 중 오류가 발생했습니다.');
       }
-    } catch (error) {
-      console.error(error);
-      Alert.alert('이미지 처리하는 중 오류가 발생했습니다.');
-    }
+    }, 100);
   };
 
   const pickImage = async () => {

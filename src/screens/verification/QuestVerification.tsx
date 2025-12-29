@@ -591,6 +591,7 @@ const QuestVerification = () => {
           editable={hasScrolledToBottom}
           value={verificationText}
           onChangeText={setVerificationText}
+          multiline
         />
         <TouchableOpacity
           style={[

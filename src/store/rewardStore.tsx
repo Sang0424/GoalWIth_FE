@@ -1,5 +1,3 @@
-// src/store/rewardStore.tsx
-
 import {create} from 'zustand';
 import {persist, createJSONStorage} from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,29 +13,47 @@ interface RewardStore {
   setBadgeCount(badgeCount: number): void;
   markCharacterSeen(): void;
   markBadgeSeen(): void;
+  reset(): void;
 }
+
+const initialState = {
+  charCount: 1,
+  badgeCount: 1,
+  lastSeenCharacterCount: 1,
+  lastSeenBadgeCount: 1,
+  hasNewCharacter: false,
+  hasNewBadge: false,
+};
 
 export const rewardStore = create<RewardStore>()(
   persist(
     set => ({
-      charCount: 1,
-      badgeCount: 1,
-      lastSeenCharacterCount: 1,
-      lastSeenBadgeCount: 1,
-      hasNewCharacter: false,
-      hasNewBadge: false,
-
+      ...initialState,
       setCharCount: charCount =>
-        set(state => ({
-          charCount,
-          hasNewCharacter: charCount > state.lastSeenCharacterCount,
-        })),
+        set(state => {
+          const effectiveLastSeen =
+            charCount < state.lastSeenCharacterCount
+              ? charCount
+              : state.lastSeenCharacterCount;
+          return {
+            charCount,
+            lastSeenCharacterCount: effectiveLastSeen,
+            hasNewCharacter: charCount > effectiveLastSeen,
+          };
+        }),
 
       setBadgeCount: badgeCount =>
-        set(state => ({
-          badgeCount,
-          hasNewBadge: badgeCount > state.lastSeenBadgeCount,
-        })),
+        set(state => {
+          const effectiveLastSeen =
+            badgeCount < state.lastSeenBadgeCount
+              ? badgeCount
+              : state.lastSeenBadgeCount;
+          return {
+            badgeCount,
+            lastSeenBadgeCount: effectiveLastSeen,
+            hasNewBadge: badgeCount > effectiveLastSeen,
+          };
+        }),
 
       markCharacterSeen: () =>
         set(state => ({
@@ -50,6 +66,7 @@ export const rewardStore = create<RewardStore>()(
           lastSeenBadgeCount: state.badgeCount,
           hasNewBadge: false,
         })),
+      reset: () => set(initialState),
     }),
     {
       name: 'reward-storage',
