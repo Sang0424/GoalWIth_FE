@@ -158,9 +158,6 @@ export default function Home() {
           ],
         );
       }
-
-      // 3. 결과 확인 (디버깅용)
-      console.log('Permission Statuses:', statuses);
     };
 
     // 4. 약간의 지연 시간을 주어 화면 전환이 끝난 후 팝업이 뜨게 함 (UX 권장사항)
@@ -277,13 +274,6 @@ export default function Home() {
     onEdit: (quest: Quest) => void;
   }) => {
     if (!quest) return null;
-
-    // useEffect(() => {
-    //   const timer = setTimeout(() => {
-    //     setShowHint(false);
-    //   }, 100000);
-    //   return () => clearTimeout(timer);
-    // }, []);
 
     const renderRightActions = (progress: any, _dragX: any) => {
       const animatedStyles = useAnimatedStyle(() => {
@@ -431,6 +421,7 @@ export default function Home() {
               : quest.verificationRequired
               ? navigation.navigate('QuestVerification', {
                   id: quest.id,
+                  authorId: quest.records[0].userId,
                 })
               : navigation.navigate('QuestFeed', {
                   quest,

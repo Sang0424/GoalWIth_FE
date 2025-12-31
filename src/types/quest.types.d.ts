@@ -22,7 +22,7 @@ export interface QuestRecord {
   images?: Asset[];
   questId: number;
   createdAt: Date;
-  user: User;
+  userId: number;
 }
 
 export interface QuestVerification {

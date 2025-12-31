@@ -60,14 +60,13 @@ const VerificationCard = ({item}: {item: any}) => {
     },
   });
 
-  // const alreadyVerification = item.verifications
-  //   .map((v: any) => v.user_id)
-  //   .includes(user?.id);
-
   const alreadyVerification = item.verified;
 
   const handleGoQuest = () => {
-    navigation.navigate('QuestVerification', {id: item.id});
+    navigation.navigate('QuestVerification', {
+      id: item.id,
+      authorId: item.user.id,
+    });
   };
 
   const blurhash =

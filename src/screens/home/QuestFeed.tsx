@@ -215,18 +215,20 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     };
   }, []);
 
-  if (!quest) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>퀘스트를 찾을 수 없습니다.</Text>
-      </View>
-    );
-  }
   if (isLoading) {
     return (
       <SafeAreaView style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.secondary} />
+        <Text>로딩 중... 조금만 기다려주세요</Text>
       </SafeAreaView>
+    );
+  }
+
+  if (!isLoading && !quest) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text>퀘스트를 찾을 수 없습니다.</Text>
+      </View>
     );
   }
 

@@ -12,6 +12,7 @@ import {
   Platform,
   Keyboard,
   useWindowDimensions,
+  ActivityIndicator,
 } from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -50,7 +51,7 @@ type QuestVerificationScreenNavigationProp = StackNavigationProp<
 const QuestVerification = () => {
   const navigation = useNavigation<QuestVerificationScreenNavigationProp>();
   const route = useRoute();
-  const {id} = route.params as {id: number};
+  const {id, authorId} = route.params as {id: number; authorId: number};
   const [verificationText, setVerificationText] = useState('');
   const [record, setRecord] = useState<QuestRecord | null>(null);
   const [isCommentUpdate, setIsCommentUpdate] = useState(false);
@@ -240,6 +241,23 @@ const QuestVerification = () => {
     setVerificationText('');
   };
 
+  const {mutate: completeQuest} = useMutation({
+    mutationFn: async (id: number) => {
+      await instance.put(`/quest/complete/${id}`);
+    },
+    onSuccess: () => {
+      Alert.alert('성공', '퀘스트가 완료되었습니다!');
+      navigation.goBack();
+      queryClient.invalidateQueries({queryKey: ['QuestRecord', id]});
+      queryClient.invalidateQueries({queryKey: ['homeQuests']});
+      queryClient.invalidateQueries({queryKey: ['myBadges']});
+      queryClient.invalidateQueries({queryKey: ['myCharacters']});
+    },
+    onError: (error: any) => {
+      Alert.alert(`${error.response.data.message}`);
+    },
+  });
+
   const handleEdit = (id: number | null, comment: string) => {
     if (!id || !comment.trim()) {
       Alert.alert('인증 메시지를 입력해주세요.');
@@ -259,15 +277,40 @@ const QuestVerification = () => {
     return groupRecordsByDate(visibleRecords);
   }, [visibleRecords]);
 
+  const handleCompleteQuest = () => {
+    Alert.alert(
+      '퀘스트 완료',
+      '아직 인증을 다 받지 못했지만 이 퀘스트를 완료하시겠습니까?',
+      [
+        {text: '취소', style: 'cancel'},
+        {
+          text: '완료',
+          onPress: () => {
+            completeQuest(id, {
+              onSuccess: () => {
+                Alert.alert('성공', '퀘스트가 완료되었습니다!');
+                navigation.goBack();
+              },
+              onError: error => {
+                Alert.alert(`${error.response.data.message}`);
+              },
+            });
+          },
+        },
+      ],
+    );
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={colors.secondary} />
         <Text>로딩 중...</Text>
       </SafeAreaView>
     );
   }
 
-  if (!data) {
+  if (!isLoading && !data) {
     return (
       <SafeAreaView style={[styles.container, styles.loadingContainer]}>
         <Text
@@ -302,8 +345,6 @@ const QuestVerification = () => {
 
     return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
   };
-
-  const percentage = calculateProgressPercentage();
 
   const renderQuestHeader = () => (
     <View>
@@ -580,34 +621,55 @@ const QuestVerification = () => {
             transform: [{translateY: keyboardOffset}],
           },
         ]}>
-        <TextInput
-          style={styles.commentInput}
-          placeholder={
-            hasScrolledToBottom
-              ? '인증 댓글을 남겨주세요'
-              : '타임라인을 확인한 후 인증이 가능합니다'
-          }
-          placeholderTextColor={colors.gray}
-          editable={hasScrolledToBottom}
-          value={verificationText}
-          onChangeText={setVerificationText}
-          multiline
-        />
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            !hasScrolledToBottom && styles.disabledButton,
-          ]}
-          disabled={!hasScrolledToBottom}
-          onPress={
-            isCommentUpdate
-              ? () => handleEdit(commentId, verificationText)
-              : handleVerify
-          }>
-          <Text style={styles.submitButtonText}>
-            {isCommentUpdate ? '수정하기' : '인증하기'}
-          </Text>
-        </TouchableOpacity>
+        <View style={{flexDirection: 'row'}}>
+          <TextInput
+            style={styles.commentInput}
+            placeholder={
+              hasScrolledToBottom
+                ? '인증 댓글을 남겨주세요'
+                : '타임라인을 확인한 후 인증이 가능합니다'
+            }
+            placeholderTextColor={colors.gray}
+            editable={hasScrolledToBottom}
+            value={verificationText}
+            onChangeText={setVerificationText}
+            multiline
+          />
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              !hasScrolledToBottom && styles.disabledButton,
+            ]}
+            disabled={!hasScrolledToBottom}
+            onPress={
+              isCommentUpdate
+                ? () => handleEdit(commentId, verificationText)
+                : handleVerify
+            }>
+            <Text style={styles.submitButtonText}>
+              {isCommentUpdate ? '수정하기' : '인증하기'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {user.id === authorId && (
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={
+                user.id === authorId
+                  ? [styles.actionButton, styles.completeButton]
+                  : [
+                      styles.actionButton,
+                      styles.completeButton,
+                      {backgroundColor: colors.lightGray},
+                    ]
+              }
+              onPress={handleCompleteQuest}
+              disabled={user.id !== authorId}>
+              <Ionicons name="checkmark-circle" size={18} color="white" />
+              <Text style={styles.completeButtonText}>지금 완료하기</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </Animated.View>
       <ReplyBottomSheet
         visible={replyVisible}
@@ -771,12 +833,41 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 5,
-    flexDirection: 'row',
+    //flexDirection: 'row',
     padding: 12,
     borderTopWidth: 1,
     borderTopColor: '#eee',
     backgroundColor: 'white',
     zIndex: 1,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    marginTop: 10,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 12,
+    marginHorizontal: 5,
+  },
+  completeButton: {
+    backgroundColor: colors.accent,
+  },
+  addButton: {
+    backgroundColor: colors.primary,
+  },
+  completeButtonText: {
+    color: colors.btnFont,
+    fontWeight: 'bold',
+    marginLeft: 5,
+  },
+  addButtonText: {
+    color: colors.btnFont,
+    fontWeight: 'bold',
+    marginLeft: 5,
   },
   commentInput: {
     flex: 1,
@@ -785,7 +876,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 10,
-    paddingRight: 45,
     minHeight: 44,
     maxHeight: 120,
     backgroundColor: '#f9f9f9',

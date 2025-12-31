@@ -345,7 +345,10 @@ export default function Peers() {
           ) : null}
         </View>
         {(peersLoading || myPeersLoading || requestedPeersLoading) && (
-          <ActivityIndicator size="small" color={colors.primary} />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text>로딩 중... 조금만 기다려주세요</Text>
+          </View>
         )}
         {activeTab === 'searchPeers' && debouncedSearchQuery.length == 0 && (
           <Text
@@ -464,5 +467,11 @@ const styles = StyleSheet.create({
   activeTabLabel: {
     color: colors.accent,
     fontWeight: 'bold',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 300,
   },
 });

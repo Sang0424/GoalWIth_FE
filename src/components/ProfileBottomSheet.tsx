@@ -193,6 +193,7 @@ const ProfileBottomSheet = ({
                               })
                             : navigation.navigate('QuestVerification', {
                                 id: user.main_quest.id,
+                                authorId: user.id,
                               });
                         }}>
                         <Text style={styles.questTitle}>
