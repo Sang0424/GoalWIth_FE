@@ -89,55 +89,6 @@ const ImageCarousel = ({images, containerWidth}: ImageCarouselProps) => {
         })}
       />
       {images.length > 1 && (
-        // <View
-        //   style={{
-        //     flexDirection: 'row',
-        //     position: 'absolute',
-        //     bottom: 4,
-        //     alignSelf: 'center',
-        //   }}>
-        //   {images.map((_, index) => {
-        //     const opacity = scrollX.interpolate({
-        //       inputRange: [
-        //         (index - 1) * windowWidth,
-        //         index * windowWidth,
-        //         (index + 1) * windowWidth,
-        //       ],
-        //       outputRange: [0.5, 1, 0.5],
-        //       extrapolate: 'clamp',
-        //     });
-
-        //     const scale = scrollX.interpolate({
-        //       inputRange: [
-        //         (index - 1) * ITEM_WIDTH,
-        //         index * ITEM_WIDTH,
-        //         (index + 1) * ITEM_WIDTH,
-        //       ],
-        //       outputRange: [0.8, 1.2, 0.8], // 크기 변화 추가
-        //       extrapolate: 'clamp',
-        //     });
-
-        //     return (
-        //       <Animated.View
-        //         key={index}
-        //         style={{
-        //           width: 8,
-        //           height: 8,
-        //           borderRadius: 4,
-        //           backgroundColor: colors.font,
-        //           margin: 5,
-        //           opacity,
-        //           transform: [{scale}],
-        //           shadowColor: '#000', // 점에 그림자 추가해서 밝은 이미지에서도 보이게
-        //           shadowOffset: {width: 0, height: 1},
-        //           shadowOpacity: 0.3,
-        //           shadowRadius: 2,
-        //           elevation: 2,
-        //         }}
-        //       />
-        //     );
-        //   })}
-        // </View>
         <View style={styles.paginationContainer}>
           <Text style={styles.paginationText}>
             {activeIndex + 1} / {images.length}
@@ -206,7 +157,7 @@ const styles = StyleSheet.create({
   paginationContainer: {
     position: 'absolute',
     top: 16,
-    right: 16,
+    right: 32,
     backgroundColor: colors.gray,
     borderRadius: 16,
     paddingHorizontal: 8,

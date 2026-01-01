@@ -241,22 +241,22 @@ const QuestVerification = () => {
     setVerificationText('');
   };
 
-  const {mutate: completeQuest} = useMutation({
-    mutationFn: async (id: number) => {
-      await instance.put(`/quest/complete/${id}`);
-    },
-    onSuccess: () => {
-      Alert.alert('성공', '퀘스트가 완료되었습니다!');
-      navigation.goBack();
-      queryClient.invalidateQueries({queryKey: ['QuestRecord', id]});
-      queryClient.invalidateQueries({queryKey: ['homeQuests']});
-      queryClient.invalidateQueries({queryKey: ['myBadges']});
-      queryClient.invalidateQueries({queryKey: ['myCharacters']});
-    },
-    onError: (error: any) => {
-      Alert.alert(`${error.response.data.message}`);
-    },
-  });
+  // const {mutate: completeQuest} = useMutation({
+  //   mutationFn: async (id: number) => {
+  //     await instance.put(`/quest/complete/${id}`);
+  //   },
+  //   onSuccess: () => {
+  //     Alert.alert('성공', '퀘스트가 완료되었습니다!');
+  //     navigation.goBack();
+  //     queryClient.invalidateQueries({queryKey: ['QuestRecord', id]});
+  //     queryClient.invalidateQueries({queryKey: ['homeQuests']});
+  //     queryClient.invalidateQueries({queryKey: ['myBadges']});
+  //     queryClient.invalidateQueries({queryKey: ['myCharacters']});
+  //   },
+  //   onError: (error: any) => {
+  //     Alert.alert(`${error.response.data.message}`);
+  //   },
+  // });
 
   const handleEdit = (id: number | null, comment: string) => {
     if (!id || !comment.trim()) {
@@ -277,29 +277,29 @@ const QuestVerification = () => {
     return groupRecordsByDate(visibleRecords);
   }, [visibleRecords]);
 
-  const handleCompleteQuest = () => {
-    Alert.alert(
-      '퀘스트 완료',
-      '아직 인증을 다 받지 못했지만 이 퀘스트를 완료하시겠습니까?',
-      [
-        {text: '취소', style: 'cancel'},
-        {
-          text: '완료',
-          onPress: () => {
-            completeQuest(id, {
-              onSuccess: () => {
-                Alert.alert('성공', '퀘스트가 완료되었습니다!');
-                navigation.goBack();
-              },
-              onError: error => {
-                Alert.alert(`${error.response.data.message}`);
-              },
-            });
-          },
-        },
-      ],
-    );
-  };
+  // const handleCompleteQuest = () => {
+  //   Alert.alert(
+  //     '퀘스트 완료',
+  //     '아직 인증을 다 받지 못했지만 이 퀘스트를 완료하시겠습니까?',
+  //     [
+  //       {text: '취소', style: 'cancel'},
+  //       {
+  //         text: '완료',
+  //         onPress: () => {
+  //           completeQuest(id, {
+  //             onSuccess: () => {
+  //               Alert.alert('성공', '퀘스트가 완료되었습니다!');
+  //               navigation.goBack();
+  //             },
+  //             onError: error => {
+  //               Alert.alert(`${error.response.data.message}`);
+  //             },
+  //           });
+  //         },
+  //       },
+  //     ],
+  //   );
+  // };
 
   if (isLoading) {
     return (
@@ -651,7 +651,7 @@ const QuestVerification = () => {
             </Text>
           </TouchableOpacity>
         </View>
-        {user.id === authorId && (
+        {/* {user.id === authorId && (
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={
@@ -669,7 +669,7 @@ const QuestVerification = () => {
               <Text style={styles.completeButtonText}>지금 완료하기</Text>
             </TouchableOpacity>
           </View>
-        )}
+        )} */}
       </Animated.View>
       <ReplyBottomSheet
         visible={replyVisible}

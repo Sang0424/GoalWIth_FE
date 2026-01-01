@@ -502,7 +502,6 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                     />
                   </View>
                 )}
-                {/* {hasImages && <Separator paddingHorizontal={64} />} */}
                 <View
                   style={[
                     styles.cardContentContainer,
@@ -654,10 +653,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
-    paddingBottom: 300,
+    paddingHorizontal: 16,
   },
   header: {
     padding: 10,
@@ -732,6 +728,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 1,
+    marginHorizontal: 16,
   },
   emptyStateText: {
     marginTop: 15,
@@ -773,6 +770,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background, // 로딩 전 배경색
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    //height: '50%',
   },
   cardContentContainer: {
     padding: 16, // 글자 영역에만 패딩을 줌
@@ -780,10 +778,6 @@ const styles = StyleSheet.create({
   // 이미지가 없을 때 위쪽 패딩을 좀 더 줘서 답답하지 않게
   cardContentNoImage: {
     paddingTop: 24,
-  },
-  recordImage: {
-    width: '100%',
-    borderRadius: 8,
   },
   recordText: {
     fontSize: 15,

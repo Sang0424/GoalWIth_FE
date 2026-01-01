@@ -12,6 +12,7 @@ import {
   appleAuth,
   AppleButton,
 } from '@invertase/react-native-apple-authentication';
+import {rewardStore} from '../../store/rewardStore';
 
 export const configureGoogleSignIn = () => {
   GoogleSignin.configure({
@@ -58,10 +59,8 @@ export const signInWithGoogle = async (): Promise<string | null> => {
 export const signOutWithGoogle = async () => {
   try {
     await GoogleSignin.signOut();
-    const setAccessToken = tokenStore(state => state.actions.setAccessToken);
-    setAccessToken(null);
+    tokenStore.getState().actions.setAccessToken(null);
     await AsyncStorage.clear();
-    // 추가로 앱의 상태(e.g., zustand store)에서 사용자 정보를 제거해야 합니다.
   } catch (error) {
     console.error('Google sign-out error:', error);
   }
@@ -85,7 +84,7 @@ export const getCurrentGoogleUser = async () => {
   }
 };
 
-export const deleteAccount = async (): Promise<boolean> => {
+export const deleteAccount = async () => {
   try {
     const loginType = await AsyncStorage.getItem('loginType');
     switch (loginType) {
@@ -99,11 +98,7 @@ export const deleteAccount = async (): Promise<boolean> => {
         await handleCustomAccountDeletion();
     }
 
-    await instance.delete('/user/revoke');
-
-    await clearUserData();
-
-    return true;
+    return instance.delete('/user/revoke');
   } catch (error) {
     console.error('Account deletion failed:', error);
     throw error;
@@ -142,8 +137,8 @@ const handleAppleAccountDeletion = async () => {
 
 const handleCustomAccountDeletion = async () => {};
 
-const clearUserData = async () => {
+export const clearUserData = async () => {
   await AsyncStorage.clear();
-  const setAccessToken = tokenStore(state => state.actions.setAccessToken);
-  setAccessToken(null);
+  rewardStore.getState().reset();
+  tokenStore.getState().actions.setAccessToken(null);
 };

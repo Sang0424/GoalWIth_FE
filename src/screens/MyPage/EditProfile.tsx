@@ -24,7 +24,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
 import {Dropdown} from 'react-native-element-dropdown';
 import {colors} from '../../styles/theme';
-import {deleteAccount} from '../../services/api/auth';
+import {deleteAccount, clearUserData} from '../../services/api/auth';
 
 interface EditProfileProps {
   nickname: string;
@@ -90,6 +90,18 @@ const EditProfile = () => {
     },
   });
 
+  const {mutate: deleteAccountMutate} = useMutation({
+    mutationFn: deleteAccount,
+    onSuccess: async () => {
+      await clearUserData();
+      queryClient.invalidateQueries({queryKey: ['user']});
+      Alert.alert('회원 탈퇴', '회원 탈퇴가 완료되었습니다.');
+    },
+    onError: (error: any) => {
+      Alert.alert(error?.response?.data?.message);
+    },
+  });
+
   const updateProfile = async () => {
     try {
       setLoading(true);
@@ -118,7 +130,7 @@ const EditProfile = () => {
         {
           text: '탈퇴하기',
           style: 'destructive',
-          onPress: () => deleteAccount(),
+          onPress: () => deleteAccountMutate(),
         },
       ],
     );

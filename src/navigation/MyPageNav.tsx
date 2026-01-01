@@ -10,6 +10,7 @@ import MyReaction from '../screens/MyPage/MyReaction';
 import MyBookmark from '../screens/MyPage/MyBookmark';
 import QuestVerification from '../screens/verification/QuestVerification';
 import InquiryPage from '../screens/MyPage/InquiryPage';
+import Onboarding1 from '../screens/onboarding/OnBoarding1';
 
 const Stack = createNativeStackNavigator<MyPageNavParamList>();
 

@@ -303,7 +303,7 @@ const ReplyBottomSheet = ({
                       </Text>
                     </View>
                   </View>
-                  <Separator paddingHorizontal={16} />
+                  <Separator paddingHorizontal={32} />
                   {replies.length > 0 ? (
                     replies.map((reply: Verification) => (
                       <View key={reply.id} style={styles.commentCard}>
