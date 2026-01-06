@@ -21,12 +21,14 @@ import useReactionData from '../utils/hooks/useReactionData';
 import {userStore} from '../store/userStore';
 import ProfileBottomSheet from './ProfileBottomSheet';
 import {Image} from 'expo-image';
+import ReportBottomSheet from './ReportBottomSheet';
 
 const VerificationCard = ({item}: {item: any}) => {
   const user = userStore(state => state.user);
   const navigation =
     useNavigation<NativeStackNavigationProp<VerificationNavParamList>>();
   const [isProfileVisible, setProfileVisible] = useState(false);
+  const [isReportVisible, setReportVisible] = useState(false);
   const [selecteUser, setSelectUser] = useState<number | undefined>(undefined);
   const reactions = useReactionData(item.id);
   const queryClient = useQueryClient();
@@ -131,6 +133,14 @@ const VerificationCard = ({item}: {item: any}) => {
                 )}
                 <Text>저장하기</Text>
               </MenuOption>
+              <MenuOption
+                onSelect={() => {
+                  setReportVisible(true);
+                }}
+                style={styles.menuOption}>
+                <Icon name="flag" size={20} color={colors.primary} />
+                <Text>신고하기</Text>
+              </MenuOption>
             </MenuOptions>
           </Menu>
         </TouchableOpacity>
@@ -203,6 +213,11 @@ const VerificationCard = ({item}: {item: any}) => {
         onClose={() => setProfileVisible(false)}
         userId={selecteUser}
         fromContext="general"
+      />
+      <ReportBottomSheet
+        visible={isReportVisible}
+        onClose={() => setReportVisible(false)}
+        verificationId={item.id}
       />
     </>
   );

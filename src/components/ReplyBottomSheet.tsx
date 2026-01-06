@@ -249,7 +249,7 @@ const ReplyBottomSheet = ({
       </TouchableWithoutFeedback>
       <Modal
         visible={visible}
-        animationType="fade"
+        animationType="slide"
         transparent
         statusBarTranslucent
         onRequestClose={closeModalWithAnimation}>

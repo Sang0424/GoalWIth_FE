@@ -401,7 +401,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
   };
 
-  const CARD_WIDTH = width - 16;
+  const CARD_WIDTH = width - 32;
 
   const renderQuestHeader = () => (
     <View>

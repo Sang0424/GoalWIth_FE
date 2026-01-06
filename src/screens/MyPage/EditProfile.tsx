@@ -309,13 +309,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   revokeText: {
-    color: '#FF0000',
-    fontSize: 14,
+    color: 'white',
+    fontSize: 12,
     fontWeight: 'regular',
     textAlign: 'center',
   },
   revokeButton: {
-    backgroundColor: colors.lightGray,
+    backgroundColor: colors.warning,
     padding: 12,
     borderRadius: 4,
     alignItems: 'center',

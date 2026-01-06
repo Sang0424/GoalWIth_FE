@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   paginationContainer: {
     position: 'absolute',
     top: 16,
-    right: 32,
+    right: 16,
     backgroundColor: colors.gray,
     borderRadius: 16,
     paddingHorizontal: 8,

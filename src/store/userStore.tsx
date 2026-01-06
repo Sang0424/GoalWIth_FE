@@ -6,7 +6,7 @@ interface UserStore {
   user: {
     id: number;
     nickname: string;
-    eamil: string;
+    email: string;
     level: number;
     actionPoints: number;
     exp: number;
@@ -22,7 +22,7 @@ export const userStore = create<UserStore>((set, get) => ({
   user: {
     id: -1,
     nickname: '',
-    eamil: '',
+    email: '',
     level: 0,
     actionPoints: 0,
     exp: 0,
