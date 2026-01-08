@@ -217,7 +217,8 @@ const VerificationCard = ({item}: {item: any}) => {
       <ReportBottomSheet
         visible={isReportVisible}
         onClose={() => setReportVisible(false)}
-        verificationId={item.id}
+        id={item.id}
+        from="quest"
       />
     </>
   );

@@ -39,7 +39,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {colors} from '../../styles/theme';
 import {userStore} from '../../store/userStore';
 import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
-import Separator from '../../components/Separator';
+import ReportBottomSheet from '../../components/ReportBottomSheet';
 import ReplyBottomSheet from '../../components/ReplyBottomSheet';
 import {groupRecordsByDate} from '../../utils/dateUtils';
 
@@ -56,6 +56,7 @@ const QuestVerification = () => {
   const [record, setRecord] = useState<QuestRecord | null>(null);
   const [isCommentUpdate, setIsCommentUpdate] = useState(false);
   const [replyVisible, setReplyVisible] = useState(false);
+  const [isReportVisible, setIsReportVisible] = useState(false);
   const [replyVerificationInfo, setReplyVerificationInfo] =
     useState<Verification | null>(null);
   const [commentId, setCommentId] = useState<number | null>(null);
@@ -537,7 +538,7 @@ const QuestVerification = () => {
                     />
                     <Text style={{marginLeft: 8}}>{verification.username}</Text>
                   </View>
-                  {verification.user_id === user?.id && (
+                  {verification.user_id === user?.id ? (
                     <Menu>
                       <MenuTrigger>
                         <View>
@@ -575,6 +576,27 @@ const QuestVerification = () => {
                           }}
                           style={[styles.menuOption, styles.deleteOption]}>
                           <Text style={styles.deleteText}>삭제</Text>
+                        </MenuOption>
+                      </MenuOptions>
+                    </Menu>
+                  ) : (
+                    <Menu>
+                      <MenuTrigger>
+                        <View>
+                          <Ionicons
+                            name="ellipsis-horizontal"
+                            size={20}
+                            color={colors.gray}
+                          />
+                        </View>
+                      </MenuTrigger>
+                      <MenuOptions optionsContainerStyle={styles.menuOptions}>
+                        <MenuOption
+                          onSelect={() => {
+                            setIsReportVisible(true);
+                          }}
+                          style={styles.menuOption}>
+                          <Text>신고</Text>
                         </MenuOption>
                       </MenuOptions>
                     </Menu>
@@ -678,6 +700,14 @@ const QuestVerification = () => {
         }}
         verificationId={commentId}
         verification={replyVerificationInfo}
+      />
+      <ReportBottomSheet
+        visible={isReportVisible}
+        onClose={() => {
+          setIsReportVisible(false);
+        }}
+        id={commentId}
+        from="verification"
       />
     </SafeAreaView>
   );

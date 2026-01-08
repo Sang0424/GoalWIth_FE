@@ -20,10 +20,9 @@ import {useNavigation, DrawerActions} from '@react-navigation/native';
 import {PeersNavParamList} from '../../types/navigation';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Config from 'react-native-config';
-import type {RequestedPeers} from '../../types/peers.types.d.ts';
 import {useDebounce} from '../../utils/hooks/useDebounce';
 import {colors} from '../../styles/theme';
-import {AutoSkeletonView} from 'react-native-auto-skeleton';
+import {useBlockStore} from '../../store/userStore';
 
 const PAGE_SIZE = 10;
 
@@ -52,6 +51,8 @@ export default function Peers() {
     requestedSearchQuery.toLowerCase(),
     300,
   );
+
+  const {blockedUsers} = useBlockStore(state => state);
 
   const {
     data: myPeersData,
@@ -173,6 +174,10 @@ export default function Peers() {
     requestedPeersData,
     myPeersData,
   ]);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => !blockedUsers.includes(user.id));
+  }, [users, blockedUsers]);
 
   const requestedPeersCount = requestedPeersData?.pages[0].totalElements;
 
@@ -364,7 +369,7 @@ export default function Peers() {
         )}
       </>
       <FlatList
-        data={users}
+        data={filteredUsers}
         renderItem={renderItems}
         keyExtractor={item => item.id}
         onRefresh={handleRefresh}

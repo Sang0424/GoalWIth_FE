@@ -15,7 +15,6 @@ import {useWindowDimensions} from 'react-native';
 import {
   useMutation,
   useQueryClient,
-  useQuery,
   useInfiniteQuery,
 } from '@tanstack/react-query';
 import instance from '../utils/axiosInterceptor';
@@ -26,7 +25,6 @@ import {colors} from '../styles/theme';
 import {useCancelRequestPeer} from '../utils/mutations';
 
 export default function UserCard({user, from}: {user?: any; from: string}) {
-  const navigation = useNavigation();
   const {width} = useWindowDimensions();
   const queryClient = useQueryClient();
   const [isProfileVisible, setProfileVisible] = useState(false);

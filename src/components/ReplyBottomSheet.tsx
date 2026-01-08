@@ -34,6 +34,7 @@ import {userStore} from '../store/userStore';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import useKeyboardHeight from '../utils/hooks/useKeyboardHeight';
 import Separator from './Separator';
+import ReportBottomSheet from './ReportBottomSheet';
 
 interface ReplyBottomSheetProps {
   visible: boolean;
@@ -58,6 +59,7 @@ const ReplyBottomSheet = ({
   const [reply, setReply] = useState('');
   const [isReplyUpdate, setIsReplyUpdate] = useState<boolean>(false);
   const [replyId, setReplyId] = useState<number | null>(null);
+  const [isReportVisible, setIsReportVisible] = useState<boolean>(false);
 
   const queryClient = useQueryClient();
 
@@ -326,7 +328,7 @@ const ReplyBottomSheet = ({
                               reply.createdAt.toString() || '',
                             )}
                           </Text>
-                          {reply.user_id === user?.id && (
+                          {reply.user_id === user?.id ? (
                             <View style={styles.editContainer}>
                               <TouchableOpacity
                                 onPress={() => {
@@ -361,6 +363,18 @@ const ReplyBottomSheet = ({
                                 <Text
                                   style={{color: colors.gray, fontSize: 14}}>
                                   삭제
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                          ) : (
+                            <View style={styles.editContainer}>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setIsReportVisible(true);
+                                }}>
+                                <Text
+                                  style={{color: colors.gray, fontSize: 14}}>
+                                  신고
                                 </Text>
                               </TouchableOpacity>
                             </View>
@@ -409,6 +423,14 @@ const ReplyBottomSheet = ({
           </GestureDetector>
         </View>
       </Modal>
+      <ReportBottomSheet
+        visible={isReportVisible}
+        onClose={() => {
+          setIsReportVisible(false);
+        }}
+        id={replyId}
+        from="verification"
+      />
     </SafeAreaView>
   );
 };

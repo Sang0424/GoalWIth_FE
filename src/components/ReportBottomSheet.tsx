@@ -15,7 +15,8 @@ import instance from '../utils/axiosInterceptor';
 interface ReportBottomSheetProps {
   visible: boolean;
   onClose: () => void;
-  verificationId: number | null;
+  id: number | null;
+  from: 'quest' | 'verification' | 'user';
 }
 
 const reportReasons = [
@@ -29,7 +30,8 @@ const reportReasons = [
 const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({
   visible,
   onClose,
-  verificationId,
+  id,
+  from,
 }) => {
   const [selectedReason, setSelectedReason] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +39,7 @@ const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({
 
   const {mutate: reportMutate} = useMutation({
     mutationFn: (reason: string) =>
-      instance.post(`/report/${verificationId}`, {
+      instance.post(`${from}/report/${id}`, {
         reason,
       }),
     onSuccess: () => {
