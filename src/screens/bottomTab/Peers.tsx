@@ -52,7 +52,7 @@ export default function Peers() {
     300,
   );
 
-  const {blockedUsers} = useBlockStore(state => state);
+  const blockedUsers = useBlockStore(state => state.blockedUsers);
 
   const {
     data: myPeersData,

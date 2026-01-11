@@ -7,9 +7,12 @@ import {
   Alert,
   Modal,
   TextInput,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {colors} from '../styles/theme';
-import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {useMutation} from '@tanstack/react-query';
 import instance from '../utils/axiosInterceptor';
 
 interface ReportBottomSheetProps {
@@ -34,106 +37,127 @@ const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({
   from,
 }) => {
   const [selectedReason, setSelectedReason] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const queryClient = useQueryClient();
+  const [otherReasonText, setOtherReasonText] = useState('');
 
   const {mutate: reportMutate} = useMutation({
     mutationFn: (reason: string) =>
-      instance.post(`${from}/report/${id}`, {
-        reason,
-      }),
+      from === 'verification'
+        ? instance.post(`quest/${from}/report/${id}`, {reason})
+        : instance.post(`${from}/report/${id}`, {reason}),
     onSuccess: () => {
       Alert.alert('신고 완료', '신고가 성공적으로 접수되었습니다.');
-      onClose();
-      setSelectedReason('');
-      setIsLoading(false);
+      handleClose();
     },
     onError: (error: any) => {
       Alert.alert(
         '오류',
         error.response?.data?.message || '신고 중 오류가 발생했습니다.',
       );
-      setIsLoading(false);
     },
   });
 
+  const handleClose = () => {
+    setSelectedReason('');
+    setOtherReasonText('');
+    onClose();
+  };
+
   const handleSubmit = () => {
-    if (selectedReason) {
-      setIsLoading(true);
-      reportMutate(selectedReason);
-      onClose();
-    } else {
+    if (!selectedReason) {
       Alert.alert('오류', '신고 사유를 선택해주세요.');
+      return;
     }
+
+    let reasonToSubmit = selectedReason;
+    if (selectedReason === '기타') {
+      if (!otherReasonText.trim()) {
+        Alert.alert('오류', '기타 사유를 입력해주세요.');
+        return;
+      }
+      reasonToSubmit = otherReasonText.trim();
+    }
+
+    reportMutate(reasonToSubmit);
   };
 
   return (
     <Modal
       visible={visible}
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
       animationType="slide"
-      transparent
-      statusBarTranslucent
-      style={styles.modal}>
-      <View style={styles.container}>
-        <View style={styles.handle} />
-        <Text style={styles.title}>신고하기</Text>
-        {reportReasons.map(reason => (
-          <TouchableOpacity
-            key={reason}
-            style={[
-              styles.reasonButton,
-              selectedReason === reason && styles.selectedReason,
-            ]}
-            onPress={() => setSelectedReason(reason)}>
-            <Text
+      transparent>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flexEnd}>
+        <TouchableWithoutFeedback onPress={handleClose}>
+          <View style={styles.overlay} />
+        </TouchableWithoutFeedback>
+        <View style={styles.container}>
+          <View style={styles.handle} />
+          <Text style={styles.title}>신고하기</Text>
+          {reportReasons.map(reason => (
+            <TouchableOpacity
+              key={reason}
               style={[
-                styles.reasonText,
-                selectedReason === reason && styles.selectedReasonText,
-              ]}>
-              {reason}
-            </Text>
-            {reason === '기타' && (
-              <View>
-                <TextInput
-                  placeholder="신고 사유를 입력해주세요"
-                  style={styles.reasonInput}
-                  value={selectedReason}
-                  onChangeText={setSelectedReason}
-                  multiline
-                />
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, styles.cancelButton]}
-            onPress={onClose}>
-            <Text style={styles.buttonText}>취소</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.submitButton]}
-            onPress={handleSubmit}
-            disabled={isLoading || selectedReason === ''}>
-            <Text style={styles.buttonText}>
-              {isLoading ? '제출 중...' : '제출'}
-            </Text>
-          </TouchableOpacity>
+                styles.reasonButton,
+                selectedReason === reason && styles.selectedReason,
+              ]}
+              onPress={() => setSelectedReason(reason)}>
+              <Text
+                style={[
+                  styles.reasonText,
+                  selectedReason === reason && styles.selectedReasonText,
+                ]}>
+                {reason}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          {selectedReason === '기타' && (
+            <TextInput
+              placeholder="신고 사유를 입력해주세요"
+              style={styles.reasonInput}
+              value={otherReasonText}
+              onChangeText={setOtherReasonText}
+              multiline
+              maxLength={350}
+            />
+          )}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.cancelButton]}
+              onPress={handleClose}>
+              <Text style={styles.buttonText}>취소</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.submitButton,
+                !selectedReason && styles.disabledButton,
+              ]}
+              onPress={handleSubmit}
+              disabled={!selectedReason}>
+              <Text style={styles.buttonText}>{'제출'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modal: {
+  flexEnd: {
+    flex: 1,
     justifyContent: 'flex-end',
-    margin: 0,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   container: {
     backgroundColor: 'white',
     padding: 22,
+    paddingBottom: 40,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     alignItems: 'center',
@@ -165,14 +189,18 @@ const styles = StyleSheet.create({
   reasonText: {
     fontSize: 16,
     textAlign: 'center',
+    color: colors.font,
   },
   reasonInput: {
+    width: '100%',
     borderWidth: 1,
     borderColor: colors.gray,
     borderRadius: 12,
     padding: 12,
+    minHeight: 80,
+    textAlignVertical: 'top',
     marginBottom: 10,
-    marginTop: 12,
+    marginTop: -5,
   },
   selectedReasonText: {
     color: 'white',
@@ -196,6 +224,9 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     backgroundColor: colors.primary,
+  },
+  disabledButton: {
+    backgroundColor: colors.gray,
   },
   buttonText: {
     color: 'white',

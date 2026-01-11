@@ -567,6 +567,10 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               onChangeText={setNewRecordText}
               multiline
               editable={!isCreatingRecord}
+              maxLength={350}
+              autoComplete="off"
+              textContentType="none"
+              autoCorrect={false}
             />
             <TouchableOpacity
               style={styles.cameraButton}

@@ -268,7 +268,6 @@ const ProfileBottomSheet = ({
                           '사용자 신고',
                           '이 사용자를 신고하시겠습니까?',
                           [
-                            {text: '취소', style: 'cancel'},
                             {
                               text: '욕설/비방',
                               onPress: () => reportMutate('욕설/비방'),
@@ -285,6 +284,7 @@ const ProfileBottomSheet = ({
                               text: '개인정보 노출',
                               onPress: () => reportMutate('개인정보 노출'),
                             },
+                            {text: '취소', style: 'cancel'},
                           ],
                         )
                       }
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     padding: 15,
     alignItems: 'center',
     marginTop: 20,
-    marginBottom: 15,
+    marginBottom: 16,
   },
   fullWidthButtonText: {
     color: 'white',
@@ -463,15 +463,14 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   textButton: {
-    padding: 10,
+    padding: 12,
     backgroundColor: colors.switchBG,
     alignItems: 'center',
     marginHorizontal: 10,
   },
   secondaryText: {
-    color: colors.gray,
-    fontSize: 12,
-    textDecorationLine: 'underline', // 선택 사항
+    color: colors.font,
+    fontSize: 14,
   },
   divider: {
     width: 1,

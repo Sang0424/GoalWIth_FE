@@ -40,6 +40,7 @@ const InquiryPage = () => {
       Alert.alert(
         '문의가 성공적으로 전달되었습니다. 신속한 조치를 취하겠습니다.',
       );
+      setInquiry('');
     } catch (err) {
       if (err instanceof EmailJSResponseStatus) {
         console.log('EmailJS Request Failed...', err);

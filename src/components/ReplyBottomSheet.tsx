@@ -371,6 +371,7 @@ const ReplyBottomSheet = ({
                               <TouchableOpacity
                                 onPress={() => {
                                   setIsReportVisible(true);
+                                  setReplyId(reply.id);
                                 }}>
                                 <Text
                                   style={{color: colors.gray, fontSize: 14}}>

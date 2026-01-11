@@ -594,6 +594,7 @@ const QuestVerification = () => {
                         <MenuOption
                           onSelect={() => {
                             setIsReportVisible(true);
+                            setCommentId(verification.id);
                           }}
                           style={styles.menuOption}>
                           <Text>신고</Text>
