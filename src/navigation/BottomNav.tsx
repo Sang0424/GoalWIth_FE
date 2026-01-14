@@ -7,7 +7,7 @@ import type {BottomTabParamList} from '../types/navigation';
 import VerificationNav from '../navigation/VerificationNav';
 import TeamNav from '../navigation/TeamNav';
 import {rewardStore} from '../store/rewardStore';
-import {StyleSheet} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import QuestVerification from '../screens/verification/QuestVerification';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
@@ -15,8 +15,9 @@ const Tab = createBottomTabNavigator<BottomTabParamList>();
 export default function BottomNav() {
   const hasNewCharacter = rewardStore(state => state.hasNewCharacter);
   const hasNewBadge = rewardStore(state => state.hasNewBadge);
-  const showCharRedDot = hasNewCharacter ? true : false;
-  const showBadgeRedDot = hasNewBadge ? true : false;
+
+  console.log('hasNewBage', hasNewBadge);
+  console.log('hasNewCharacter', hasNewCharacter);
 
   return (
     <Tab.Navigator
@@ -33,10 +34,11 @@ export default function BottomNav() {
         component={HomeNav}
         options={{
           tabBarIcon: ({color, size}) => (
-            <Icon name="home" color={color} size={size} />
+            <View>
+              <Icon name="home" color={color} size={size} />
+              {hasNewCharacter && <View style={styles.redDot} />}
+            </View>
           ),
-          tabBarBadge: showCharRedDot ? ' ' : undefined,
-          tabBarBadgeStyle: styles.redDot,
           tabBarLabel: '홈',
         }}
       />
@@ -76,10 +78,11 @@ export default function BottomNav() {
         options={{
           tabBarIcon: ({color, size}) => (
             // <Icon name="account-circle" color={color} size={size} />
-            <Icon name="more-horiz" color={color} size={size} />
+            <View>
+              <Icon name="more-horiz" color={color} size={size} />
+              {hasNewBadge && <View style={styles.redDot} />}
+            </View>
           ),
-          tabBarBadge: showBadgeRedDot ? ' ' : undefined,
-          tabBarBadgeStyle: styles.redDot,
           tabBarLabel: '더보기',
         }}
       />

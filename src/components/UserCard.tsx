@@ -8,8 +8,6 @@ import {
   TouchableOpacity,
   Touchable,
 } from 'react-native';
-import type {User} from '../types/user.types';
-import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useWindowDimensions} from 'react-native';
 import {

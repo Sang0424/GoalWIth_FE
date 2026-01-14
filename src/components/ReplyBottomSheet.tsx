@@ -54,12 +54,11 @@ const ReplyBottomSheet = ({
   const {height: screenHeight} = useWindowDimensions();
   const translateY = useSharedValue(screenHeight);
   const context = useSharedValue({y: 0});
-  const [error, setError] = useState<string | null>(null);
   const {keyboardHeight} = useKeyboardHeight();
   const [reply, setReply] = useState('');
   const [isReplyUpdate, setIsReplyUpdate] = useState<boolean>(false);
   const [replyId, setReplyId] = useState<number | null>(null);
-  const [isReportVisible, setIsReportVisible] = useState<boolean>(false);
+  // const [isReportVisible, setIsReportVisible] = useState<boolean>(false);
 
   const queryClient = useQueryClient();
 
@@ -109,6 +108,8 @@ const ReplyBottomSheet = ({
       queryClient.invalidateQueries({
         queryKey: ['QuestVerification'],
       });
+      queryClient.invalidateQueries({queryKey: ['myCharacters']});
+      queryClient.invalidateQueries({queryKey: ['myBadges']});
       Alert.alert('답글이 추가되었습니다.');
       setReply('');
       setIsReplyUpdate(false);
@@ -166,6 +167,20 @@ const ReplyBottomSheet = ({
     },
     onError: (error: any) => {
       Alert.alert(error.response.data.message);
+    },
+  });
+
+  const {mutate: reportMutate} = useMutation({
+    mutationFn: (reason: string) =>
+      instance.post(`quest/verification/report/${replyId}`, {reason}),
+    onSuccess: () => {
+      Alert.alert('신고 완료', '신고가 성공적으로 접수되었습니다.');
+    },
+    onError: (error: any) => {
+      Alert.alert(
+        '오류',
+        error.response?.data?.message || '신고 중 오류가 발생했습니다.',
+      );
     },
   });
 
@@ -370,8 +385,37 @@ const ReplyBottomSheet = ({
                             <View style={styles.editContainer}>
                               <TouchableOpacity
                                 onPress={() => {
-                                  setIsReportVisible(true);
-                                  setReplyId(reply.id);
+                                  // setIsReportVisible(true);
+                                  // setReplyId(reply.id);
+                                  Alert.alert(
+                                    '댓글 신고',
+                                    '이 댓글을 신고하시겠습니까?',
+                                    [
+                                      {
+                                        text: '스팸 또는 광고',
+                                        onPress: () =>
+                                          reportMutate('스팸 또는 광고'),
+                                      },
+                                      {
+                                        text: '욕설 또는 비방',
+                                        onPress: () =>
+                                          reportMutate('욕설 또는 비방'),
+                                      },
+                                      {
+                                        text: '음란물 또는 성적인 콘텐츠',
+                                        onPress: () =>
+                                          reportMutate(
+                                            '음란물 또는 성적인 콘텐츠',
+                                          ),
+                                      },
+                                      {
+                                        text: '잘못된 정보',
+                                        onPress: () =>
+                                          reportMutate('잘못된 정보'),
+                                      },
+                                      {text: '취소', style: 'cancel'},
+                                    ],
+                                  );
                                 }}>
                                 <Text
                                   style={{color: colors.gray, fontSize: 14}}>
@@ -424,14 +468,14 @@ const ReplyBottomSheet = ({
           </GestureDetector>
         </View>
       </Modal>
-      <ReportBottomSheet
+      {/* <ReportBottomSheet
         visible={isReportVisible}
         onClose={() => {
           setIsReportVisible(false);
         }}
         id={replyId}
         from="verification"
-      />
+      /> */}
     </SafeAreaView>
   );
 };

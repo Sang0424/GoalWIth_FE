@@ -39,7 +39,6 @@ import {colors} from '../../styles/theme';
 import {formatRelativeTime} from '../../utils/dateUtils';
 import {Image as ImageCompressor} from 'react-native-compressor';
 import {Image} from 'expo-image';
-import Separator from '../../components/Separator';
 import ImagePickerModal from '../../components/ImagePickerModal';
 import {groupRecordsByDate} from '../../utils/dateUtils';
 
@@ -118,14 +117,10 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       Alert.alert('성공', '기록이 추가되었습니다!');
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
-      queryClient.invalidateQueries({queryKey: ['myBadges']});
-      queryClient.invalidateQueries({queryKey: ['myCharacters']});
     },
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
-      queryClient.invalidateQueries({queryKey: ['myBadges']});
-      queryClient.invalidateQueries({queryKey: ['myCharacters']});
     },
   });
 
@@ -138,8 +133,8 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       navigation.goBack();
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
-      queryClient.invalidateQueries({queryKey: ['myBadges']});
       queryClient.invalidateQueries({queryKey: ['myCharacters']});
+      queryClient.invalidateQueries({queryKey: ['myBadges']});
     },
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);
@@ -238,15 +233,23 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       {
         text: '완료',
         onPress: () => {
-          completeQuest(quest.id, {
-            onSuccess: () => {
-              Alert.alert('성공', '퀘스트가 완료되었습니다!');
-              navigation.goBack();
-            },
-            onError: error => {
-              Alert.alert(`${error.response.data.message}`);
-            },
-          });
+          if (
+            quest.verificationRequired == true &&
+            quest.requiredVerification > quest.verificationCount
+          ) {
+            Alert.alert('인증이 완료되지 않았습니다');
+            return;
+          } else {
+            completeQuest(quest.id, {
+              onSuccess: () => {
+                Alert.alert('성공', '퀘스트가 완료되었습니다!');
+                navigation.goBack();
+              },
+              onError: error => {
+                Alert.alert(`${error.response.data.message}`);
+              },
+            });
+          }
         },
       },
     ]);
@@ -330,52 +333,56 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   };
 
   const pickImage = async () => {
-    const options: any = {
-      mediaType: 'photo',
-      selectionLimit: 5 - images.length,
-      maxWidth: 1000,
-      maxHeight: 1000,
-      quality: 0.8, // 0-1 where 1 is best quality
-      includeBase64: false,
-    };
-    try {
-      const response = await new Promise<ImagePickerResponse>(resolve =>
-        launchImageLibrary(options, resolve),
-      );
-      if (response.didCancel) {
-        Alert.alert('이미지 선택을 취소했습니다.');
-      }
-      if (response.errorCode) {
-        Alert.alert('이미지 선택 중 오류가 발생했습니다.');
-      }
-      if (response.assets?.length) {
-        const compressedImages = await Promise.all(
-          response.assets.map(async (asset: Asset) => {
-            try {
-              const result = await ImageCompressor.compress(asset.uri || '', {
-                maxWidth: 1000,
-                maxHeight: 1000,
-                quality: 0.8,
-                input: 'uri',
-              });
-              return {
-                ...asset,
-                uri: result,
-              };
-            } catch (error) {
-              console.error(error);
-            }
-          }),
+    setIsModalVisible(false);
+
+    setTimeout(async () => {
+      const options: any = {
+        mediaType: 'photo',
+        selectionLimit: 5 - images.length,
+        maxWidth: 1000,
+        maxHeight: 1000,
+        quality: 0.8, // 0-1 where 1 is best quality
+        includeBase64: false,
+      };
+      try {
+        const response = await new Promise<ImagePickerResponse>(resolve =>
+          launchImageLibrary(options, resolve),
         );
-        const validCompressedImages = compressedImages.filter(
-          img => img !== undefined,
-        );
-        setImages(prev => [...prev, ...validCompressedImages].slice(0, 5));
+        if (response.didCancel) {
+          Alert.alert('이미지 선택을 취소했습니다.');
+        }
+        if (response.errorCode) {
+          Alert.alert('이미지 선택 중 오류가 발생했습니다.');
+        }
+        if (response.assets?.length) {
+          const compressedImages = await Promise.all(
+            response.assets.map(async (asset: Asset) => {
+              try {
+                const result = await ImageCompressor.compress(asset.uri || '', {
+                  maxWidth: 1000,
+                  maxHeight: 1000,
+                  quality: 0.8,
+                  input: 'uri',
+                });
+                return {
+                  ...asset,
+                  uri: result,
+                };
+              } catch (error) {
+                console.error(error);
+              }
+            }),
+          );
+          const validCompressedImages = compressedImages.filter(
+            img => img !== undefined,
+          );
+          setImages(prev => [...prev, ...validCompressedImages].slice(0, 5));
+        }
+      } catch (error) {
+        console.error(error);
+        Alert.alert('이미지 처리하는 중 오류가 발생했습니다.');
       }
-    } catch (error) {
-      console.error(error);
-      Alert.alert('이미지 처리하는 중 오류가 발생했습니다.');
-    }
+    }, 100);
   };
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
@@ -509,7 +516,12 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                   ]}>
                   {/* 글 내용 */}
                   {item.text ? (
-                    <Text style={styles.recordText}>{item.text}</Text>
+                    <Text
+                      style={styles.recordText}
+                      ellipsizeMode="tail"
+                      numberOfLines={2}>
+                      {item.text}
+                    </Text>
                   ) : null}
                   <Text style={styles.recordDate}>
                     {formatRelativeTime(item.createdAt.toString())}
@@ -529,7 +541,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       />
 
       {/* Input Container (Footer) - 기존과 동일하게 Absolute Position 유지 */}
-      {quest.procedure === 'progress' && (
+      {(quest.procedure === 'progress' || quest.procedure === 'verify') && (
         <Animated.View
           style={[
             styles.inputContainer,
@@ -583,9 +595,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={
-                questRecord?.length > 0 &&
-                new Date(quest.endDate) < new Date() &&
-                questParam.procedure === 'progress'
+                questRecord?.length > 0 && new Date(quest.endDate) < new Date()
                   ? [styles.actionButton, styles.completeButton]
                   : [
                       styles.actionButton,
@@ -601,10 +611,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               }
               disabled={
                 questRecord?.length === 0 ||
-                new Date(quest.endDate) > new Date() ||
-                (questParam.procedure === 'verify' &&
-                  questParam.verificationCount <
-                    questParam.requiredVerification)
+                new Date(quest.endDate) > new Date()
               }>
               <Ionicons name="checkmark-circle" size={18} color="white" />
               {questParam.verificationRequired &&

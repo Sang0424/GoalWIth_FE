@@ -204,6 +204,8 @@ const BottomSheet = ({
     onSuccess: () => {
       // 성공 시 공통 로직
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
+      queryClient.invalidateQueries({queryKey: ['myCharacters']});
+      queryClient.invalidateQueries({queryKey: ['myBadges']});
       // 상태 초기화 및 모달 닫기
       setNewQuestTitle('');
       setNewQuestDescription('');

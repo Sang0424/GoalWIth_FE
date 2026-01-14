@@ -125,7 +125,8 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
           onPress={() => {
             handleSelectCharacter(character);
           }}>
-          <Text style={styles.completeText}>완료</Text>
+          {/* <Text style={styles.completeText}>완료</Text> */}
+          <View></View>
         </Pressable>
       </View>
       <AutoSkeletonView isLoading={isLoading}>

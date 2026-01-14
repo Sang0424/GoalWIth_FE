@@ -180,6 +180,7 @@ const QuestVerification = () => {
         queryKey: ['myBadges'],
       });
       Alert.alert('인증 댓글이 추가되었습니다.');
+      Keyboard.dismiss();
     },
     onError: (error: any) => {
       Alert.alert(error.response.data.message);
@@ -202,7 +203,10 @@ const QuestVerification = () => {
       queryClient.invalidateQueries({
         queryKey: ['Verification'],
       });
+      queryClient.invalidateQueries({queryKey: ['myCharacters']});
+      queryClient.invalidateQueries({queryKey: ['myBadges']});
       Alert.alert('인증 댓글이 수정되었습니다.');
+      Keyboard.dismiss();
       setVerificationText('');
       setIsCommentUpdate(false);
       setCommentId(null);

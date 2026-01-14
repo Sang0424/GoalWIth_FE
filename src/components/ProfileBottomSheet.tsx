@@ -99,6 +99,8 @@ const ProfileBottomSheet = ({
       queryClient.invalidateQueries({queryKey: ['recommendPeers']});
       queryClient.invalidateQueries({queryKey: ['myPeers']});
       queryClient.invalidateQueries({queryKey: ['requestedPeersCount']});
+      queryClient.invalidateQueries({queryKey: ['isAlreadyRequest']});
+      Alert.alert('요청 성공!', '동료 요청을 성공적으로 보냈습니다!');
     },
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);
@@ -258,7 +260,15 @@ const ProfileBottomSheet = ({
                   )}
                   <TouchableOpacity
                     style={styles.fullWidthButton}
-                    onPress={() => requestPeer()}>
+                    onPress={() =>
+                      Alert.alert('동료 요청', '동료 요청을 보내겠습니까?', [
+                        {text: '취소', style: 'cancel'},
+                        {
+                          text: '보내기',
+                          onPress: () => requestPeer(),
+                        },
+                      ])
+                    }>
                     <Text style={styles.fullWidthButtonText}>+ 피어링</Text>
                   </TouchableOpacity>
                   <View style={styles.secondaryActionsRow}>

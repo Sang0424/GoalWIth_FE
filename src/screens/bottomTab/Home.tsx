@@ -43,6 +43,7 @@ import {
   RESULTS,
   openSettings,
 } from 'react-native-permissions';
+import {rewardStore} from '../../store/rewardStore';
 
 export default function Home() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -59,6 +60,7 @@ export default function Home() {
   const [showHint, setShowHint] = useState(true);
   const setUser = userStore(state => state.setUser);
   const queryClient = useQueryClient();
+  const hasNewCharacter = rewardStore(state => state.hasNewCharacter);
 
   const {mutate} = useMutation({
     mutationFn: async (questId: number) => {
@@ -208,7 +210,7 @@ export default function Home() {
   const filteredSubQuests = subQuests.filter(matchesCurrentFilter);
 
   const canAddMainQuest =
-    filter === 'ONGOING' && (!mainQuest || mainQuest.length === 0);
+    filter === 'ONGOING' && filteredMainQuest && filteredMainQuest.length === 0;
 
   const hasVerifyingQuest = mainQuest?.some(
     quest => quest.procedure === 'verify',
@@ -249,7 +251,7 @@ export default function Home() {
             : '단 하나의 메인 퀘스트만 생성할 수 있습니다'
           : '마음껏 서브 퀘스트를 생성해보세요'}
       </Text>
-      {filter === 'ONGOING' && (!isMain || canAddMainQuest) && (
+      {filter === 'ONGOING' && canAddMainQuest && !hasVerifyingQuest && (
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => {
@@ -418,13 +420,13 @@ export default function Home() {
               ? navigation.navigate('QuestFeed', {
                   quest,
                 })
-              : quest.verificationRequired
-              ? navigation.navigate('QuestVerification', {
-                  id: quest.id,
-                  authorId: quest.records[0].userId,
-                })
-              : navigation.navigate('QuestFeed', {
+              : quest.procedure === 'verify'
+              ? navigation.navigate('QuestFeed', {
                   quest,
+                })
+              : navigation.navigate('QuestVerification', {
+                  id: quest.id,
+                  authorId: user.id,
                 });
           }}
           activeOpacity={0.88}>
@@ -561,6 +563,7 @@ export default function Home() {
                 });
               }}
               activeOpacity={0.8}>
+              {hasNewCharacter && <View style={styles.redDot} />}
               <CharacterAvatar
                 size={150}
                 level={user?.level}
@@ -905,6 +908,16 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
     width: '100%',
+  },
+  redDot: {
+    position: 'absolute',
+    left: 12,
+    top: 12,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.error,
+    zIndex: 1,
   },
   statsContainer: {
     flex: 1,

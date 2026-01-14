@@ -236,18 +236,11 @@ export default function Peers() {
     return (
       <View
         style={{marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>
-        {/* {activeTab === 'searchPeers' ? (
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: 'bold',
-              color: colors.font,
-              marginBottom: 16,
-            }}>
-            추천 동료
-          </Text>
-        ) : undefined} */}
-        <UserCard user={item.item} from="peers" />
+        {activeTab === 'requestedPeers' ? (
+          <UserCard user={item.item} from="requestedPeers" />
+        ) : (
+          <UserCard user={item.item} from="peers" />
+        )}
       </View>
     );
   };

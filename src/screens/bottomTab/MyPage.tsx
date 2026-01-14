@@ -141,13 +141,13 @@ export default function MyPage() {
     },
   });
 
-  useFocusEffect(
-    useCallback(() => {
-      if (isSuccess && hasNewBadge && badges && badges.length > 0) {
-        markBadgeSeen();
-      }
-    }, [isSuccess, hasNewBadge, badges, markBadgeSeen]),
-  );
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     if (hasNewBadge) {
+  //       markBadgeSeen();
+  //     }
+  //   }, [hasNewBadge, markBadgeSeen]),
+  // );
 
   const renderBadgeItem = useCallback(
     (item: {id: number; name: string}) => {
@@ -176,6 +176,7 @@ export default function MyPage() {
   const handleBadgeChange = useCallback(
     (item: any) => {
       changeBadgeMutate(item.id);
+      markBadgeSeen();
       setSelectedBadge(item.name);
     },
     [changeBadgeMutate],
@@ -279,6 +280,7 @@ export default function MyPage() {
         <View style={styles.badgesContainer}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>획득한 칭호</Text>
+            {hasNewBadge && <View style={styles.redDot} />}
           </View>
           <Dropdown
             data={dropdownData}
@@ -418,6 +420,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 15,
+  },
+  redDot: {
+    position: 'absolute',
+    left: 12,
+    top: 12,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.error,
+    zIndex: 1,
   },
   cardTitle: {
     fontSize: 16,
