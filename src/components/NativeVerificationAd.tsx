@@ -23,10 +23,10 @@ const NATIVE_AD_ID = Platform.select({
   android: Config.ADMOB_NATIVE_ID_ANDROID,
 });
 
-// const NATIVE_VERIFICATION_AD_UNIT =
-//   Config.ENV === 'development' ? TestIds.NATIVE : NATIVE_AD_ID;
+const NATIVE_VERIFICATION_AD_UNIT =
+  Config.ENV === 'development' ? TestIds.NATIVE : NATIVE_AD_ID;
 
-const NATIVE_VERIFICATION_AD_UNIT = TestIds.NATIVE;
+// const NATIVE_VERIFICATION_AD_UNIT = TestIds.NATIVE;
 
 export const NativeVerificationAd = () => {
   const [nativeAd, setNativeAd] = useState<NativeAd>();

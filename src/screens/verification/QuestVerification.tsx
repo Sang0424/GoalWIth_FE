@@ -35,7 +35,7 @@ import {
   MenuOption,
   MenuTrigger,
 } from 'react-native-popup-menu';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+// import Ionicons from 'react-native-vector-icons/Ionicons';
 import {colors} from '../../styles/theme';
 import {userStore} from '../../store/userStore';
 import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
@@ -370,11 +370,7 @@ const QuestVerification = () => {
               onPress={() => navigation.goBack()}
               style={{padding: 10}}>
               <Icon
-                name={
-                  Platform.OS === 'ios'
-                    ? 'arrow-back-ios'
-                    : 'arrow-back-android'
-                }
+                name={Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back'}
                 size={20}
                 color={colors.font}
               />
@@ -508,7 +504,7 @@ const QuestVerification = () => {
               <Text style={styles.expandButtonText}>
                 이전 기록 {hiddenCount}개 더 보기
               </Text>
-              <Ionicons name="chevron-down" size={16} color={colors.gray} />
+              <Icon name="keyboard-arrow-down" size={16} color={colors.gray} />
             </TouchableOpacity>
           )}
 
@@ -521,7 +517,7 @@ const QuestVerification = () => {
                 // 접었을 때 스크롤 위치 조정이 필요할 수 있음
               }}>
               <Text style={styles.expandButtonText}>접기</Text>
-              <Ionicons name="chevron-up" size={16} color={colors.gray} />
+              <Icon name="keyboard-arrow-up" size={16} color={colors.gray} />
             </TouchableOpacity>
           )}
         </View>
@@ -546,8 +542,8 @@ const QuestVerification = () => {
                     <Menu>
                       <MenuTrigger>
                         <View>
-                          <Ionicons
-                            name="ellipsis-horizontal"
+                          <Icon
+                            name="more-horiz"
                             size={20}
                             color={colors.gray}
                           />
@@ -587,8 +583,8 @@ const QuestVerification = () => {
                     <Menu>
                       <MenuTrigger>
                         <View>
-                          <Ionicons
-                            name="ellipsis-horizontal"
+                          <Icon
+                            name="more-horiz"
                             size={20}
                             color={colors.gray}
                           />
@@ -621,8 +617,8 @@ const QuestVerification = () => {
                       setCommentId(verification.id);
                       setReplyVerificationInfo(verification);
                     }}>
-                    <Ionicons
-                      name="chatbubble-outline"
+                    <Icon
+                      name="chat-bubble-outline"
                       size={20}
                       color={colors.gray}
                     />

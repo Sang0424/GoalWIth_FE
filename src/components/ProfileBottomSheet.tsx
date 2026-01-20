@@ -199,7 +199,7 @@ const ProfileBottomSheet = ({
                         {user.badge ? user.badge : null}
                       </Text>
                       <Text style={styles.nickname}>{user.nickname}</Text>
-                      <Text style={styles.email}>{user.email}</Text>
+                      {/* <Text style={styles.email}>{user.email}</Text> */}
                       <Text style={styles.userType}>{user.userType}</Text>
                     </View>
                   </View>

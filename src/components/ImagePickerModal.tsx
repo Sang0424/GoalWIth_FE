@@ -1,5 +1,6 @@
 import {Modal, View, Text, TouchableOpacity, StyleSheet} from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+// import Ionicons from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import {colors} from '../styles/theme';
 
 interface ImagePickerModalProps {
@@ -23,14 +24,13 @@ const ImagePickerModal = ({
         activeOpacity={1}>
         <View style={styles.bottomSheet}>
           <Text style={styles.title}>이미지 업로드</Text>
-
           <TouchableOpacity
             style={styles.optionButton}
             onPress={() => {
               onCamera();
               onClose();
             }}>
-            <Ionicons name="camera-outline" size={24} color="#333" />
+            <Icon name="photo-camera" size={24} color="#333" />
             <Text style={styles.optionText}>사진 찍기</Text>
           </TouchableOpacity>
 
@@ -40,7 +40,7 @@ const ImagePickerModal = ({
               onGallery();
               onClose();
             }}>
-            <Ionicons name="images-outline" size={24} color="#333" />
+            <Icon name="image-search" size={24} color="#333" />
             <Text style={styles.optionText}>앨범에서 선택</Text>
           </TouchableOpacity>
 

@@ -256,27 +256,23 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   };
 
   const handleVerificationQuest = () => {
-    Alert.alert(
-      '이 퀘스트를 인증받으시겠습니까?',
-      '인증을 받기 시작하면 수정할 수 없습니다.',
-      [
-        {text: '취소', style: 'cancel'},
-        {
-          text: '인증',
-          onPress: () => {
-            completeQuest(quest.id, {
-              onSuccess: () => {
-                Alert.alert('성공', '퀘스트를 인증받기 시작합니다!');
-                navigation.goBack();
-              },
-              onError: error => {
-                Alert.alert(`${error.response.data.message}`);
-              },
-            });
-          },
+    Alert.alert('이 퀘스트를 인증받으시겠습니까?', '사람들에게 공개됩니다', [
+      {text: '취소', style: 'cancel'},
+      {
+        text: '인증',
+        onPress: () => {
+          completeQuest(quest.id, {
+            onSuccess: () => {
+              Alert.alert('성공', '퀘스트를 인증받기 시작합니다!');
+              navigation.goBack();
+            },
+            onError: error => {
+              Alert.alert(`${error.response.data.message}`);
+            },
+          });
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const handleCamera = async () => {
@@ -429,11 +425,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               onPress={() => navigation.goBack()}
               style={{padding: 10}}>
               <Icon
-                name={
-                  Platform.OS === 'ios'
-                    ? 'arrow-back-ios'
-                    : 'arrow-back-android'
-                }
+                name={Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back'}
                 size={20}
                 color={colors.font}
               />
@@ -472,7 +464,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Ionicons name="time-outline" size={50} color={colors.font} />
+      <Icon name="access-time" size={50} color={colors.font} />
       <Text style={styles.emptyStateText}>아직 기록이 없습니다.</Text>
       <Text style={styles.emptyStateSubtext}>
         {questParam.verificationRequired
@@ -566,7 +558,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               <TouchableOpacity
                 style={styles.removeImageButton}
                 onPress={() => setImages([])}>
-                <Ionicons name="close" size={16} color="white" />
+                <Icon name="close" size={16} color="white" />
               </TouchableOpacity>
             </View>
           )}
@@ -588,7 +580,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               style={styles.cameraButton}
               onPress={() => setIsModalVisible(true)}
               disabled={isCreatingRecord}>
-              <Ionicons name="camera" size={24} color={colors.primary} />
+              <Icon name="camera-alt" size={24} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
@@ -613,7 +605,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                 questRecord?.length === 0 ||
                 new Date(quest.endDate) > new Date()
               }>
-              <Ionicons name="checkmark-circle" size={18} color="white" />
+              <Icon name="check-circle" size={18} color="white" />
               {questParam.verificationRequired &&
               questParam.procedure === 'progress' ? (
                 <Text style={styles.completeButtonText}>인증받기</Text>
@@ -632,7 +624,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               ]}
               onPress={handleAddRecord}
               disabled={!newRecordText.trim() && images.length === 0}>
-              <Ionicons name="add" size={18} color="white" />
+              <Icon name="add" size={18} color="white" />
               <Text style={styles.addButtonText}>기록 추가</Text>
             </TouchableOpacity>
           </View>

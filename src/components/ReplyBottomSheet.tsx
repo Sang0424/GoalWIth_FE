@@ -31,7 +31,8 @@ import type {QuestVerification as Verification} from '../types/quest.types';
 import CharacterAvatar from './CharacterAvatar';
 import {formatRelativeTime} from '../utils/dateUtils';
 import {userStore} from '../store/userStore';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+// import Ionicons from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import useKeyboardHeight from '../utils/hooks/useKeyboardHeight';
 import Separator from './Separator';
 import ReportBottomSheet from './ReportBottomSheet';
@@ -288,7 +289,7 @@ const ReplyBottomSheet = ({
                     }}>
                     답글
                   </Text>
-                  <Ionicons
+                  <Icon
                     name="close"
                     size={24}
                     color={colors.font}

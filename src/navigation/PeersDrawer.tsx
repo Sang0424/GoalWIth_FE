@@ -14,19 +14,14 @@ export default function PeersDrawer() {
       drawerContent={props => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
-        drawerType: 'front',
+        drawerType: 'slide',
+        swipeEnabled: false,
         drawerStyle: {
           width: '80%',
+          backgroundColor: '#FFFFFF',
         },
-        overlayColor: 'transparent',
+        overlayColor: 'rgba(0,0,0,0.5)',
       }}>
-      {/*
-        ‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️
-        이 부분의 name이 'PeersNav'가 맞는지 다시 한번 확인해주세요.
-        다른 모든 것이 정상이라면, 이 이름이 문제의 원인일 수밖에 없습니다.
-        아래 코드를 그대로 복사해서 붙여넣어 보세요.
-        ‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️
-      */}
       <Drawer.Screen
         name="PeersNav"
         component={PeersNav}

@@ -12,7 +12,8 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+// import Ionicons from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import Logo from '../../components/Logo';
 import {MyPageNavParamList} from '../../types/navigation';
@@ -165,7 +166,7 @@ export default function MyPage() {
             {item.name}
           </Text>
           {item.name === selectedBadge && (
-            <Ionicons name="checkmark" size={16} color={colors.secondary} />
+            <Icon name="check" size={16} color={colors.secondary} />
           )}
         </View>
       );
@@ -298,44 +299,40 @@ export default function MyPage() {
             style={styles.settingItem}
             onPress={() => navigation.navigate('EditProfile')}>
             <View style={styles.settingLeft}>
-              <Ionicons name="person-outline" size={22} color="#666" />
+              <Icon name="person-outline" size={22} color="#666" />
               <Text style={styles.settingText}>프로필 수정</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#999" />
+            <Icon name="chevron-right" size={18} color="#999" />
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => navigation.navigate('HelpPage')}>
             <View style={styles.settingLeft}>
-              <Ionicons name="help-circle-outline" size={22} color="#666" />
+              <Icon name="help-outline" size={22} color="#666" />
               <Text style={styles.settingText}>도움말</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#999" />
+            <Icon name="chevron-right" size={18} color="#999" />
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => navigation.navigate('AppInfoPage')}>
             <View style={styles.settingLeft}>
-              <Ionicons
-                name="information-circle-outline"
-                size={22}
-                color="#666"
-              />
+              <Icon name="info-outline" size={22} color="#666" />
               <Text style={styles.settingText}>앱 정보</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#999" />
+            <Icon name="chevron-right" size={18} color="#999" />
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => navigation.navigate('InquiryPage')}>
             <View style={styles.settingLeft}>
-              <Ionicons name="mail-outline" size={22} color="#666" />
+              <Icon name="mail-outline" size={22} color="#666" />
               <Text style={styles.settingText}>문의하기</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#999" />
+            <Icon name="chevron-right" size={18} color="#999" />
           </TouchableOpacity>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={logout}>

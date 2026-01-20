@@ -65,11 +65,9 @@ platform :ios do
       reject_if_possible: true,
       skip_metadata: false,
       skip_screenshots: true,
-      languages: ['en-US', 'ja','ko'],
+      languages: ['ko'],
       release_notes: {
         "default" => "bug fixed",
-        "en-US" => "bug fixed",
-        "ja" => "バグ修正",
         "ko" => "버그 수정"
       },
       submit_for_review: true,
@@ -80,6 +78,7 @@ platform :ios do
         add_id_info_tracks_install: true,
         add_id_info_tracks_action: false,
         add_id_info_limits_tracking: true,
+        export_compliance_uses_encryption: false,
         export_compliance_encryption_updated: false,
       }
     )

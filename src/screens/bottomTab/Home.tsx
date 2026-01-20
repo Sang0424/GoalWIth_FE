@@ -335,7 +335,6 @@ export default function Home() {
 
     const calculateProgressText = () => {
       if (quest.procedure === 'complete') return '완료됨';
-      if (quest.procedure === 'verify') return '인증 중';
 
       const percentage = calculateProgressPercentage();
       if (quest.verificationRequired) {
@@ -411,7 +410,7 @@ export default function Home() {
         friction={2}
         rightThreshold={40}
         renderRightActions={
-          quest.procedure === 'progress' ? renderRightActions : undefined
+          quest.procedure === 'complete' ? undefined : renderRightActions
         }
         onSwipeableWillOpen={() => setShowHint(false)}>
         <TouchableOpacity

@@ -100,8 +100,8 @@ android {
         applicationId "com.goalwith"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 17
+        versionName "1.0.0"
         resValue "string", "build_config_package", "com.goalwith"
         resValue "string", "admob_app_id", "ca-app-pub-3479406355847634~3087242073"
     }
