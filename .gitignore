@@ -95,3 +95,12 @@ ios/*.xcworkspace/xcuserdata
 .expo
 dist/
 web-build/
+
+# Expo Updates
+ios/Supporting/Expo.plist
+android/app/src/main/Expo.plist
+# Google Cloud Service Account Key
+android/fastlane/*.json
+
+# iOS Build Artifacts
+ios/*.app.dSYM.zip

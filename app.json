@@ -1,8 +1,0 @@
-{
-  "name": "goalwith",
-  "displayName": "GoalWith",
-  "react-native-google-mobile-ads": {
-    "android_app_id": "ca-app-pub-3479406355847634~3087242073",
-    "ios_app_id": "ca-app-pub-3479406355847634~5748353999"
-  }
-}

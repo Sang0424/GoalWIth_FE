@@ -141,6 +141,7 @@
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				9AB2A0CF2ECE0EF8001A3A47 /* Copy GoogleService-Info.plist */,
+				9A3DCE4E2F1F503F000FD683 /* Setup Expo Channel */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				435EF84C68C48D9E5EF91A8A /* [CP] Embed Pods Frameworks */,
 				D76D0445EB3FC30CED0094AC /* [CP] Copy Pods Resources */,
@@ -274,6 +275,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-GoalWith/expo-configure-project.sh\"\n";
+		};
+		9A3DCE4E2F1F503F000FD683 /* Setup Expo Channel */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Setup Expo Channel";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n# Configuration(Debug/Release)에 따라 채널 결정\nif [ \"${CONFIGURATION}\" == \"Debug\" ]; then\n  CHANNEL_NAME=\"dev\"\nelse\n  CHANNEL_NAME=\"production\"\nfi\n\n# Expo.plist 파일 경로 찾기\nPLIST=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Expo.plist\"\n\n# Expo.plist가 없으면 에러 방지를 위해 생성 (보통은 있음)\nif [ ! -f \"$PLIST\" ]; then\n    echo \"Expo.plist not found, creating...\"\n    /usr/libexec/PlistBuddy -c \"Save\" \"$PLIST\"\nfi\n\n# 기존 키 삭제 (중복 방지) 후 새로 쓰기\n/usr/libexec/PlistBuddy -c \"Delete :EXUpdatesRequestHeaders:expo-channel-name\" \"$PLIST\" 2>/dev/null\n/usr/libexec/PlistBuddy -c \"Add :EXUpdatesRequestHeaders:expo-channel-name string $CHANNEL_NAME\" \"$PLIST\"\n\necho \"Updated Expo.plist channel to: $CHANNEL_NAME\"\n";
 		};
 		9AB2A0CF2ECE0EF8001A3A47 /* Copy GoogleService-Info.plist */ = {
 			isa = PBXShellScriptBuildPhase;

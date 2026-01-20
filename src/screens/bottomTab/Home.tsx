@@ -420,8 +420,9 @@ export default function Home() {
                   quest,
                 })
               : quest.procedure === 'verify'
-              ? navigation.navigate('QuestFeed', {
-                  quest,
+              ? navigation.navigate('QuestVerification', {
+                  id: quest.id,
+                  authorId: user.id,
                 })
               : navigation.navigate('QuestVerification', {
                   id: quest.id,

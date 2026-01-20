@@ -256,23 +256,27 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   };
 
   const handleVerificationQuest = () => {
-    Alert.alert('이 퀘스트를 인증받으시겠습니까?', '사람들에게 공개됩니다', [
-      {text: '취소', style: 'cancel'},
-      {
-        text: '인증',
-        onPress: () => {
-          completeQuest(quest.id, {
-            onSuccess: () => {
-              Alert.alert('성공', '퀘스트를 인증받기 시작합니다!');
-              navigation.goBack();
-            },
-            onError: error => {
-              Alert.alert(`${error.response.data.message}`);
-            },
-          });
+    Alert.alert(
+      '이 퀘스트를 인증받으시겠습니까?',
+      '인증받기 시작하면 수정 및 삭제 할 수 없습니다',
+      [
+        {text: '취소', style: 'cancel'},
+        {
+          text: '인증',
+          onPress: () => {
+            completeQuest(quest.id, {
+              onSuccess: () => {
+                Alert.alert('성공', '퀘스트를 인증받기 시작합니다!');
+                navigation.goBack();
+              },
+              onError: error => {
+                Alert.alert(`${error.response.data.message}`);
+              },
+            });
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   const handleCamera = async () => {
