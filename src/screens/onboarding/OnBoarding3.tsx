@@ -193,7 +193,7 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
         </View>
         <KeyboardAvoidingView
           style={{flex: 5, justifyContent: 'flex-start'}}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
           <Text style={styles.label}>사용할 닉네임을 입력해주세요</Text>
           <TextInput

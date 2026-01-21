@@ -117,7 +117,7 @@ export default function OnBoarding2() {
         </TouchableOpacity>
         <KeyboardAvoidingView
           style={{flex: 5, justifyContent: 'flex-start'}}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
           <TextInput
             value={registerForm.name}

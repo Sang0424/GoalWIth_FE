@@ -70,11 +70,34 @@ platform :android do
     end
   end
 
+  def deep_clean_project
+    UI.message("🧹 Starting Deep Clean (Force removing caches)...")
+    
+    # Fastfile 위치(android/fastlane/)를 기준으로 상위 폴더(android/)의 파일들을 정리합니다.
+    # 1. android/.gradle 삭제
+    sh("rm -rf ../.gradle")
+    
+    # 2. android/build 삭제
+    sh("rm -rf ../build")
+    
+    # 3. android/app/build 삭제
+    sh("rm -rf ../app/build")
+    
+    # 4. android/app/.cxx 삭제 (이게 핵심!)
+    sh("rm -rf ../app/.cxx")
+    
+    # 5. ./gradlew clean 실행
+    gradle(task: "clean")
+    
+    UI.success("✨ Deep Clean Finished! Ready to build.")
+  end
+
   desc "Submit a new Beta Build to Crashlytics Beta"
   lane :beta do |options|
+    deep_clean_project
     updateVersion(options)
 
-    gradle(task: "clean bundleProdRelease")
+    gradle(task: "bundleProdRelease")
     upload_to_play_store(
       skip_upload_metadata: true,
       skip_upload_changelogs: true,
@@ -86,18 +109,36 @@ platform :android do
     )
   end
 
-  desc "Deploy a new version to the Google Play"
-  lane :release do |options|
+  desc "Submit a new Beta Build to Tester"
+  lane :test do |options|
+    deep_clean_project
     updateVersion(options)
 
-    gradle(task: "clean bundleProdRelease")
+    gradle(task: "bundleProdRelease")
     upload_to_play_store(
       skip_upload_metadata: true,
       skip_upload_changelogs: true,
       skip_upload_screenshots: true,
       skip_upload_images: true,
       skip_upload_apk: true,
-      track: 'internal',
+      track: 'alpha',
+      release_status: 'completed'
+    )
+  end
+
+  desc "Deploy a new version to the Google Play"
+  lane :release do |options|
+    deep_clean_project
+    updateVersion(options)
+
+    gradle(task: "bundleProdRelease")
+    upload_to_play_store(
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_screenshots: true,
+      skip_upload_images: true,
+      skip_upload_apk: true,
+      track: 'production',
       release_status: 'draft'
     )
   end

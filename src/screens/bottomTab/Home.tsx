@@ -423,6 +423,7 @@ export default function Home() {
               ? navigation.navigate('QuestVerification', {
                   id: quest.id,
                   authorId: user.id,
+                  quest: quest,
                 })
               : navigation.navigate('QuestVerification', {
                   id: quest.id,

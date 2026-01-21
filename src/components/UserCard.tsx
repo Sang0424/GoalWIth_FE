@@ -149,7 +149,7 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
           </View>
           <View>
             <Text style={{fontSize: 12, textAlign: 'center'}}>
-              {user?.userType || 'UserType'}
+              {user?.userType === 'none' ? '기타' : user?.userType}
             </Text>
           </View>
           {from == 'peers' ? (

@@ -17,7 +17,7 @@ class AppDelegate: ExpoAppDelegate {
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
 
-  override override override func application(
+  override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
@@ -67,7 +67,7 @@ class AppDelegate: ExpoAppDelegate {
 
         // 1. Google Sign-In 처리 시도
         handled = GIDSignIn.sharedInstance.handle(url)
-        if handled { return super.application(application, didFinishLaunchingWithOptions: launchOptions) }
+        if handled { return true }
 
         // 2. Kakao SDK 처리 시도
         if (AuthApi.isKakaoTalkLoginUrl(url)) {

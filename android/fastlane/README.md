@@ -23,6 +23,14 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 Submit a new Beta Build to Crashlytics Beta
 
+### android test
+
+```sh
+[bundle exec] fastlane android test
+```
+
+Submit a new Beta Build to Tester
+
 ### android release
 
 ```sh
@@ -30,6 +38,22 @@ Submit a new Beta Build to Crashlytics Beta
 ```
 
 Deploy a new version to the Google Play
+
+### android update_prod
+
+```sh
+[bundle exec] fastlane android update_prod
+```
+
+프로덕션 환경으로 JS 업데이트 배포
+
+### android update_dev
+
+```sh
+[bundle exec] fastlane android update_dev
+```
+
+개발 환경으로 JS 업데이트 배포
 
 ----
 

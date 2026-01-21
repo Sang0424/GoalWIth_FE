@@ -43,7 +43,7 @@ export type HomeNavParamList = {
   Home: undefined;
   QuestFeed: {quest: Quest};
   CharacterSelection: {currentCharacter: string};
-  QuestVerification: {id: number; authorId: number};
+  QuestVerification: {id: number; authorId: number; quest?: Quest};
 };
 
 export type QuestFeedProps = NativeStackNavigationProp<

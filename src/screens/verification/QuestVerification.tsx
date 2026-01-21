@@ -42,6 +42,7 @@ import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
 import ReportBottomSheet from '../../components/ReportBottomSheet';
 import ReplyBottomSheet from '../../components/ReplyBottomSheet';
 import {groupRecordsByDate} from '../../utils/dateUtils';
+import {Quest} from '../../types/quest.types';
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<
   QuestVerificationProps,
@@ -51,7 +52,11 @@ type QuestVerificationScreenNavigationProp = StackNavigationProp<
 const QuestVerification = () => {
   const navigation = useNavigation<QuestVerificationScreenNavigationProp>();
   const route = useRoute();
-  const {id, authorId} = route.params as {id: number; authorId: number};
+  const {id, authorId, quest} = route.params as {
+    id: number;
+    authorId: number;
+    quest?: Quest;
+  };
   const [verificationText, setVerificationText] = useState('');
   const [record, setRecord] = useState<QuestRecord | null>(null);
   const [isCommentUpdate, setIsCommentUpdate] = useState(false);
@@ -80,6 +85,8 @@ const QuestVerification = () => {
   });
 
   let tabBarHeight = 0;
+
+  console.log('Quest', quest);
 
   try {
     // 이 화면이 TabNavigator 안에 있다면 실제 높이를 반환하고, 없으면 에러가 발생합니다.
@@ -246,22 +253,22 @@ const QuestVerification = () => {
     setVerificationText('');
   };
 
-  // const {mutate: completeQuest} = useMutation({
-  //   mutationFn: async (id: number) => {
-  //     await instance.put(`/quest/complete/${id}`);
-  //   },
-  //   onSuccess: () => {
-  //     Alert.alert('성공', '퀘스트가 완료되었습니다!');
-  //     navigation.goBack();
-  //     queryClient.invalidateQueries({queryKey: ['QuestRecord', id]});
-  //     queryClient.invalidateQueries({queryKey: ['homeQuests']});
-  //     queryClient.invalidateQueries({queryKey: ['myBadges']});
-  //     queryClient.invalidateQueries({queryKey: ['myCharacters']});
-  //   },
-  //   onError: (error: any) => {
-  //     Alert.alert(`${error.response.data.message}`);
-  //   },
-  // });
+  const {mutate: completeQuest} = useMutation({
+    mutationFn: async (id: number) => {
+      await instance.put(`/quest/complete/${id}`);
+    },
+    onSuccess: () => {
+      Alert.alert('성공', '퀘스트가 완료되었습니다!');
+      navigation.goBack();
+      queryClient.invalidateQueries({queryKey: ['QuestRecord', id]});
+      queryClient.invalidateQueries({queryKey: ['homeQuests']});
+      queryClient.invalidateQueries({queryKey: ['myBadges']});
+      queryClient.invalidateQueries({queryKey: ['myCharacters']});
+    },
+    onError: (error: any) => {
+      Alert.alert(`${error.response.data.message}`);
+    },
+  });
 
   const handleEdit = (id: number | null, comment: string) => {
     if (!id || !comment.trim()) {
@@ -282,29 +289,25 @@ const QuestVerification = () => {
     return groupRecordsByDate(visibleRecords);
   }, [visibleRecords]);
 
-  // const handleCompleteQuest = () => {
-  //   Alert.alert(
-  //     '퀘스트 완료',
-  //     '아직 인증을 다 받지 못했지만 이 퀘스트를 완료하시겠습니까?',
-  //     [
-  //       {text: '취소', style: 'cancel'},
-  //       {
-  //         text: '완료',
-  //         onPress: () => {
-  //           completeQuest(id, {
-  //             onSuccess: () => {
-  //               Alert.alert('성공', '퀘스트가 완료되었습니다!');
-  //               navigation.goBack();
-  //             },
-  //             onError: error => {
-  //               Alert.alert(`${error.response.data.message}`);
-  //             },
-  //           });
-  //         },
-  //       },
-  //     ],
-  //   );
-  // };
+  const handleCompleteQuest = () => {
+    Alert.alert('퀘스트 완료', '현재 퀘스트를 완료하시겠습니까?', [
+      {text: '취소', style: 'cancel'},
+      {
+        text: '완료',
+        onPress: () => {
+          completeQuest(id, {
+            onSuccess: () => {
+              Alert.alert('성공', '퀘스트가 완료되었습니다!');
+              navigation.goBack();
+            },
+            onError: error => {
+              Alert.alert(`${error.response.data.message}`);
+            },
+          });
+        },
+      },
+    ]);
+  };
 
   if (isLoading) {
     return (
@@ -674,11 +677,14 @@ const QuestVerification = () => {
             </Text>
           </TouchableOpacity>
         </View>
-        {/* {user.id === authorId && (
+        {user.id === authorId && quest && (
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={
-                user.id === authorId
+                user.id === authorId &&
+                (quest?.requiredVerification ?? 0) > 0 &&
+                (quest?.verificationCount ?? 0) >=
+                  (quest?.requiredVerification ?? 0)
                   ? [styles.actionButton, styles.completeButton]
                   : [
                       styles.actionButton,
@@ -687,12 +693,17 @@ const QuestVerification = () => {
                     ]
               }
               onPress={handleCompleteQuest}
-              disabled={user.id !== authorId}>
-              <Ionicons name="checkmark-circle" size={18} color="white" />
-              <Text style={styles.completeButtonText}>지금 완료하기</Text>
+              disabled={
+                user.id !== authorId ||
+                ((quest?.requiredVerification ?? 0) > 0 &&
+                  (quest?.verificationCount ?? 0) <
+                    (quest?.requiredVerification ?? 0))
+              }>
+              <Icon name="check-circle-outline" size={18} color="white" />
+              <Text style={styles.completeButtonText}>완료하기</Text>
             </TouchableOpacity>
           </View>
-        )} */}
+        )}
       </Animated.View>
       <ReplyBottomSheet
         visible={replyVisible}

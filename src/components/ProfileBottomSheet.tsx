@@ -200,7 +200,9 @@ const ProfileBottomSheet = ({
                       </Text>
                       <Text style={styles.nickname}>{user.nickname}</Text>
                       {/* <Text style={styles.email}>{user.email}</Text> */}
-                      <Text style={styles.userType}>{user.userType}</Text>
+                      <Text style={styles.userType}>
+                        {user.userType === 'none' ? '기타' : user.userType}
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.statsContainer}>
