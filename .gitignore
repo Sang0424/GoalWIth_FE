@@ -96,9 +96,11 @@ ios/*.xcworkspace/xcuserdata
 dist/
 web-build/
 
+
 # Expo Updates
 ios/Supporting/Expo.plist
 android/app/src/main/Expo.plist
+
 # Google Cloud Service Account Key
 android/fastlane/*.json
 

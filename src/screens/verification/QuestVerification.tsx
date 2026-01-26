@@ -43,6 +43,8 @@ import ReportBottomSheet from '../../components/ReportBottomSheet';
 import ReplyBottomSheet from '../../components/ReplyBottomSheet';
 import {groupRecordsByDate} from '../../utils/dateUtils';
 import {Quest} from '../../types/quest.types';
+import analytics from '@react-native-firebase/analytics';
+import {checkForProfanity} from '../../utils/filter';
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<
   QuestVerificationProps,
@@ -186,6 +188,7 @@ const QuestVerification = () => {
       queryClient.invalidateQueries({
         queryKey: ['myBadges'],
       });
+      analytics().logEvent('add_verification_comment');
       Alert.alert('인증 댓글이 추가되었습니다.');
       Keyboard.dismiss();
     },
@@ -249,6 +252,13 @@ const QuestVerification = () => {
       Alert.alert('인증 메시지를 입력해주세요.');
       return;
     }
+    if (checkForProfanity(verificationText)) {
+      Alert.alert(
+        '부적절한 단어',
+        '인증 메시지에 부적절한 단어가 포함되어 있습니다.',
+      );
+      return;
+    }
     mutate(verificationText);
     setVerificationText('');
   };
@@ -273,6 +283,13 @@ const QuestVerification = () => {
   const handleEdit = (id: number | null, comment: string) => {
     if (!id || !comment.trim()) {
       Alert.alert('인증 메시지를 입력해주세요.');
+      return;
+    }
+    if (checkForProfanity(comment)) {
+      Alert.alert(
+        '부적절한 단어',
+        '인증 메시지에 부적절한 단어가 포함되어 있습니다.',
+      );
       return;
     }
     editVerification({id, comment});

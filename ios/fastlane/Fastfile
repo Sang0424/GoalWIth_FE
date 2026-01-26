@@ -85,13 +85,19 @@ platform :ios do
   end
   desc "프로덕션 환경으로 JS 업데이트 배포"
   lane :update_prod do
-    # 1. APP_VARIANT=prod를 주입하여 .env.prod를 읽게 함
-    # 2. --branch production: 채널과 브랜치를 일치시킴
-    sh("APP_VARIANT=prod eas update --branch production --message 'Fastlane Update'")
+    # 1. 프로젝트 루트(../..)로 이동해서 명령어를 실행해야 package.json을 찾을 수 있음
+    Dir.chdir("../..") do
+      # 2. APP_VARIANT=prod를 주입하여 .env.prod를 읽게 함
+      # 3. --branch production: 채널과 브랜치를 일치시킴
+      sh("APP_VARIANT=prod eas update --branch production --message 'Fastlane Update'")
+    end
   end
   desc "개발 환경으로 JS 업데이트 배포"
   lane :update_dev do
-    sh("APP_VARIANT=dev eas update --branch dev --message 'Dev Update'")
+    # 개발 배포도 마찬가지로 루트로 이동 필요
+    Dir.chdir("../..") do
+      sh("APP_VARIANT=dev eas update --branch dev --message 'Dev Update'")
+    end
   end
 end
 

@@ -35,7 +35,8 @@ import {userStore} from '../store/userStore';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import useKeyboardHeight from '../utils/hooks/useKeyboardHeight';
 import Separator from './Separator';
-import ReportBottomSheet from './ReportBottomSheet';
+import analytics from '@react-native-firebase/analytics';
+import {checkForProfanity} from '../utils/filter';
 
 interface ReplyBottomSheetProps {
   visible: boolean;
@@ -85,6 +86,13 @@ const ReplyBottomSheet = ({
   const {mutate} = useMutation({
     mutationFn: async (reply: string) => {
       try {
+        if (checkForProfanity(reply)) {
+          Alert.alert(
+            '부적절한 단어',
+            '답글에 부적절한 단어가 포함되어 있습니다.',
+          );
+          return;
+        }
         const response = await instance.post(
           `/quest/verification/comment/${verificationId}`,
           {
@@ -112,6 +120,9 @@ const ReplyBottomSheet = ({
       queryClient.invalidateQueries({queryKey: ['myCharacters']});
       queryClient.invalidateQueries({queryKey: ['myBadges']});
       Alert.alert('답글이 추가되었습니다.');
+      analytics().logEvent('reply_add', {
+        verification_id: verificationId,
+      });
       setReply('');
       setIsReplyUpdate(false);
       setReplyId(null);
@@ -121,6 +132,13 @@ const ReplyBottomSheet = ({
 
   const {mutate: editReply} = useMutation({
     mutationFn: async ({id, comment}: {id: number | null; comment: string}) => {
+      if (checkForProfanity(comment)) {
+        Alert.alert(
+          '부적절한 단어',
+          '답글에 부적절한 단어가 포함되어 있습니다.',
+        );
+        return Promise.reject(new Error('Profanity detected'));
+      }
       try {
         const response = await instance.put(`quest/verifications/${id}`, {
           comment,
@@ -176,6 +194,9 @@ const ReplyBottomSheet = ({
       instance.post(`quest/verification/report/${replyId}`, {reason}),
     onSuccess: () => {
       Alert.alert('신고 완료', '신고가 성공적으로 접수되었습니다.');
+      analytics().logEvent('reply_report', {
+        verification_id: replyId,
+      });
     },
     onError: (error: any) => {
       Alert.alert(

@@ -21,6 +21,7 @@ import ProfileBottomSheet from './ProfileBottomSheet';
 import {useState, useMemo} from 'react';
 import {colors} from '../styles/theme';
 import {useCancelRequestPeer} from '../utils/mutations';
+import analytics from '@react-native-firebase/analytics';
 
 export default function UserCard({user, from}: {user?: any; from: string}) {
   const {width} = useWindowDimensions();
@@ -43,6 +44,10 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
       queryClient.invalidateQueries({queryKey: ['myPeers']});
       queryClient.invalidateQueries({queryKey: ['requestedPeersCount']});
       requestingRefetch();
+      analytics().logEvent('peer_request', {
+        user_id: user?.id,
+        from: from,
+      });
     },
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);
@@ -62,6 +67,10 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
       queryClient.invalidateQueries({queryKey: ['myPeers']});
       queryClient.invalidateQueries({queryKey: ['requestedPeersCount']});
       requestingRefetch();
+      analytics().logEvent('peer_accept', {
+        user_id: user?.id,
+        from: from,
+      });
     },
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);
@@ -81,6 +90,10 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
       queryClient.invalidateQueries({queryKey: ['myPeers']});
       queryClient.invalidateQueries({queryKey: ['requestedPeersCount']});
       requestingRefetch();
+      analytics().logEvent('peer_reject', {
+        user_id: user?.id,
+        from: from,
+      });
     },
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);
@@ -172,7 +185,7 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
                 {isAlreadyRequest ? '요청취소' : '피어링'}
               </Text>
             </TouchableOpacity>
-          ) : (
+          ) : from == 'requestedPeers' ? (
             <View
               style={{
                 flexDirection: 'row',
@@ -227,7 +240,7 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
                 </Text>
               </TouchableOpacity>
             </View>
-          )}
+          ) : null}
         </View>
       </View>
       <ProfileBottomSheet

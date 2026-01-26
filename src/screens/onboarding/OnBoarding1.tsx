@@ -26,6 +26,7 @@ import {
   AppleRequestResponseFullName,
 } from '@invertase/react-native-apple-authentication';
 import {colors} from '../../styles/theme';
+import {GoogleSigninButton} from '@react-native-google-signin/google-signin';
 
 export default function Onboarding1() {
   const {height, width} = useWindowDimensions();
@@ -56,9 +57,19 @@ export default function Onboarding1() {
       } else {
         // 기존 유저
         const {accessToken, refreshToken} = data;
-        setAccessToken(accessToken);
-        await AsyncStorage.setItem('refreshToken', refreshToken);
-        await AsyncStorage.setItem('loginType', 'google');
+        if (!data.nickname || data.userType === '') {
+          navigation.navigate('OnBoarding3', {
+            isSocial: true,
+            registerForm: {email: data.email, name: data.name},
+            accessToken,
+            refreshToken,
+            isGoogle: true,
+          });
+        } else {
+          setAccessToken(accessToken);
+          await AsyncStorage.setItem('refreshToken', refreshToken);
+          await AsyncStorage.setItem('loginType', 'google');
+        }
       }
     },
     onError: (error: any) => {
@@ -105,9 +116,19 @@ export default function Onboarding1() {
       } else {
         // 기존 유저
         const {accessToken, refreshToken} = data;
-        setAccessToken(accessToken);
-        await AsyncStorage.setItem('refreshToken', refreshToken);
-        await AsyncStorage.setItem('loginType', 'apple');
+        if (!data.nickname || data.userType === '') {
+          navigation.navigate('OnBoarding3', {
+            isSocial: true,
+            registerForm: {email: data.email, name: data.name},
+            accessToken,
+            refreshToken,
+            isApple: true,
+          });
+        } else {
+          setAccessToken(accessToken);
+          await AsyncStorage.setItem('refreshToken', refreshToken);
+          await AsyncStorage.setItem('loginType', 'apple');
+        }
       }
     },
     onError: (error: any) => {
@@ -219,6 +240,7 @@ export default function Onboarding1() {
             style={{resizeMode: 'stretch', width: width - 54, height: 72}}
           />
         </Pressable>
+
         {/* <Pressable style={styles.oauthBtn} onPress={() => handleKakaoLogin()}>
           <Image
             source={require('../../assets/images/kakao_login.png')}
@@ -241,7 +263,7 @@ export default function Onboarding1() {
             />
           </View>
         )}
-        <DividerWithText text={'또는'} />
+        <DividerWithText text={'또는 or'} />
         <Pressable
           style={[styles.registerBtnWrapper, {width: width - 54, height: 64}]}
           onPress={() => navigation.push('OnBoarding2')}>

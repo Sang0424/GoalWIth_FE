@@ -19,14 +19,17 @@ export default ({config}: ConfigContext): CustomExpoConfig => ({
   ...config,
   name: APP_VARIANT === 'prod' ? 'GoalWith' : 'GoalWith_Dev',
   slug: 'goalwith',
-  version: APP_VARIANT === 'prod' ? '1.0.1' : '1.0.0', // iOS/Android 버전 차이 대응 가능
+  version: APP_VARIANT === 'prod' ? '1.0.2' : '1.0.1', // iOS/Android 버전 차이 대응 가능
+  runtimeVersion: {
+    policy: 'appVersion',
+  },
 
   ios: {
     bundleIdentifier:
       APP_VARIANT === 'prod'
         ? 'com.goalwith.goalwith'
         : 'com.goalwith.goalwith.dev',
-    buildNumber: '1',
+    buildNumber: '2',
     // 구글 로그인을 위한 설정
     googleServicesFile:
       APP_VARIANT === 'prod'
@@ -36,7 +39,7 @@ export default ({config}: ConfigContext): CustomExpoConfig => ({
 
   android: {
     package: APP_VARIANT === 'prod' ? 'com.goalwith' : 'com.goalwith_dev',
-    versionCode: 1,
+    versionCode: 2,
   },
 
   // 3. 환경 변수(.env) 값을 Expo 앱 내부에서 사용하도록 주입
@@ -64,5 +67,4 @@ export default ({config}: ConfigContext): CustomExpoConfig => ({
       'expo-channel-name': APP_VARIANT === 'prod' ? 'production' : 'dev',
     },
   },
-  runtimeVersion: '1.0.0',
 });

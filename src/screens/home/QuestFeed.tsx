@@ -41,6 +41,7 @@ import {Image as ImageCompressor} from 'react-native-compressor';
 import {Image} from 'expo-image';
 import ImagePickerModal from '../../components/ImagePickerModal';
 import {groupRecordsByDate} from '../../utils/dateUtils';
+import {checkForProfanity} from '../../utils/filter';
 
 const QuestFeed = ({route}: QuestFeedProps) => {
   const navigation = useNavigation();
@@ -144,6 +145,10 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   const handleAddRecord = useCallback(async () => {
     if (!newRecordText.trim() && images.length === 0) {
       Alert.alert('기록할 내용을 입력해주세요.');
+      return;
+    }
+    if (checkForProfanity(newRecordText)) {
+      Alert.alert('부적절한 단어', '기록에 부적절한 단어가 포함되어 있습니다.');
       return;
     }
     mutate({

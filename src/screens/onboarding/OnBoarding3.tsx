@@ -64,6 +64,7 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
   const {setAccessToken} = tokenStore(state => state.actions);
   const queryClient = useQueryClient();
   const loadUser = userStore(state => state.loadUser);
+  const setUser = userStore(state => state.setUser);
   const [userInfo, setUserInfo] = useState({
     nickname: '',
     userType: selectedUserType || '',
@@ -125,13 +126,30 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
       isApple ? await AsyncStorage.setItem('loginType', 'apple') : null;
       loadUser();
       // 소셜 로그인 추가 정보 입력
-      await instance.put('/user/info', {
-        nickname: userInfo.nickname,
-        userType: userInfo.userType,
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['user'],
-      });
+      try {
+        await instance.put('/user/info', {
+          nickname: userInfo.nickname,
+          userType: userInfo.userType,
+        });
+        queryClient.setQueryData(['user'], (oldData: any) => {
+          return {
+            ...oldData,
+            nickname: userInfo.nickname,
+            userType: userInfo.userType,
+          };
+        });
+        const currentUser = userStore.getState().user;
+        setUser({
+          ...currentUser,
+          nickname: userInfo.nickname,
+          userType: userInfo.userType,
+        });
+
+        // 4. 안전하게 쿼리 무효화 (백그라운드에서 동기화 맞춤)
+        queryClient.invalidateQueries({queryKey: ['user']});
+      } catch (error: any) {
+        Alert.alert('가입 실패', error.response.data.message);
+      }
     } else {
       // 일반 이메일 회원가입
       const userData = {
@@ -245,7 +263,7 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
                 color={agreedTerms ? '#806a5b' : '#ccc'}
               />
               <Text style={styles.checkboxLabel}>
-                [필수] 서비스 이용약관 동의
+                [필수] 서비스 이용약관 및 불쾌한 콘텐츠 제재 방침(EULA) 동의
               </Text>
               <TouchableOpacity onPress={() => openLink(TERMS_URL)}>
                 <Text style={styles.viewLink}>[보기]</Text>

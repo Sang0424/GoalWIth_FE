@@ -44,6 +44,8 @@ import {
   openSettings,
 } from 'react-native-permissions';
 import {rewardStore} from '../../store/rewardStore';
+import crashlytics from '@react-native-firebase/crashlytics';
+import analytics from '@react-native-firebase/analytics';
 
 export default function Home() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -72,6 +74,8 @@ export default function Home() {
     },
     onError: error => {
       Alert.alert('오류', '퀘스트 삭제 중 오류가 발생했습니다.');
+      crashlytics().recordError(error);
+      analytics().logEvent('delete_quest_error', {error: error.message});
     },
     onSettled: () => {
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
@@ -102,6 +106,8 @@ export default function Home() {
   useEffect(() => {
     if (user) {
       setUser(user);
+      crashlytics().setUserId(String(user.id));
+      analytics().setUserId(String(user.id));
     }
   }, [user, setUser]);
 

@@ -238,6 +238,8 @@ export default function Peers() {
         style={{marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>
         {activeTab === 'requestedPeers' ? (
           <UserCard user={item.item} from="requestedPeers" />
+        ) : activeTab === 'myPeers' ? (
+          <UserCard user={item.item} from="myPeers" />
         ) : (
           <UserCard user={item.item} from="peers" />
         )}

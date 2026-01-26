@@ -14,6 +14,7 @@ import {
 import {colors} from '../styles/theme';
 import {useMutation} from '@tanstack/react-query';
 import instance from '../utils/axiosInterceptor';
+import analytics from '@react-native-firebase/analytics';
 
 interface ReportBottomSheetProps {
   visible: boolean;
@@ -46,6 +47,10 @@ const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({
         : instance.post(`${from}/report/${id}`, {reason}),
     onSuccess: () => {
       Alert.alert('신고 완료', '신고가 성공적으로 접수되었습니다.');
+      analytics().logEvent('report', {
+        reason: selectedReason,
+        from: from,
+      });
       handleClose();
     },
     onError: (error: any) => {
