@@ -10,6 +10,7 @@ import {
   TouchableWithoutFeedback,
   TouchableOpacity,
   Pressable,
+  Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {GestureDetector, Gesture} from 'react-native-gesture-handler';
@@ -20,11 +21,12 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import instance from '../utils/axiosInterceptor';
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {colors} from '../styles/theme';
 import type {RootStackParamList} from '../types/navigation';
 import {StackActions, useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {useBlockStore} from '../store/userStore';
 
 // --- Type Definitions ---
 export interface UserProfile {
@@ -53,6 +55,7 @@ interface ProfileBottomSheetProps {
   onClose: () => void;
   userId: number | undefined;
   fromContext: 'drawer' | 'general';
+  parentPeeringStatus?: 'requested' | 'requesting' | 'peer' | 'none';
 }
 
 // --- Component ---
@@ -61,12 +64,15 @@ const ProfileBottomSheet = ({
   onClose,
   userId,
   fromContext = 'general',
+  parentPeeringStatus,
 }: ProfileBottomSheetProps) => {
   const {height: screenHeight} = useWindowDimensions();
   const translateY = useSharedValue(screenHeight);
   const context = useSharedValue({y: 0});
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const queryClient = useQueryClient();
+  const {blockUser, unblockUser} = useBlockStore();
   const {
     data: user,
     error,
@@ -79,6 +85,42 @@ const ProfileBottomSheet = ({
       return response.data;
     },
     enabled: visible && userId !== undefined,
+  });
+
+  const {mutate: requestPeer} = useMutation({
+    mutationFn: async () => {
+      const response = await instance.post(`/peer/${userId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ['peers']});
+      queryClient.invalidateQueries({queryKey: ['requestedPeers']});
+      queryClient.invalidateQueries({queryKey: ['requestingPeers']});
+      queryClient.invalidateQueries({queryKey: ['recommendPeers']});
+      queryClient.invalidateQueries({queryKey: ['myPeers']});
+      queryClient.invalidateQueries({queryKey: ['requestedPeersCount']});
+      queryClient.invalidateQueries({queryKey: ['isAlreadyRequest']});
+      Alert.alert('요청 성공!', '동료 요청을 성공적으로 보냈습니다!');
+    },
+    onError: (error: any) => {
+      Alert.alert(`${error.response.data.message}`);
+    },
+  });
+  const {mutate: reportMutate} = useMutation({
+    mutationFn: (reason: string) =>
+      instance.post(`user/report/${userId}`, {
+        reason,
+      }),
+    onSuccess: () => {
+      Alert.alert('신고 완료', '신고가 성공적으로 접수되었습니다.');
+      onClose();
+    },
+    onError: (error: any) => {
+      Alert.alert(
+        '오류',
+        error.response?.data?.message || '신고 중 오류가 발생했습니다.',
+      );
+    },
   });
 
   const closeModalWithAnimation = useCallback(() => {
@@ -157,8 +199,10 @@ const ProfileBottomSheet = ({
                         {user.badge ? user.badge : null}
                       </Text>
                       <Text style={styles.nickname}>{user.nickname}</Text>
-                      <Text style={styles.email}>{user.email}</Text>
-                      <Text style={styles.userType}>{user.userType}</Text>
+                      {/* <Text style={styles.email}>{user.email}</Text> */}
+                      <Text style={styles.userType}>
+                        {user.userType === 'none' ? '기타' : user.userType}
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.statsContainer}>
@@ -193,6 +237,7 @@ const ProfileBottomSheet = ({
                               })
                             : navigation.navigate('QuestVerification', {
                                 id: user.main_quest.id,
+                                authorId: user.id,
                               });
                         }}>
                         <Text style={styles.questTitle}>
@@ -215,6 +260,68 @@ const ProfileBottomSheet = ({
                       </Text>
                     </View>
                   )}
+                  <TouchableOpacity
+                    style={styles.fullWidthButton}
+                    onPress={() =>
+                      Alert.alert('동료 요청', '동료 요청을 보내겠습니까?', [
+                        {text: '취소', style: 'cancel'},
+                        {
+                          text: '보내기',
+                          onPress: () => requestPeer(),
+                        },
+                      ])
+                    }>
+                    <Text style={styles.fullWidthButtonText}>+ 피어링</Text>
+                  </TouchableOpacity>
+                  <View style={styles.secondaryActionsRow}>
+                    <TouchableOpacity
+                      onPress={() =>
+                        Alert.alert(
+                          '사용자 신고',
+                          '이 사용자를 신고하시겠습니까?',
+                          [
+                            {
+                              text: '욕설/비방',
+                              onPress: () => reportMutate('욕설/비방'),
+                            },
+                            {
+                              text: '음란물/불법 콘텐츠',
+                              onPress: () => reportMutate('음란물/불법 콘텐츠'),
+                            },
+                            {
+                              text: '잘못된 정보',
+                              onPress: () => reportMutate('잘못된 정보'),
+                            },
+                            {
+                              text: '개인정보 노출',
+                              onPress: () => reportMutate('개인정보 노출'),
+                            },
+                            {text: '취소', style: 'cancel'},
+                          ],
+                        )
+                      }
+                      style={styles.textButton}>
+                      <Text style={styles.secondaryText}>신고하기</Text>
+                    </TouchableOpacity>
+                    <View style={styles.divider} />
+                    <TouchableOpacity
+                      onPress={() =>
+                        Alert.alert(
+                          '차단하시겠습니까?',
+                          '이 사용자를 차단하시겠습니까?',
+                          [
+                            {text: '취소', style: 'cancel'},
+                            {
+                              text: '차단',
+                              onPress: () => userId && blockUser(userId),
+                            },
+                          ],
+                        )
+                      }
+                      style={styles.textButton}>
+                      <Text style={styles.secondaryText}>차단하기</Text>
+                    </TouchableOpacity>
+                  </View>
                 </ScrollView>
               </SafeAreaView>
             </Animated.View>
@@ -347,6 +454,41 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontWeight: 'bold',
     alignSelf: 'flex-end',
+  },
+  fullWidthButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    padding: 15,
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  fullWidthButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  secondaryActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  textButton: {
+    padding: 12,
+    backgroundColor: colors.switchBG,
+    alignItems: 'center',
+    marginHorizontal: 10,
+  },
+  secondaryText: {
+    color: colors.font,
+    fontSize: 14,
+  },
+  divider: {
+    width: 1,
+    height: 12,
+    backgroundColor: colors.gray,
+    marginHorizontal: 10,
   },
 });
 

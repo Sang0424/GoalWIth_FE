@@ -5,9 +5,12 @@ if (__DEV__) {
 import React from 'react';
 import OnBoardingNav from './src/navigation/OnBoardingNav';
 import MainNav from './src/navigation/MainNav';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {NavigationContainer} from '@react-navigation/native';
+import {
+  NavigationContainer,
+  NavigationContainerRef,
+} from '@react-navigation/native';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,6 +25,7 @@ import {initializeKakaoSDK} from '@react-native-kakao/core';
 import Toast from 'react-native-toast-message';
 import mobileAds from 'react-native-google-mobile-ads';
 import {useRewardSync} from './src/utils/hooks/useRewardSync';
+import analytics from '@react-native-firebase/analytics';
 
 const queryClient = new QueryClient();
 
@@ -34,6 +38,9 @@ const AppContent = () => {
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const setAccessToken = tokenStore(state => state.actions.setAccessToken);
+
+  const navigationRef = useRef<NavigationContainerRef<any>>(null);
+  const routeNameRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     mobileAds().initialize();
@@ -97,7 +104,24 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <MenuProvider>
-        <NavigationContainer>
+        <NavigationContainer
+          ref={navigationRef}
+          onReady={() => {
+            routeNameRef.current =
+              navigationRef.current?.getCurrentRoute()?.name;
+          }}
+          onStateChange={async () => {
+            const previousRouteName = routeNameRef.current;
+            const currentRouteName =
+              navigationRef.current?.getCurrentRoute()?.name;
+            if (previousRouteName !== currentRouteName) {
+              await analytics().logScreenView({
+                screen_name: currentRouteName,
+                screen_class: currentRouteName,
+              });
+            }
+            routeNameRef.current = currentRouteName;
+          }}>
           <SafeAreaProvider>
             <GestureHandlerRootView style={{flex: 1}}>
               <AppContent />

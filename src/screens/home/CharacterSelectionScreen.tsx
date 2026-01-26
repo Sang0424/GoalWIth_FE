@@ -30,6 +30,8 @@ import {useFocusEffect} from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<HomeNavParamList, 'CharacterSelection'>;
 
+const PAGE_SIZE = 6;
+
 const CharacterSelectionScreen = ({route, navigation}: Props) => {
   const {currentCharacter} = route.params;
   const [character, setCharacter] = useState(currentCharacter);
@@ -41,14 +43,15 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
   const {data, isLoading, refetch, isRefetching, hasNextPage, fetchNextPage} =
     useInfiniteQuery({
       queryKey: ['characters'],
-      queryFn: async () => {
-        const response = await instance.get(`/user/characters/${user.id}`);
+      queryFn: async ({pageParam = 0}) => {
+        const response = await instance.get(
+          `/user/characters/${user.id}?page=${pageParam}&size=${PAGE_SIZE}`,
+        );
         return response.data;
       },
       initialPageParam: 0,
       getNextPageParam: (lastPage, allPages) => {
-        const totalPages = lastPage.totalPages;
-        return totalPages > allPages.length ? allPages.length + 1 : undefined;
+        return lastPage.hasNext ? allPages.length : undefined;
       },
     });
 
@@ -125,7 +128,8 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
           onPress={() => {
             handleSelectCharacter(character);
           }}>
-          <Text style={styles.completeText}>완료</Text>
+          {/* <Text style={styles.completeText}>완료</Text> */}
+          <View></View>
         </Pressable>
       </View>
       <AutoSkeletonView isLoading={isLoading}>

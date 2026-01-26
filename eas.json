@@ -1,0 +1,12 @@
+{
+  "build": {
+    "development": {
+      "channel": "dev",
+      "env": {"APP_VARIANT": "dev"}
+    },
+    "production": {
+      "channel": "production",
+      "env": {"APP_VARIANT": "prod"}
+    }
+  }
+}

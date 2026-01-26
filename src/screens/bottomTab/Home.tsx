@@ -43,6 +43,9 @@ import {
   RESULTS,
   openSettings,
 } from 'react-native-permissions';
+import {rewardStore} from '../../store/rewardStore';
+import crashlytics from '@react-native-firebase/crashlytics';
+import analytics from '@react-native-firebase/analytics';
 
 export default function Home() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -59,6 +62,7 @@ export default function Home() {
   const [showHint, setShowHint] = useState(true);
   const setUser = userStore(state => state.setUser);
   const queryClient = useQueryClient();
+  const hasNewCharacter = rewardStore(state => state.hasNewCharacter);
 
   const {mutate} = useMutation({
     mutationFn: async (questId: number) => {
@@ -70,6 +74,8 @@ export default function Home() {
     },
     onError: error => {
       Alert.alert('오류', '퀘스트 삭제 중 오류가 발생했습니다.');
+      crashlytics().recordError(error);
+      analytics().logEvent('delete_quest_error', {error: error.message});
     },
     onSettled: () => {
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
@@ -100,6 +106,8 @@ export default function Home() {
   useEffect(() => {
     if (user) {
       setUser(user);
+      crashlytics().setUserId(String(user.id));
+      analytics().setUserId(String(user.id));
     }
   }, [user, setUser]);
 
@@ -116,12 +124,13 @@ export default function Home() {
         ios: [
           PERMISSIONS.IOS.APP_TRACKING_TRANSPARENCY,
           PERMISSIONS.IOS.CAMERA,
-          PERMISSIONS.IOS.PHOTO_LIBRARY, // Library
+          PERMISSIONS.IOS.PHOTO_LIBRARY,
         ],
         android: [
           PERMISSIONS.ANDROID.CAMERA,
-          // 안드로이드 13(API 33) 이상 여부에 따라 권한이 갈리므로 주의가 필요합니다.
           PERMISSIONS.ANDROID.READ_MEDIA_IMAGES,
+          PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE,
+          PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE,
         ],
       });
 
@@ -134,6 +143,11 @@ export default function Home() {
         Platform.OS === 'ios'
           ? statuses[PERMISSIONS.IOS.PHOTO_LIBRARY]
           : statuses[PERMISSIONS.ANDROID.READ_MEDIA_IMAGES];
+
+      const storageStatus =
+        Platform.OS === 'ios'
+          ? statuses[PERMISSIONS.IOS.PHOTO_LIBRARY]
+          : statuses[PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE];
 
       if (
         libraryStatus === RESULTS.BLOCKED ||
@@ -152,9 +166,6 @@ export default function Home() {
           ],
         );
       }
-
-      // 3. 결과 확인 (디버깅용)
-      console.log('Permission Statuses:', statuses);
     };
 
     // 4. 약간의 지연 시간을 주어 화면 전환이 끝난 후 팝업이 뜨게 함 (UX 권장사항)
@@ -205,7 +216,7 @@ export default function Home() {
   const filteredSubQuests = subQuests.filter(matchesCurrentFilter);
 
   const canAddMainQuest =
-    filter === 'ONGOING' && (!mainQuest || mainQuest.length === 0);
+    filter === 'ONGOING' && filteredMainQuest && filteredMainQuest.length === 0;
 
   const hasVerifyingQuest = mainQuest?.some(
     quest => quest.procedure === 'verify',
@@ -246,7 +257,7 @@ export default function Home() {
             : '단 하나의 메인 퀘스트만 생성할 수 있습니다'
           : '마음껏 서브 퀘스트를 생성해보세요'}
       </Text>
-      {filter === 'ONGOING' && (!isMain || canAddMainQuest) && (
+      {filter === 'ONGOING' && canAddMainQuest && !hasVerifyingQuest && (
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => {
@@ -271,13 +282,6 @@ export default function Home() {
     onEdit: (quest: Quest) => void;
   }) => {
     if (!quest) return null;
-
-    // useEffect(() => {
-    //   const timer = setTimeout(() => {
-    //     setShowHint(false);
-    //   }, 100000);
-    //   return () => clearTimeout(timer);
-    // }, []);
 
     const renderRightActions = (progress: any, _dragX: any) => {
       const animatedStyles = useAnimatedStyle(() => {
@@ -337,7 +341,6 @@ export default function Home() {
 
     const calculateProgressText = () => {
       if (quest.procedure === 'complete') return '완료됨';
-      if (quest.procedure === 'verify') return '인증 중';
 
       const percentage = calculateProgressPercentage();
       if (quest.verificationRequired) {
@@ -413,7 +416,7 @@ export default function Home() {
         friction={2}
         rightThreshold={40}
         renderRightActions={
-          quest.procedure === 'progress' ? renderRightActions : undefined
+          quest.procedure === 'complete' ? undefined : renderRightActions
         }
         onSwipeableWillOpen={() => setShowHint(false)}>
         <TouchableOpacity
@@ -422,12 +425,15 @@ export default function Home() {
               ? navigation.navigate('QuestFeed', {
                   quest,
                 })
-              : quest.verificationRequired
+              : quest.procedure === 'verify'
               ? navigation.navigate('QuestVerification', {
                   id: quest.id,
+                  authorId: user.id,
+                  quest: quest,
                 })
-              : navigation.navigate('QuestFeed', {
-                  quest,
+              : navigation.navigate('QuestVerification', {
+                  id: quest.id,
+                  authorId: user.id,
                 });
           }}
           activeOpacity={0.88}>
@@ -564,6 +570,7 @@ export default function Home() {
                 });
               }}
               activeOpacity={0.8}>
+              {hasNewCharacter && <View style={styles.redDot} />}
               <CharacterAvatar
                 size={150}
                 level={user?.level}
@@ -908,6 +915,16 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
     width: '100%',
+  },
+  redDot: {
+    position: 'absolute',
+    left: 12,
+    top: 12,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.error,
+    zIndex: 1,
   },
   statsContainer: {
     flex: 1,

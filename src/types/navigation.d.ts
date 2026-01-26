@@ -43,7 +43,7 @@ export type HomeNavParamList = {
   Home: undefined;
   QuestFeed: {quest: Quest};
   CharacterSelection: {currentCharacter: string};
-  QuestVerification: {id: number};
+  QuestVerification: {id: number; authorId: number; quest?: Quest};
 };
 
 export type QuestFeedProps = NativeStackNavigationProp<
@@ -53,7 +53,7 @@ export type QuestFeedProps = NativeStackNavigationProp<
 
 export type VerificationNavParamList = {
   Verification: undefined;
-  QuestVerification: {id: number};
+  QuestVerification: {id: number; authorId: number};
 };
 
 export type QuestVerificationProps = NativeStackNavigationProp<
@@ -72,7 +72,7 @@ export type PeersNavParamList = {
   Peers: undefined;
   PeerRequest: undefined;
   PeerListScreen: {type: string};
-  QuestVerification: {id: number};
+  QuestVerification: {id: number; authorId: number};
 };
 
 export type PeersDrawerParamList = {
@@ -116,6 +116,6 @@ export type MyPageNavParamList = {
 export type RootStackParamList = {
   VerificationNav: NavigatorScreenParams<VerificationNavParamList>;
   PeersNav: NavigatorScreenParams<PeersNavParamList>;
-  QuestVerification: {id: number};
+  QuestVerification: {id: number; authorId: number};
   PeersDrawer: NavigatorScreenParams<PeersDrawerParamList>;
 };

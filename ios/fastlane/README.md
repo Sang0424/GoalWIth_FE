@@ -39,6 +39,22 @@ Push a new beta build to TestFlight
 
 Push a new release build to the App Store
 
+### ios update_prod
+
+```sh
+[bundle exec] fastlane ios update_prod
+```
+
+프로덕션 환경으로 JS 업데이트 배포
+
+### ios update_dev
+
+```sh
+[bundle exec] fastlane ios update_dev
+```
+
+개발 환경으로 JS 업데이트 배포
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

@@ -34,7 +34,7 @@ class AppDelegate: ExpoAppDelegate {
     self.window = UIWindow(frame: UIScreen.main.bounds)
 
     factory.startReactNative(
-      withModuleName: "goalwith",
+      withModuleName: "main",
       in: self.window,
       launchOptions: launchOptions
     )
@@ -55,7 +55,7 @@ class AppDelegate: ExpoAppDelegate {
         } else {
              print("Warning: KAKAO_APP_KEY not found in Info.plist")
         }
-    return true
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
   override func application(
         _ app: UIApplication,

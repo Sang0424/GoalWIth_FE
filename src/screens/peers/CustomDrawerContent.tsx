@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   SectionList,
   Alert,
+  Pressable,
 } from 'react-native';
 import {useQuery} from '@tanstack/react-query';
 import instance from '../../utils/axiosInterceptor';
@@ -25,6 +26,7 @@ import {PeersDrawerParamList, PeersNavParamList} from '../../types/navigation';
 import {colors} from '../../styles/theme';
 import ProfileBottomSheet from '../../components/ProfileBottomSheet';
 import {useCancelRequestPeer} from '../../utils/mutations';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export default function CustomDrawerContent(props: any) {
   const user = userStore(state => state.user);
@@ -153,6 +155,11 @@ export default function CustomDrawerContent(props: any) {
 
   return (
     <SafeAreaView style={{flex: 1, paddingHorizontal: 16, paddingVertical: 32}}>
+      <View style={{alignItems: 'flex-end', marginBottom: 10}}>
+        <Pressable onPress={() => props.navigation.closeDrawer()}>
+          <Icon name="close" size={24} color={colors.font} />
+        </Pressable>
+      </View>
       <View style={styles.profileContainer}>
         <CharacterAvatar
           avatar={

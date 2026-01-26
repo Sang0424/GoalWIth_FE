@@ -45,10 +45,10 @@ const HelpPage = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>서브 퀘스트</Text>
           <Text style={styles.text}>
-            • 메인 퀘스트를 달성하기 위한 작은 단계들이에요.{'\n'} • 단기간 내에
-            완료할 수 있는 목표를 설정하세요.{'\n'} • 서브 퀘스트를 완료하면
-            경험치를 얻을 수 있어요.{'\n'} • 서브 퀘스트는 한번에 여러 개 설정할
-            수 있어요.
+            • 메인 퀘스트를 달성하기 위한 작은 단계들이에요.{'\n'} •혹은 평소에
+            달성하고자 했던 작은 목표들도 좋아요.{'\n'} • 단기간 내에 완료할 수
+            있는 목표를 설정하세요.{'\n'} • 서브 퀘스트를 완료하면 경험치를 얻을
+            수 있어요.{'\n'} • 서브 퀘스트는 한번에 여러 개 설정할 수 있어요.
           </Text>
         </View>
 
@@ -61,14 +61,14 @@ const HelpPage = () => {
           </Text>
         </View>
 
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>팀 기능</Text>
           <Text style={styles.text}>
             • 같은 목표를 가진 유저들과 팀을 이룰 수 있어요.{'\n'} • 팀원들과
             함께 퀘스트를 완수해보세요.{'\n'} • 서로의 진행 상황을 확인하고
             응원할 수 있어요.{'\n'}
           </Text>
-        </View>
+        </View> */}
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>도움이 필요하시면 문의해주세요.</Text>
@@ -125,6 +125,7 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 20,
     padding: 15,
+    marginBottom: 20,
     alignItems: 'center',
   },
   footerText: {

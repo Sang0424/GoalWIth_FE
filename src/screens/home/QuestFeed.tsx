@@ -12,8 +12,10 @@ import {
   Pressable,
   Platform,
   ActivityIndicator,
+  SectionList,
+  useWindowDimensions,
 } from 'react-native';
-import {useRef, useEffect, useCallback} from 'react';
+import {useRef, useEffect, useCallback, useMemo} from 'react';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -22,6 +24,8 @@ import {
   launchImageLibrary,
   Asset,
   ImagePickerResponse,
+  launchCamera,
+  CameraOptions,
 } from 'react-native-image-picker';
 import {QuestFeedProps} from '../../types/navigation';
 import useKeyboardHeight from '../../utils/hooks/useKeyboardHeight';
@@ -35,7 +39,9 @@ import {colors} from '../../styles/theme';
 import {formatRelativeTime} from '../../utils/dateUtils';
 import {Image as ImageCompressor} from 'react-native-compressor';
 import {Image} from 'expo-image';
-import Separator from '../../components/Separator';
+import ImagePickerModal from '../../components/ImagePickerModal';
+import {groupRecordsByDate} from '../../utils/dateUtils';
+import {checkForProfanity} from '../../utils/filter';
 
 const QuestFeed = ({route}: QuestFeedProps) => {
   const navigation = useNavigation();
@@ -44,10 +50,13 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   const [images, setImages] = useState<Asset[]>([]);
   const [questRecord, setQuestRecord] = useState<QuestRecord[]>([]);
   const {keyboardHeight} = useKeyboardHeight();
-  const scrollViewRef = useRef<ScrollView>(null);
+  // const scrollViewRef = useRef<ScrollView>(null);
+  const sectionListRef = useRef<SectionList>(null);
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const TAB_BAR_HEIGHT = 49;
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const {width} = useWindowDimensions();
 
   const blurhash =
     '|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[';
@@ -109,14 +118,10 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       Alert.alert('성공', '기록이 추가되었습니다!');
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
-      queryClient.invalidateQueries({queryKey: ['myBadges']});
-      queryClient.invalidateQueries({queryKey: ['myCharacters']});
     },
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
-      queryClient.invalidateQueries({queryKey: ['myBadges']});
-      queryClient.invalidateQueries({queryKey: ['myCharacters']});
     },
   });
 
@@ -129,8 +134,8 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       navigation.goBack();
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
-      queryClient.invalidateQueries({queryKey: ['myBadges']});
       queryClient.invalidateQueries({queryKey: ['myCharacters']});
+      queryClient.invalidateQueries({queryKey: ['myBadges']});
     },
     onError: (error: any) => {
       Alert.alert(`${error.response.data.message}`);
@@ -142,6 +147,10 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       Alert.alert('기록할 내용을 입력해주세요.');
       return;
     }
+    if (checkForProfanity(newRecordText)) {
+      Alert.alert('부적절한 단어', '기록에 부적절한 단어가 포함되어 있습니다.');
+      return;
+    }
     mutate({
       questId: quest.id,
       text: newRecordText,
@@ -151,13 +160,22 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     setImages([]);
   }, [newRecordText, images, quest.id, mutate]);
 
+  const sections = useMemo(() => {
+    if (!questRecord) return [];
+    return groupRecordsByDate(questRecord);
+  }, [questRecord]);
+
   useEffect(() => {
-    if (questRecord?.length) {
+    if (sections.length > 0) {
       setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({animated: true});
+        sectionListRef.current?.scrollToLocation({
+          sectionIndex: 0,
+          itemIndex: 0,
+          animated: true,
+        });
       }, 100);
     }
-  }, [questRecord]);
+  }, [sections]);
 
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
@@ -197,18 +215,20 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     };
   }, []);
 
-  if (!quest) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>퀘스트를 찾을 수 없습니다.</Text>
-      </View>
-    );
-  }
   if (isLoading) {
     return (
       <SafeAreaView style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.secondary} />
+        <Text>로딩 중... 조금만 기다려주세요</Text>
       </SafeAreaView>
+    );
+  }
+
+  if (!isLoading && !quest) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text>퀘스트를 찾을 수 없습니다.</Text>
+      </View>
     );
   }
 
@@ -218,15 +238,23 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       {
         text: '완료',
         onPress: () => {
-          completeQuest(quest.id, {
-            onSuccess: () => {
-              Alert.alert('성공', '퀘스트가 완료되었습니다!');
-              navigation.goBack();
-            },
-            onError: error => {
-              Alert.alert(`${error.response.data.message}`);
-            },
-          });
+          if (
+            quest.verificationRequired == true &&
+            quest.requiredVerification > quest.verificationCount
+          ) {
+            Alert.alert('인증이 완료되지 않았습니다');
+            return;
+          } else {
+            completeQuest(quest.id, {
+              onSuccess: () => {
+                Alert.alert('성공', '퀘스트가 완료되었습니다!');
+                navigation.goBack();
+              },
+              onError: error => {
+                Alert.alert(`${error.response.data.message}`);
+              },
+            });
+          }
         },
       },
     ]);
@@ -235,7 +263,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   const handleVerificationQuest = () => {
     Alert.alert(
       '이 퀘스트를 인증받으시겠습니까?',
-      '인증을 받기 시작하면 수정할 수 없습니다.',
+      '인증받기 시작하면 수정 및 삭제 할 수 없습니다',
       [
         {text: '취소', style: 'cancel'},
         {
@@ -256,53 +284,110 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     );
   };
 
+  const handleCamera = async () => {
+    setIsModalVisible(false);
+
+    setTimeout(async () => {
+      const options: CameraOptions = {
+        mediaType: 'photo',
+        cameraType: 'back',
+        saveToPhotos: true,
+        quality: 1,
+        includeBase64: false,
+      };
+
+      try {
+        const response = await new Promise<ImagePickerResponse>(resolve =>
+          launchCamera(options, resolve),
+        );
+        if (response.didCancel) {
+          Alert.alert('이미지 촬영을 취소했습니다.');
+        }
+        if (response.errorCode) {
+          Alert.alert('이미지 촬영 중 오류가 발생했습니다.');
+        }
+        if (response.assets?.length) {
+          const compressedImages = await Promise.all(
+            response.assets.map(async (asset: Asset) => {
+              try {
+                const result = await ImageCompressor.compress(asset.uri || '', {
+                  maxWidth: 1000,
+                  maxHeight: 1000,
+                  quality: 0.8,
+                  input: 'uri',
+                });
+                return {
+                  ...asset,
+                  uri: result,
+                };
+              } catch (error) {
+                console.error(error);
+              }
+            }),
+          );
+          const validCompressedImages = compressedImages.filter(
+            img => img !== undefined,
+          );
+          setImages(prev => [...prev, ...validCompressedImages].slice(0, 5));
+        }
+      } catch (error) {
+        console.error(error);
+        Alert.alert('이미지 처리하는 중 오류가 발생했습니다.');
+      }
+    }, 100);
+  };
+
   const pickImage = async () => {
-    const options: any = {
-      mediaType: 'photo',
-      selectionLimit: 3 - images.length,
-      maxWidth: 1000,
-      maxHeight: 1000,
-      quality: 0.8, // 0-1 where 1 is best quality
-      includeBase64: false,
-    };
-    try {
-      const response = await new Promise<ImagePickerResponse>(resolve =>
-        launchImageLibrary(options, resolve),
-      );
-      if (response.didCancel) {
-        Alert.alert('이미지 선택을 취소했습니다.');
-      }
-      if (response.errorCode) {
-        Alert.alert('이미지 선택 중 오류가 발생했습니다.');
-      }
-      if (response.assets?.length) {
-        const compressedImages = await Promise.all(
-          response.assets.map(async (asset: Asset) => {
-            try {
-              const result = await ImageCompressor.compress(asset.uri || '', {
-                maxWidth: 1000,
-                maxHeight: 1000,
-                quality: 0.8,
-                input: 'uri',
-              });
-              return {
-                ...asset,
-                uri: result,
-              };
-            } catch (error) {
-              console.error(error);
-            }
-          }),
+    setIsModalVisible(false);
+
+    setTimeout(async () => {
+      const options: any = {
+        mediaType: 'photo',
+        selectionLimit: 5 - images.length,
+        maxWidth: 1000,
+        maxHeight: 1000,
+        quality: 0.8, // 0-1 where 1 is best quality
+        includeBase64: false,
+      };
+      try {
+        const response = await new Promise<ImagePickerResponse>(resolve =>
+          launchImageLibrary(options, resolve),
         );
-        const validCompressedImages = compressedImages.filter(
-          img => img !== undefined,
-        );
-        setImages(prev => [...prev, ...validCompressedImages].slice(0, 3));
+        if (response.didCancel) {
+          Alert.alert('이미지 선택을 취소했습니다.');
+        }
+        if (response.errorCode) {
+          Alert.alert('이미지 선택 중 오류가 발생했습니다.');
+        }
+        if (response.assets?.length) {
+          const compressedImages = await Promise.all(
+            response.assets.map(async (asset: Asset) => {
+              try {
+                const result = await ImageCompressor.compress(asset.uri || '', {
+                  maxWidth: 1000,
+                  maxHeight: 1000,
+                  quality: 0.8,
+                  input: 'uri',
+                });
+                return {
+                  ...asset,
+                  uri: result,
+                };
+              } catch (error) {
+                console.error(error);
+              }
+            }),
+          );
+          const validCompressedImages = compressedImages.filter(
+            img => img !== undefined,
+          );
+          setImages(prev => [...prev, ...validCompressedImages].slice(0, 5));
+        }
+      } catch (error) {
+        console.error(error);
+        Alert.alert('이미지 처리하는 중 오류가 발생했습니다.');
       }
-    } catch (error) {
-      console.error(error);
-      Alert.alert('이미지 처리하는 중 오류가 발생했습니다.');
-    }
+    }, 100);
   };
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
@@ -328,115 +413,142 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        stickyHeaderIndices={[0]}
-        ref={scrollViewRef}
-        contentContainerStyle={
-          !!keyboardHeight ? undefined : {paddingBottom: 80}
-        }
+  const CARD_WIDTH = width - 32;
+
+  const renderQuestHeader = () => (
+    <View>
+      <View
         style={[
-          styles.scrollView,
-          !!keyboardHeight && {marginBottom: keyboardHeight + 20},
-        ]}
-        keyboardShouldPersistTaps="handled">
-        {/* Quest Header */}
-        <View
-          style={[
-            styles.header,
-            quest.isMain ? styles.mainQuestHeader : styles.subQuestHeader,
-          ]}>
-          <View style={styles.headerContent}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-                width: '100%',
-              }}>
-              <Pressable
-                onPress={() => navigation.goBack()}
-                style={{padding: 10}}>
-                <Icon
-                  name={
-                    Platform.OS === 'ios'
-                      ? 'arrow-back-ios'
-                      : 'arrow-back-android'
-                  }
-                  size={20}
-                  color={colors.font}
-                />
-              </Pressable>
-              <Text style={styles.questTitle}>{quest.title}</Text>
-              <View style={{width: 40}} />
+          styles.header,
+          quest.isMain ? styles.mainQuestHeader : styles.subQuestHeader,
+        ]}>
+        <View style={styles.headerContent}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              width: CARD_WIDTH,
+            }}>
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={{padding: 10}}>
+              <Icon
+                name={Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back'}
+                size={20}
+                color={colors.font}
+              />
+            </Pressable>
+            <Text style={styles.questTitle}>{quest.title}</Text>
+            <View style={{width: 40}} />
+          </View>
+          <Text style={styles.questDate}>
+            {formatDate(quest.startDate.toString())} -{' '}
+            {formatDate(quest.endDate.toString())}
+          </Text>
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {width: `${calculateProgressPercentage()}%`},
+                  {backgroundColor: quest.isMain ? '#4a90e2' : '#a0a0a0'},
+                ]}
+              />
             </View>
-            <Text style={styles.questDate}>
-              {formatDate(quest.startDate.toString())} -{' '}
-              {formatDate(quest.endDate.toString())}
+            <Text style={styles.progressText}>
+              {Math.floor(
+                (Date.now() - new Date(quest.startDate).getTime()) / 86400000,
+              ) + 1}
+              일차
             </Text>
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    {width: `${calculateProgressPercentage()}%`},
-                    {
-                      backgroundColor: quest.isMain ? '#4a90e2' : '#a0a0a0',
-                    },
-                  ]}
-                />
-              </View>
-              <Text style={styles.progressText}>
-                {Math.floor(
-                  (Date.now() - new Date(quest.startDate).getTime()) / 86400000,
-                ) + 1}
-                일차
-              </Text>
-            </View>
           </View>
         </View>
+      </View>
+      <View style={{paddingHorizontal: 20, paddingTop: 20}}>
+        <Text style={styles.sectionTitle}>기록 타임라인</Text>
+      </View>
+    </View>
+  );
 
-        {/* Records List */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>기록 타임라인</Text>
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Icon name="access-time" size={50} color={colors.font} />
+      <Text style={styles.emptyStateText}>아직 기록이 없습니다.</Text>
+      <Text style={styles.emptyStateSubtext}>
+        {questParam.verificationRequired
+          ? '기록이 하나 이상이고 완료 날짜가 지나야 인증을 받을 수 있습니다!'
+          : '기록이 하나 이상이고 완료 날짜가 지나야 완료할 수 있습니다!'}
+      </Text>
+    </View>
+  );
 
-          {questRecord?.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="time-outline" size={50} color={colors.font} />
-              <Text style={styles.emptyStateText}>아직 기록이 없습니다.</Text>
-              <Text style={styles.emptyStateSubtext}>
-                {questParam.verificationRequired
-                  ? '기록이 하나 이상이고 완료 날짜가 지나야 인증을 받을 수 있습니다!'
-                  : '기록이 하나 이상이고 완료 날짜가 지나야 완료할 수 있습니다!'}
-              </Text>
+  return (
+    <SafeAreaView style={styles.container}>
+      <SectionList
+        ref={sectionListRef}
+        sections={sections}
+        ListHeaderComponent={renderQuestHeader}
+        ListEmptyComponent={renderEmptyState}
+        renderSectionHeader={({section: {title}}) => (
+          <View style={styles.dateHeaderContainer}>
+            <View style={styles.dateBadge}>
+              <Text style={styles.dateHeaderText}>{title}</Text>
             </View>
-          ) : (
-            questRecord?.map((record: QuestRecord) => (
-              <View key={record.id} style={styles.recordCard}>
-                {record.images && record.images?.length > 0 && (
-                  <ImageCarousel images={record.images} />
+          </View>
+        )}
+        renderItem={({item}) => {
+          const hasImages = item.images && item.images.length > 0;
+          return (
+            <View style={styles.recordItemContainer}>
+              <View style={styles.recordCard}>
+                {hasImages && (
+                  <View style={styles.cardImageContainer}>
+                    <ImageCarousel
+                      images={item.images}
+                      containerWidth={CARD_WIDTH}
+                    />
+                  </View>
                 )}
-                {record.images && record.images?.length > 0 && (
-                  <Separator paddingHorizontal={64} />
-                )}
-                <Text style={styles.recordText}>{record.text}</Text>
-                <Text style={styles.recordDate}>
-                  {formatRelativeTime(record.createdAt.toString())}
-                </Text>
+                <View
+                  style={[
+                    styles.cardContentContainer,
+                    !hasImages && styles.cardContentNoImage,
+                  ]}>
+                  {/* 글 내용 */}
+                  {item.text ? (
+                    <Text
+                      style={styles.recordText}
+                      ellipsizeMode="tail"
+                      numberOfLines={2}>
+                      {item.text}
+                    </Text>
+                  ) : null}
+                  <Text style={styles.recordDate}>
+                    {formatRelativeTime(item.createdAt.toString())}
+                  </Text>
+                </View>
               </View>
-            ))
-          )}
-        </View>
-      </ScrollView>
+            </View>
+          );
+        }}
+        keyExtractor={item => item.id.toString()}
+        contentContainerStyle={[
+          styles.listContent,
+          !!keyboardHeight && {paddingBottom: keyboardHeight + 80},
+        ]}
+        keyboardShouldPersistTaps="handled"
+        stickySectionHeadersEnabled={false} // 스크롤 시 날짜가 상단에 고정되는 효과 (false면 같이 스크롤됨)
+      />
 
-      {/* Add Record Form */}
-      {quest.procedure === 'progress' && (
+      {/* Input Container (Footer) - 기존과 동일하게 Absolute Position 유지 */}
+      {(quest.procedure === 'progress' || quest.procedure === 'verify') && (
         <Animated.View
           style={[
             styles.inputContainer,
             {transform: [{translateY: keyboardOffset}]},
           ]}>
+          {/* ... 이미지 프리뷰, 입력창, 버튼들 (기존 코드 그대로) ... */}
           {images.length > 0 && (
             <View style={styles.imagePreviewContainer}>
               {images.map((image, index) => (
@@ -455,7 +567,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               <TouchableOpacity
                 style={styles.removeImageButton}
                 onPress={() => setImages([])}>
-                <Ionicons name="close" size={16} color="white" />
+                <Icon name="close" size={16} color="white" />
               </TouchableOpacity>
             </View>
           )}
@@ -468,21 +580,23 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               onChangeText={setNewRecordText}
               multiline
               editable={!isCreatingRecord}
+              maxLength={350}
+              autoComplete="off"
+              textContentType="none"
+              autoCorrect={false}
             />
             <TouchableOpacity
               style={styles.cameraButton}
-              onPress={pickImage}
+              onPress={() => setIsModalVisible(true)}
               disabled={isCreatingRecord}>
-              <Ionicons name="camera" size={24} color={colors.primary} />
+              <Icon name="camera-alt" size={24} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={
-                questRecord?.length > 0 &&
-                new Date(quest.endDate) < new Date() &&
-                questParam.procedure === 'progress'
+                questRecord?.length > 0 && new Date(quest.endDate) < new Date()
                   ? [styles.actionButton, styles.completeButton]
                   : [
                       styles.actionButton,
@@ -498,12 +612,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               }
               disabled={
                 questRecord?.length === 0 ||
-                new Date(quest.endDate) > new Date() ||
-                (questParam.procedure === 'verify' &&
-                  questParam.verificationCount <
-                    questParam.requiredVerification)
+                new Date(quest.endDate) > new Date()
               }>
-              <Ionicons name="checkmark-circle" size={18} color="white" />
+              <Icon name="check-circle" size={18} color="white" />
               {questParam.verificationRequired &&
               questParam.procedure === 'progress' ? (
                 <Text style={styles.completeButtonText}>인증받기</Text>
@@ -522,15 +633,8 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               ]}
               onPress={handleAddRecord}
               disabled={!newRecordText.trim() && images.length === 0}>
-              <Ionicons name="add" size={18} color="white" />
-              <Text
-                style={
-                  !newRecordText.trim() && images.length === 0
-                    ? styles.addButtonText
-                    : styles.addButtonText
-                }>
-                기록 추가
-              </Text>
+              <Icon name="add" size={18} color="white" />
+              <Text style={styles.addButtonText}>기록 추가</Text>
             </TouchableOpacity>
           </View>
           {isCreatingRecord && (
@@ -541,6 +645,12 @@ const QuestFeed = ({route}: QuestFeedProps) => {
           )}
         </Animated.View>
       )}
+      <ImagePickerModal
+        visible={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        onCamera={handleCamera}
+        onGallery={pickImage}
+      />
     </SafeAreaView>
   );
 };
@@ -555,10 +665,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
-    paddingBottom: 300,
+    paddingHorizontal: 16,
   },
   header: {
     padding: 10,
@@ -633,6 +740,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 1,
+    marginHorizontal: 16,
   },
   emptyStateText: {
     marginTop: 15,
@@ -647,14 +755,17 @@ const styles = StyleSheet.create({
   },
   recordCard: {
     backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 24,
+    borderRadius: 16, // 조금 더 둥글게
+    marginBottom: 12,
+    // 그림자 (iOS/Android 공통 느낌)
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: 'hidden', // 이미지가 둥근 모서리를 넘어가지 않도록 자름
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   recordHeader: {
     flexDirection: 'row',
@@ -666,17 +777,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.gray,
   },
-  recordImage: {
+  cardImageContainer: {
     width: '100%',
-    height: 200,
-    borderRadius: 8,
-    // marginBottom: 10,
+    backgroundColor: colors.background, // 로딩 전 배경색
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    //height: '50%',
+  },
+  cardContentContainer: {
+    padding: 16, // 글자 영역에만 패딩을 줌
+  },
+  // 이미지가 없을 때 위쪽 패딩을 좀 더 줘서 답답하지 않게
+  cardContentNoImage: {
+    paddingTop: 24,
   },
   recordText: {
-    fontSize: 16,
-    lineHeight: 22,
-    color: colors.font,
-    marginTop: 4,
+    fontSize: 15,
+    lineHeight: 24, // 줄 간격을 넉넉하게 (중요)
+    color: '#333333',
+    letterSpacing: -0.2,
   },
   inputContainer: {
     position: 'absolute',
@@ -779,6 +898,29 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.font,
     marginLeft: 8,
+  },
+  dateHeaderContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: colors.background, // 배경색을 맞춰주어야 스크롤 시 겹쳐 보이지 않음
+    alignItems: 'flex-start',
+  },
+  dateBadge: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  dateHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.font,
+  },
+  recordItemContainer: {
+    paddingHorizontal: 16,
+  },
+  listContent: {
+    paddingBottom: 150, // InputContainer 공간 확보
   },
 });
 

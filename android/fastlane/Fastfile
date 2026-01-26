@@ -1,0 +1,156 @@
+default_platform(:android)
+
+platform :android do
+  def increment_version_code()
+    path = '../app/build.gradle'
+    re = /versionCode\s+(\d+)/
+
+    s = File.read(path)
+    versionCode = s[re, 1].to_i
+    s[re, 1] = (versionCode + 1).to_s
+
+    f = File.new(path, 'w')
+    f.write(s)
+    f.close
+  end
+
+  def increment_version_number(bump_type: nil, version_number: nil)
+    path = '../app/build.gradle'
+    re = /versionName\s+("\d+.\d+.\d+")/
+    s = File.read(path)
+    versionName = s[re, 1].gsub!('"','').split('.')
+
+    major = versionName[0].to_i
+    minor = versionName[1].to_i
+    patch = versionName[2].to_i
+
+    if (bump_type == 'major')
+        major += 1
+        minor = 0
+        patch = 0
+    elsif (bump_type == 'minor')
+        minor += 1
+        patch = 0
+    elsif (bump_type == 'patch')
+        patch += 1
+    end
+
+    if(version_number)
+      s[re, 1] = "\"#{version_number}\""
+    else
+      s[re, 1] = "\"#{major}.#{minor}.#{patch}\""
+    end
+
+    f = File.new(path, 'w')
+    f.write(s)
+    f.close
+    increment_version_code()
+  end
+
+  def updateVersion(options)
+    if options[:version]
+      version = options[:version]
+    else
+      version = prompt(text: "Enter the version type or specific version\n(major, minor, patch or 1.0.0): ")
+    end
+
+    re = /\d+.\d+.\d+/
+    versionNum = version[re, 0]
+
+    if (versionNum)
+      increment_version_number(
+        version_number: versionNum
+      )
+    elsif (version == 'major' || version == 'minor' || version == 'patch')
+      increment_version_number(
+        bump_type: version
+      )
+    else
+      UI.user_error!("[ERROR] Wrong version!!!!!!")
+    end
+  end
+
+  def deep_clean_project
+    UI.message("🧹 Starting Deep Clean (Force removing caches)...")
+    
+    # Fastfile 위치(android/fastlane/)를 기준으로 상위 폴더(android/)의 파일들을 정리합니다.
+    # 1. android/.gradle 삭제
+    sh("rm -rf ../.gradle")
+    
+    # 2. android/build 삭제
+    sh("rm -rf ../build")
+    
+    # 3. android/app/build 삭제
+    sh("rm -rf ../app/build")
+    
+    # 4. android/app/.cxx 삭제 (이게 핵심!)
+    sh("rm -rf ../app/.cxx")
+    
+    # 5. ./gradlew clean 실행
+    gradle(task: "clean")
+    
+    UI.success("✨ Deep Clean Finished! Ready to build.")
+  end
+
+  desc "Submit a new Beta Build to Crashlytics Beta"
+  lane :beta do |options|
+    deep_clean_project
+    updateVersion(options)
+
+    gradle(task: "bundleProdRelease")
+    upload_to_play_store(
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_screenshots: true,
+      skip_upload_images: true,
+      skip_upload_apk: true,
+      track: 'internal',
+      release_status: 'draft'
+    )
+  end
+
+  desc "Submit a new Beta Build to Tester"
+  lane :test do |options|
+    deep_clean_project
+    updateVersion(options)
+
+    gradle(task: "bundleProdRelease")
+    upload_to_play_store(
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_screenshots: true,
+      skip_upload_images: true,
+      skip_upload_apk: true,
+      track: 'alpha',
+      release_status: 'completed'
+    )
+  end
+
+  desc "Deploy a new version to the Google Play"
+  lane :release do |options|
+    deep_clean_project
+    updateVersion(options)
+
+    gradle(task: "bundleProdRelease")
+    upload_to_play_store(
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_screenshots: true,
+      skip_upload_images: true,
+      skip_upload_apk: true,
+      track: 'production',
+      release_status: 'draft'
+    )
+  end
+  desc "프로덕션 환경으로 JS 업데이트 배포"
+  lane :update_prod do
+    # 1. APP_VARIANT=prod를 주입하여 .env.prod를 읽게 함
+    # 2. --branch production: 채널과 브랜치를 일치시킴
+    sh("APP_VARIANT=prod eas update --branch production --message 'Fastlane Update'")
+  end
+
+  desc "개발 환경으로 JS 업데이트 배포"
+  lane :update_dev do
+    sh("APP_VARIANT=dev eas update --branch dev --message 'Dev Update'")
+  end
+end

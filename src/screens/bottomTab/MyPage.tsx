@@ -12,7 +12,8 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+// import Ionicons from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import CharacterAvatar from '../../components/CharacterAvatar';
 import Logo from '../../components/Logo';
 import {MyPageNavParamList} from '../../types/navigation';
@@ -27,7 +28,6 @@ import {Dropdown} from 'react-native-element-dropdown';
 import {colors} from '../../styles/theme';
 import {rewardStore} from '../../store/rewardStore';
 import NetWorkLogger from 'react-native-network-logger';
-import {deleteAccount} from '../../services/api/auth';
 
 export default function MyPage() {
   const [error, setError] = useState('');
@@ -48,6 +48,7 @@ export default function MyPage() {
         {
           text: '로그아웃',
           onPress: async () => {
+            rewardStore.getState().reset();
             await AsyncStorage.clear();
             setAccessToken(null);
           },
@@ -141,13 +142,13 @@ export default function MyPage() {
     },
   });
 
-  useFocusEffect(
-    useCallback(() => {
-      if (isSuccess && hasNewBadge && badges && badges.length > 0) {
-        markBadgeSeen();
-      }
-    }, [isSuccess, hasNewBadge, badges, markBadgeSeen]),
-  );
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     if (hasNewBadge) {
+  //       markBadgeSeen();
+  //     }
+  //   }, [hasNewBadge, markBadgeSeen]),
+  // );
 
   const renderBadgeItem = useCallback(
     (item: {id: number; name: string}) => {
@@ -165,7 +166,7 @@ export default function MyPage() {
             {item.name}
           </Text>
           {item.name === selectedBadge && (
-            <Ionicons name="checkmark" size={16} color={colors.secondary} />
+            <Icon name="check" size={16} color={colors.secondary} />
           )}
         </View>
       );
@@ -176,6 +177,7 @@ export default function MyPage() {
   const handleBadgeChange = useCallback(
     (item: any) => {
       changeBadgeMutate(item.id);
+      markBadgeSeen();
       setSelectedBadge(item.name);
     },
     [changeBadgeMutate],
@@ -192,21 +194,6 @@ export default function MyPage() {
       setShowLog(true);
       setClickCount(0);
     }
-  };
-
-  const handleRevoke = async () => {
-    Alert.alert(
-      '정말 탈퇴하시겠습니까?',
-      '계정을 삭제하시면 GoalWith에서 활동하신 모든 내역이 소멸됩니다. 탈퇴 후에는 동일한 소셜 계정으로 재가입하더라도 이전 데이터를 복구할 수 없으니 신중하게 결정해 주세요. 결제 내역이나 유료 구독 서비스가 있는 경우, 탈퇴 전 반드시 확인 부탁드립니다.',
-      [
-        {text: '취소', style: 'cancel'},
-        {
-          text: '탈퇴하기',
-          style: 'destructive',
-          onPress: () => deleteAccount(),
-        },
-      ],
-    );
   };
 
   const myVerificationCount = myVerification?.totalElements;
@@ -294,6 +281,7 @@ export default function MyPage() {
         <View style={styles.badgesContainer}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>획득한 칭호</Text>
+            {hasNewBadge && <View style={styles.redDot} />}
           </View>
           <Dropdown
             data={dropdownData}
@@ -311,51 +299,44 @@ export default function MyPage() {
             style={styles.settingItem}
             onPress={() => navigation.navigate('EditProfile')}>
             <View style={styles.settingLeft}>
-              <Ionicons name="person-outline" size={22} color="#666" />
+              <Icon name="person-outline" size={22} color="#666" />
               <Text style={styles.settingText}>프로필 수정</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#999" />
+            <Icon name="chevron-right" size={18} color="#999" />
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => navigation.navigate('HelpPage')}>
             <View style={styles.settingLeft}>
-              <Ionicons name="help-circle-outline" size={22} color="#666" />
+              <Icon name="help-outline" size={22} color="#666" />
               <Text style={styles.settingText}>도움말</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#999" />
+            <Icon name="chevron-right" size={18} color="#999" />
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => navigation.navigate('AppInfoPage')}>
             <View style={styles.settingLeft}>
-              <Ionicons
-                name="information-circle-outline"
-                size={22}
-                color="#666"
-              />
+              <Icon name="info-outline" size={22} color="#666" />
               <Text style={styles.settingText}>앱 정보</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#999" />
+            <Icon name="chevron-right" size={18} color="#999" />
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => navigation.navigate('InquiryPage')}>
             <View style={styles.settingLeft}>
-              <Ionicons name="mail-outline" size={22} color="#666" />
+              <Icon name="mail-outline" size={22} color="#666" />
               <Text style={styles.settingText}>문의하기</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#999" />
+            <Icon name="chevron-right" size={18} color="#999" />
           </TouchableOpacity>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={logout}>
           <Text style={styles.logoutText}>로그아웃</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleRevoke}>
-          <Text style={styles.revokeText}>회원탈퇴</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleVersionClick} style={{marginTop: 50}}>
           <Text style={styles.versionText}>버전 1.0.0</Text>
@@ -436,6 +417,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 15,
+  },
+  redDot: {
+    position: 'absolute',
+    left: 12,
+    top: 12,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.error,
+    zIndex: 1,
   },
   cardTitle: {
     fontSize: 16,
@@ -556,12 +547,5 @@ const styles = StyleSheet.create({
     color: colors.font,
     fontSize: 12,
     marginBottom: 20,
-  },
-  revokeText: {
-    color: colors.warning,
-    fontSize: 14,
-    fontWeight: 'regular',
-    marginTop: 16,
-    textAlign: 'center',
   },
 });

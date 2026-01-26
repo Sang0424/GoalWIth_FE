@@ -1,4 +1,5 @@
-// src/utils/dateUtils.ts
+import {format, parseISO, isSameDay} from 'date-fns';
+import {ko} from 'date-fns/locale';
 
 export const formatRelativeTime = (dateString: string): string => {
   const now = new Date();
@@ -32,4 +33,27 @@ export const formatRelativeTime = (dateString: string): string => {
   }
   const years = Math.floor(diffInSeconds / secondsInYear);
   return `${years}년 전`;
+};
+
+export const groupRecordsByDate = (records: any[]) => {
+  const grouped: {[key: string]: any[]} = {};
+  records.forEach(record => {
+    const date = new Date(record.createdAt);
+    const dateKey = format(date, 'yyyy-MM-dd');
+
+    if (!grouped[dateKey]) {
+      grouped[dateKey] = [];
+    }
+    grouped[dateKey].push(record);
+  });
+  return Object.entries(grouped)
+    .sort(
+      ([dateA], [dateB]) =>
+        new Date(dateB).getTime() - new Date(dateA).getTime(),
+    )
+    .map(([date, items]) => ({
+      date,
+      title: format(new Date(date), 'yyyy년 MM월 dd일 (EEE)', {locale: ko}),
+      data: items,
+    }));
 };

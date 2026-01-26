@@ -16,7 +16,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {GestureDetector, Gesture} from 'react-native-gesture-handler';
 import {
   useAnimatedStyle,
@@ -31,16 +31,12 @@ import type {QuestVerification as Verification} from '../types/quest.types';
 import CharacterAvatar from './CharacterAvatar';
 import {formatRelativeTime} from '../utils/dateUtils';
 import {userStore} from '../store/userStore';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import {
-  Menu,
-  MenuOptions,
-  MenuOption,
-  MenuTrigger,
-} from 'react-native-popup-menu';
+// import Ionicons from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import useKeyboardHeight from '../utils/hooks/useKeyboardHeight';
-import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
 import Separator from './Separator';
+import analytics from '@react-native-firebase/analytics';
+import {checkForProfanity} from '../utils/filter';
 
 interface ReplyBottomSheetProps {
   visible: boolean;
@@ -60,58 +56,18 @@ const ReplyBottomSheet = ({
   const {height: screenHeight} = useWindowDimensions();
   const translateY = useSharedValue(screenHeight);
   const context = useSharedValue({y: 0});
-  const [error, setError] = useState<string | null>(null);
   const {keyboardHeight} = useKeyboardHeight();
   const [reply, setReply] = useState('');
   const [isReplyUpdate, setIsReplyUpdate] = useState<boolean>(false);
   const [replyId, setReplyId] = useState<number | null>(null);
+  // const [isReportVisible, setIsReportVisible] = useState<boolean>(false);
 
   const queryClient = useQueryClient();
 
   const user = userStore(state => state.user);
-  const insets = useSafeAreaInsets();
-  const TAB_BAR_HEIGHT = Platform.select({
-    ios: 49,
-    android: 0,
-  });
-
-  let tabBarHeight = 0;
-
-  try {
-    // 이 화면이 TabNavigator 안에 있다면 실제 높이를 반환하고, 없으면 에러가 발생합니다.
-    tabBarHeight = useBottomTabBarHeight();
-  } catch (e) {
-    tabBarHeight = 0;
-  }
 
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
-  //   const {
-  //     data,
-  //     isLoading,
-  //     isFetchingNextPage,
-  //     fetchNextPage,
-  //     hasNextPage,
-  //     refetch,
-  //   } = useInfiniteQuery({
-  //     queryKey: ['reply', verificationId],
-  //     initialPageParam: 0,
-  //     queryFn: async ({pageParam = 0}) => {
-  //       try {
-  //         const response = await instance.get(
-  //           `/quest/verification/comment/${verificationId}?page=${pageParam}&size=${PAGE_SIZE}`,
-  //         );
-  //         return response.data;
-  //       } catch (e: any) {
-  //         setError(e.response.data.message);
-  //         return {items: [], nextPage: null};
-  //       }
-  //     },
-  //     getNextPageParam: (lastPage, allPages) => {
-  //       return lastPage.hasNext ? allPages.length : undefined;
-  //     },
-  //     enabled: Config.API_URL != '',
-  //   });
   const {data, isLoading, refetch} = useQuery({
     queryKey: ['Reply', verificationId],
     queryFn: async () => {
@@ -124,11 +80,19 @@ const ReplyBottomSheet = ({
         Alert.alert(e.response.data.message);
       }
     },
+    enabled: visible,
   });
 
   const {mutate} = useMutation({
     mutationFn: async (reply: string) => {
       try {
+        if (checkForProfanity(reply)) {
+          Alert.alert(
+            '부적절한 단어',
+            '답글에 부적절한 단어가 포함되어 있습니다.',
+          );
+          return;
+        }
         const response = await instance.post(
           `/quest/verification/comment/${verificationId}`,
           {
@@ -153,7 +117,12 @@ const ReplyBottomSheet = ({
       queryClient.invalidateQueries({
         queryKey: ['QuestVerification'],
       });
+      queryClient.invalidateQueries({queryKey: ['myCharacters']});
+      queryClient.invalidateQueries({queryKey: ['myBadges']});
       Alert.alert('답글이 추가되었습니다.');
+      analytics().logEvent('reply_add', {
+        verification_id: verificationId,
+      });
       setReply('');
       setIsReplyUpdate(false);
       setReplyId(null);
@@ -163,6 +132,13 @@ const ReplyBottomSheet = ({
 
   const {mutate: editReply} = useMutation({
     mutationFn: async ({id, comment}: {id: number | null; comment: string}) => {
+      if (checkForProfanity(comment)) {
+        Alert.alert(
+          '부적절한 단어',
+          '답글에 부적절한 단어가 포함되어 있습니다.',
+        );
+        return Promise.reject(new Error('Profanity detected'));
+      }
       try {
         const response = await instance.put(`quest/verifications/${id}`, {
           comment,
@@ -213,6 +189,23 @@ const ReplyBottomSheet = ({
     },
   });
 
+  const {mutate: reportMutate} = useMutation({
+    mutationFn: (reason: string) =>
+      instance.post(`quest/verification/report/${replyId}`, {reason}),
+    onSuccess: () => {
+      Alert.alert('신고 완료', '신고가 성공적으로 접수되었습니다.');
+      analytics().logEvent('reply_report', {
+        verification_id: replyId,
+      });
+    },
+    onError: (error: any) => {
+      Alert.alert(
+        '오류',
+        error.response?.data?.message || '신고 중 오류가 발생했습니다.',
+      );
+    },
+  });
+
   const closeModalWithAnimation = useCallback(() => {
     // 1) 부모 상태를 즉시 false로 만들어 모달/오버레이를 바로 제거
     runOnJS(onClose)();
@@ -260,8 +253,6 @@ const ReplyBottomSheet = ({
     }).start();
   useEffect(() => {
     const keyboardWillShow = (e: any) => {
-      const bottomInset = Math.max(insets.bottom, 16);
-      const offset = bottomInset + (TAB_BAR_HEIGHT || 0);
       startAnimation(-e.endCoordinates?.height + keyboardHeight);
     };
 
@@ -288,22 +279,6 @@ const ReplyBottomSheet = ({
 
   if (!visible || !verificationId) return null;
 
-  if (!data) {
-    return (
-      <SafeAreaView style={[styles.container, styles.loadingContainer]}>
-        <Text
-          style={{
-            textAlign: 'center',
-            fontSize: 24,
-            fontWeight: 'bold',
-            color: colors.font,
-          }}>
-          답글을 볼 수 없습니다.잠시 후 다시 시도해주세요.
-        </Text>
-      </SafeAreaView>
-    );
-  }
-
   const replies = data || [];
 
   return (
@@ -313,7 +288,7 @@ const ReplyBottomSheet = ({
       </TouchableWithoutFeedback>
       <Modal
         visible={visible}
-        animationType="fade"
+        animationType="slide"
         transparent
         statusBarTranslucent
         onRequestClose={closeModalWithAnimation}>
@@ -335,7 +310,7 @@ const ReplyBottomSheet = ({
                     }}>
                     답글
                   </Text>
-                  <Ionicons
+                  <Icon
                     name="close"
                     size={24}
                     color={colors.font}
@@ -367,7 +342,7 @@ const ReplyBottomSheet = ({
                       </Text>
                     </View>
                   </View>
-                  <Separator />
+                  <Separator paddingHorizontal={32} />
                   {replies.length > 0 ? (
                     replies.map((reply: Verification) => (
                       <View key={reply.id} style={styles.commentCard}>
@@ -390,7 +365,7 @@ const ReplyBottomSheet = ({
                               reply.createdAt.toString() || '',
                             )}
                           </Text>
-                          {reply.user_id === user?.id && (
+                          {reply.user_id === user?.id ? (
                             <View style={styles.editContainer}>
                               <TouchableOpacity
                                 onPress={() => {
@@ -425,6 +400,48 @@ const ReplyBottomSheet = ({
                                 <Text
                                   style={{color: colors.gray, fontSize: 14}}>
                                   삭제
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                          ) : (
+                            <View style={styles.editContainer}>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  // setIsReportVisible(true);
+                                  // setReplyId(reply.id);
+                                  Alert.alert(
+                                    '댓글 신고',
+                                    '이 댓글을 신고하시겠습니까?',
+                                    [
+                                      {
+                                        text: '스팸 또는 광고',
+                                        onPress: () =>
+                                          reportMutate('스팸 또는 광고'),
+                                      },
+                                      {
+                                        text: '욕설 또는 비방',
+                                        onPress: () =>
+                                          reportMutate('욕설 또는 비방'),
+                                      },
+                                      {
+                                        text: '음란물 또는 성적인 콘텐츠',
+                                        onPress: () =>
+                                          reportMutate(
+                                            '음란물 또는 성적인 콘텐츠',
+                                          ),
+                                      },
+                                      {
+                                        text: '잘못된 정보',
+                                        onPress: () =>
+                                          reportMutate('잘못된 정보'),
+                                      },
+                                      {text: '취소', style: 'cancel'},
+                                    ],
+                                  );
+                                }}>
+                                <Text
+                                  style={{color: colors.gray, fontSize: 14}}>
+                                  신고
                                 </Text>
                               </TouchableOpacity>
                             </View>
@@ -473,6 +490,14 @@ const ReplyBottomSheet = ({
           </GestureDetector>
         </View>
       </Modal>
+      {/* <ReportBottomSheet
+        visible={isReportVisible}
+        onClose={() => {
+          setIsReportVisible(false);
+        }}
+        id={replyId}
+        from="verification"
+      /> */}
     </SafeAreaView>
   );
 };

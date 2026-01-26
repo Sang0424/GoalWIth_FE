@@ -47,7 +47,6 @@ const VerificationFeedScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
-  const queryClient = useQueryClient();
 
   const {
     data,

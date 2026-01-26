@@ -19,14 +19,14 @@ import {colors} from '../styles/theme';
 import Config from 'react-native-config';
 
 const NATIVE_AD_ID = Platform.select({
-  ios: Config.ADMOB_NATIVE_ID_IOS,
-  android: Config.ADMOB_NATIVE_ID_ANDROID,
+  ios: Config.ADMOB_ID_IOS,
+  android: Config.ADMOB_ID_ANDROID,
 });
 
-// const NATIVE_VERIFICATION_AD_UNIT =
-//   Config.ENV === 'development' ? TestIds.NATIVE : NATIVE_AD_ID;
+const NATIVE_VERIFICATION_AD_UNIT =
+  Config.ENV === 'development' ? TestIds.NATIVE : NATIVE_AD_ID;
 
-const NATIVE_VERIFICATION_AD_UNIT = TestIds.NATIVE;
+// const NATIVE_VERIFICATION_AD_UNIT = TestIds.NATIVE;
 
 export const NativeVerificationAd = () => {
   const [nativeAd, setNativeAd] = useState<NativeAd>();
@@ -42,7 +42,7 @@ export const NativeVerificationAd = () => {
   }
 
   return (
-    <NativeAdView nativeAd={nativeAd}>
+    <NativeAdView nativeAd={nativeAd} style={{width: '100%'}}>
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           {nativeAd.icon && (

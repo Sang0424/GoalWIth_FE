@@ -21,12 +21,14 @@ import useReactionData from '../utils/hooks/useReactionData';
 import {userStore} from '../store/userStore';
 import ProfileBottomSheet from './ProfileBottomSheet';
 import {Image} from 'expo-image';
+import ReportBottomSheet from './ReportBottomSheet';
 
 const VerificationCard = ({item}: {item: any}) => {
   const user = userStore(state => state.user);
   const navigation =
     useNavigation<NativeStackNavigationProp<VerificationNavParamList>>();
   const [isProfileVisible, setProfileVisible] = useState(false);
+  const [isReportVisible, setReportVisible] = useState(false);
   const [selecteUser, setSelectUser] = useState<number | undefined>(undefined);
   const reactions = useReactionData(item.id);
   const queryClient = useQueryClient();
@@ -60,14 +62,13 @@ const VerificationCard = ({item}: {item: any}) => {
     },
   });
 
-  // const alreadyVerification = item.verifications
-  //   .map((v: any) => v.user_id)
-  //   .includes(user?.id);
-
   const alreadyVerification = item.verified;
 
   const handleGoQuest = () => {
-    navigation.navigate('QuestVerification', {id: item.id});
+    navigation.navigate('QuestVerification', {
+      id: item.id,
+      authorId: item.user.id,
+    });
   };
 
   const blurhash =
@@ -131,6 +132,14 @@ const VerificationCard = ({item}: {item: any}) => {
                   />
                 )}
                 <Text>저장하기</Text>
+              </MenuOption>
+              <MenuOption
+                onSelect={() => {
+                  setReportVisible(true);
+                }}
+                style={styles.menuOption}>
+                <Icon name="flag" size={20} color={colors.primary} />
+                <Text>신고하기</Text>
               </MenuOption>
             </MenuOptions>
           </Menu>
@@ -204,6 +213,12 @@ const VerificationCard = ({item}: {item: any}) => {
         onClose={() => setProfileVisible(false)}
         userId={selecteUser}
         fromContext="general"
+      />
+      <ReportBottomSheet
+        visible={isReportVisible}
+        onClose={() => setReportVisible(false)}
+        id={item.id}
+        from="quest"
       />
     </>
   );

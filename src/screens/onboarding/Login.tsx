@@ -81,6 +81,7 @@ export default function Login() {
     onSuccess: async ({accessToken, refreshToken}) => {
       setAccessToken(accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);
+
       // navigation.navigate('MainNav');
     },
     onError: (error: any) => {

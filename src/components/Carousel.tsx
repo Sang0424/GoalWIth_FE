@@ -10,21 +10,26 @@ import {
   Text,
   StyleSheet,
   Platform,
+  FlatList,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Asset} from 'react-native-image-picker';
-import {FlatList} from 'react-native-gesture-handler';
 import {colors} from '../styles/theme';
 import {Image} from 'expo-image';
 import Gallery from 'react-native-awesome-gallery';
 
-const ImageCarousel = ({images}: {images: string[]}) => {
+interface ImageCarouselProps {
+  images: string[];
+  containerWidth?: number;
+}
+
+const ImageCarousel = ({images, containerWidth}: ImageCarouselProps) => {
   const scrollX = new Animated.Value(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [galleryVisible, setGalleryVisible] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
-  const {width} = useWindowDimensions();
-  const ITEM_WIDTH = width - 70;
+  const {width: windowWidth} = useWindowDimensions();
+  const ITEM_WIDTH = containerWidth || windowWidth;
+  const imageHeight = ITEM_WIDTH * 1.25;
 
   const blurhash =
     '|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[';
@@ -42,7 +47,7 @@ const ImageCarousel = ({images}: {images: string[]}) => {
   };
 
   return (
-    <View style={{width: ITEM_WIDTH, height: ITEM_WIDTH}}>
+    <View style={{width: ITEM_WIDTH, height: imageHeight}}>
       <FlatList
         data={images}
         horizontal
@@ -57,7 +62,7 @@ const ImageCarousel = ({images}: {images: string[]}) => {
         nestedScrollEnabled={true}
         decelerationRate="fast"
         bounces={false}
-        ItemSeparatorComponent={() => <View style={{width: 8}} />}
+        // ItemSeparatorComponent={() => <View style={{width: 8}} />}
         renderItem={({item, index}) => (
           <TouchableOpacity
             onPress={() => openGallery(index)}
@@ -66,10 +71,10 @@ const ImageCarousel = ({images}: {images: string[]}) => {
               source={{uri: item}}
               style={{
                 width: ITEM_WIDTH,
-                height: ITEM_WIDTH,
+                height: imageHeight,
                 // resizeMode: 'contain',
               }}
-              contentFit="fill"
+              contentFit="contain"
               placeholder={blurhash}
               transition={1000}
             />
@@ -84,38 +89,10 @@ const ImageCarousel = ({images}: {images: string[]}) => {
         })}
       />
       {images.length > 1 && (
-        <View
-          style={{
-            flexDirection: 'row',
-            position: 'absolute',
-            bottom: 0,
-            alignSelf: 'center',
-          }}>
-          {images.map((_, index) => {
-            const opacity = scrollX.interpolate({
-              inputRange: [
-                (index - 1) * width,
-                index * width,
-                (index + 1) * width,
-              ],
-              outputRange: [0.3, 1, 0.3],
-              extrapolate: 'clamp',
-            });
-
-            return (
-              <Animated.View
-                key={index}
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: colors.gray,
-                  margin: 5,
-                  opacity,
-                }}
-              />
-            );
-          })}
+        <View style={styles.paginationContainer}>
+          <Text style={styles.paginationText}>
+            {activeIndex + 1} / {images.length}
+          </Text>
         </View>
       )}
       <SafeAreaView>
@@ -173,6 +150,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   closeText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  paginationContainer: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: colors.gray,
+    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  paginationText: {
     color: 'white',
     fontSize: 14,
     fontWeight: 'bold',

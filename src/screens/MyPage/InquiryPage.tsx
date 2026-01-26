@@ -15,21 +15,38 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import {Platform} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {colors} from '../../styles/theme';
-import instance from '../../utils/axiosInterceptor';
+import {send, EmailJSResponseStatus} from '@emailjs/react-native';
+import {userStore} from '../../store/userStore';
 
 const InquiryPage = () => {
   const navigation = useNavigation();
   const [inquiry, setInquiry] = useState('');
+  const {nickname, email} = userStore.getState().user;
 
-  const handleInquiry = async () => {
+  const onSubmit = async () => {
     try {
-      const response = await instance.post('/inquiry', {inquiry});
-      console.log(response.data);
+      await send(
+        'service_goalwith',
+        'template_goalwith',
+        {
+          nickname,
+          email,
+          inquiry,
+        },
+        {
+          publicKey: 'rwcnXCv_nniSQ3yVM',
+        },
+      );
       Alert.alert(
         '문의가 성공적으로 전달되었습니다. 신속한 조치를 취하겠습니다.',
       );
-    } catch (e) {
-      console.log(e);
+      setInquiry('');
+    } catch (err) {
+      if (err instanceof EmailJSResponseStatus) {
+        console.log('EmailJS Request Failed...', err);
+      }
+
+      Alert.alert('문의가 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -63,7 +80,7 @@ const InquiryPage = () => {
             multiline
           />
         </View>
-        <TouchableOpacity style={styles.button} onPress={handleInquiry}>
+        <TouchableOpacity style={styles.button} onPress={onSubmit}>
           <Text style={styles.buttonText}>문의하기</Text>
         </TouchableOpacity>
       </ScrollView>

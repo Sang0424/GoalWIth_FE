@@ -36,6 +36,8 @@ import Animated, {
 import type {Quest} from '../types/quest.types';
 import {colors} from '../styles/theme';
 import crashlytics from '@react-native-firebase/crashlytics';
+import analytics from '@react-native-firebase/analytics';
+import {checkForProfanity} from '../utils/filter';
 
 interface BottomSheetProps {
   todoModalVisible: boolean;
@@ -131,8 +133,8 @@ const BottomSheet = ({
 
   const closeModalWithAnimation = useCallback(() => {
     // 먼저 상태 업데이트
-    runOnJS(closeDatePickers)();
-    runOnJS(settodoModalVisible)(false);
+    closeDatePickers();
+    settodoModalVisible(false);
 
     // 그 다음 애니메이션 실행
     translateY.value = withSpring(screenHeight, {damping: 20});
@@ -159,7 +161,7 @@ const BottomSheet = ({
     })
     .onEnd(event => {
       if (event.translationY > 100) {
-        runOnJS(closeModalWithAnimation)();
+        closeModalWithAnimation();
       } else {
         translateY.value = withSpring(screenHeight * 0.1, {damping: 50});
       }
@@ -204,7 +206,10 @@ const BottomSheet = ({
     onSuccess: () => {
       // 성공 시 공통 로직
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
+      queryClient.invalidateQueries({queryKey: ['myCharacters']});
+      queryClient.invalidateQueries({queryKey: ['myBadges']});
       // 상태 초기화 및 모달 닫기
+      analytics().logEvent('add_quest', {newQuestTitle});
       setNewQuestTitle('');
       setNewQuestDescription('');
       setStartDate(new Date());
@@ -225,6 +230,16 @@ const BottomSheet = ({
   const handleSubmit = (event: GestureResponderEvent) => {
     if (newQuestTitle.trim() === '') {
       Alert.alert('할 일을 입력해주세요.');
+      return;
+    }
+    if (
+      checkForProfanity(newQuestTitle) ||
+      checkForProfanity(newQuestDescription)
+    ) {
+      Alert.alert(
+        '부적절한 단어',
+        '퀘스트 제목이나 설명에 부적절한 단어가 포함되어 있습니다.',
+      );
       return;
     }
 

@@ -23,7 +23,10 @@ import {login} from '@react-native-kakao/user';
 import {
   appleAuth,
   AppleButton,
+  AppleRequestResponseFullName,
 } from '@invertase/react-native-apple-authentication';
+import {colors} from '../../styles/theme';
+import {GoogleSigninButton} from '@react-native-google-signin/google-signin';
 
 export default function Onboarding1() {
   const {height, width} = useWindowDimensions();
@@ -54,9 +57,19 @@ export default function Onboarding1() {
       } else {
         // 기존 유저
         const {accessToken, refreshToken} = data;
-        setAccessToken(accessToken);
-        await AsyncStorage.setItem('refreshToken', refreshToken);
-        await AsyncStorage.setItem('loginType', 'google');
+        if (!data.nickname || data.userType === '') {
+          navigation.navigate('OnBoarding3', {
+            isSocial: true,
+            registerForm: {email: data.email, name: data.name},
+            accessToken,
+            refreshToken,
+            isGoogle: true,
+          });
+        } else {
+          setAccessToken(accessToken);
+          await AsyncStorage.setItem('refreshToken', refreshToken);
+          await AsyncStorage.setItem('loginType', 'google');
+        }
       }
     },
     onError: (error: any) => {
@@ -64,23 +77,64 @@ export default function Onboarding1() {
     },
   });
 
-  async function onAppleButtonPress() {
-    const appleAuthRequestResponse = await appleAuth.performRequest({
-      requestedOperation: appleAuth.Operation.LOGIN,
-      requestedScopes: [appleAuth.Scope.FULL_NAME, appleAuth.Scope.EMAIL],
-    });
-
-    const credentialState = await appleAuth.getCredentialStateForUser(
-      appleAuthRequestResponse.user,
-    );
-
-    if (credentialState === appleAuth.State.AUTHORIZED) {
+  const {mutate: appleLoginMutate} = useMutation({
+    mutationFn: async ({
+      token,
+    }: // name,
+    // email,
+    {
+      token: string;
+      // name?: AppleRequestResponseFullName;
+      // email?: string;
+    }) => {
+      // if (name && email) {
+      //   const response = await instance.post('/user/apple-login', {
+      //     token,
+      //     name,
+      //     email,
+      //   });
+      //   return response.data;
+      // }
       const response = await instance.post('/user/apple-login', {
-        token: appleAuthRequestResponse.identityToken,
+        token,
       });
       return response.data;
-    }
-  }
+    },
+    onSuccess: async data => {
+      if (data.newer) {
+        const {accessToken, refreshToken} = data;
+        navigation.navigate('OnBoarding3', {
+          isSocial: true,
+          registerForm: {
+            email: data.email,
+            name: data.name,
+          },
+          accessToken,
+          refreshToken,
+          isApple: true,
+        });
+      } else {
+        // 기존 유저
+        const {accessToken, refreshToken} = data;
+        if (!data.nickname || data.userType === '') {
+          navigation.navigate('OnBoarding3', {
+            isSocial: true,
+            registerForm: {email: data.email, name: data.name},
+            accessToken,
+            refreshToken,
+            isApple: true,
+          });
+        } else {
+          setAccessToken(accessToken);
+          await AsyncStorage.setItem('refreshToken', refreshToken);
+          await AsyncStorage.setItem('loginType', 'apple');
+        }
+      }
+    },
+    onError: (error: any) => {
+      Alert.alert(error?.response?.data?.message);
+    },
+  });
 
   // const {mutate: kakaoLoginMutate} = useMutation({
   //   mutationFn: async ({
@@ -129,6 +183,23 @@ export default function Onboarding1() {
     }
   };
 
+  async function onAppleButtonPress() {
+    const appleAuthRequestResponse = await appleAuth.performRequest({
+      requestedOperation: appleAuth.Operation.LOGIN,
+      requestedScopes: [appleAuth.Scope.FULL_NAME, appleAuth.Scope.EMAIL],
+    });
+    const credentialState = await appleAuth.getCredentialStateForUser(
+      appleAuthRequestResponse.user,
+    );
+    if (credentialState === appleAuth.State.AUTHORIZED) {
+      appleLoginMutate({
+        token: appleAuthRequestResponse.identityToken || '',
+        // name: appleAuthRequestResponse.fullName || undefined,
+        // email: appleAuthRequestResponse.email || undefined,
+      });
+    }
+  }
+
   // const handleKakaoLogin = async () => {
   //   const {accessToken, idToken} = await login();
   //   if (accessToken && idToken) {
@@ -169,6 +240,7 @@ export default function Onboarding1() {
             style={{resizeMode: 'stretch', width: width - 54, height: 72}}
           />
         </Pressable>
+
         {/* <Pressable style={styles.oauthBtn} onPress={() => handleKakaoLogin()}>
           <Image
             source={require('../../assets/images/kakao_login.png')}
@@ -183,12 +255,15 @@ export default function Onboarding1() {
               style={{
                 width: width - 54,
                 height: 72,
+                borderWidth: 1.5,
+                borderRadius: 12,
+                borderColor: '#a9a9a9',
               }}
               onPress={() => onAppleButtonPress()}
             />
           </View>
         )}
-        <DividerWithText text={'또는'} />
+        <DividerWithText text={'또는 or'} />
         <Pressable
           style={[styles.registerBtnWrapper, {width: width - 54, height: 64}]}
           onPress={() => navigation.push('OnBoarding2')}>
