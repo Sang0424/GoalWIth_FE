@@ -6,7 +6,7 @@ import {
   Text,
   Modal,
   TouchableWithoutFeedback,
-  useWindowDimensions,
+  Dimensions,
   PanResponder,
   TextInput,
   KeyboardAvoidingView,
@@ -31,7 +31,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  runOnJS,
 } from 'react-native-reanimated';
 import type {Quest} from '../types/quest.types';
 import {colors} from '../styles/theme';
@@ -42,7 +41,6 @@ import {checkForProfanity} from '../utils/filter';
 interface BottomSheetProps {
   todoModalVisible: boolean;
   settodoModalVisible: (visible: boolean) => void;
-  whatTodo?: string;
   isMainQuest: boolean;
   questToEdit?: Quest | null;
 }
@@ -50,11 +48,10 @@ interface BottomSheetProps {
 const BottomSheet = ({
   todoModalVisible,
   settodoModalVisible,
-  whatTodo,
   isMainQuest,
   questToEdit,
 }: BottomSheetProps) => {
-  const {height: screenHeight} = useWindowDimensions();
+  const {height: screenHeight} = Dimensions.get('window');
   const translateY = useSharedValue(screenHeight);
   const context = useSharedValue({y: 0});
 
@@ -124,7 +121,8 @@ const BottomSheet = ({
   }, []);
 
   const toggleVerification = () => {
-    setVerificationRequired(!verificationRequired);
+    setVerificationRequired(prev => !prev);
+    Keyboard.dismiss();
   };
 
   // if (todoModalVisible) {
@@ -145,7 +143,7 @@ const BottomSheet = ({
       translateY.value = withSpring(screenHeight * 0.1, {damping: 1000});
       closeDatePickers();
     } else {
-      translateY.value = withSpring(screenHeight, {damping: 1000});
+      translateY.value = withSpring(screenHeight * 0.1, {damping: 1000});
     }
   }, [todoModalVisible]);
 
@@ -225,6 +223,19 @@ const BottomSheet = ({
       Alert.alert(err.response.data.message);
     },
   });
+  const VerificationSwitch = React.memo(
+    ({value, onValueChange}: {value: boolean; onValueChange: () => void}) => {
+      return (
+        <Switch
+          value={value}
+          onValueChange={onValueChange}
+          trackColor={{false: '#ddd', true: '#4CAF50'}}
+          thumbColor="#fff"
+          style={{width: 51, height: 31}}
+        />
+      );
+    },
+  );
 
   // ✅ 3. handleSubmit을 하나로 통합하고 mutate 호출
   const handleSubmit = (event: GestureResponderEvent) => {
@@ -262,7 +273,7 @@ const BottomSheet = ({
   };
 
   return (
-    <SafeAreaView>
+    <SafeAreaView style={{flex: 1}}>
       <TouchableWithoutFeedback
         onPress={() => {
           closeModalImmediately();
@@ -284,9 +295,7 @@ const BottomSheet = ({
                   animatedStyle, // 기존 transform 속성 대신 animatedStyle 사용
                 ]}>
                 <TouchableWithoutFeedback>
-                  <KeyboardAvoidingView
-                    style={styles.addTodo}
-                    keyboardVerticalOffset={100}>
+                  <View style={styles.addTodo}>
                     <View style={styles.header}>
                       <TouchableOpacity
                         onPress={() => closeModalImmediately()}
@@ -411,12 +420,9 @@ const BottomSheet = ({
                         <View style={styles.verificationHeader}>
                           <Text style={styles.inputLabel}>인증 필요</Text>
                           <View>
-                            <Switch
+                            <VerificationSwitch
                               value={verificationRequired}
                               onValueChange={toggleVerification}
-                              trackColor={{false: '#ddd', true: '#4CAF50'}}
-                              thumbColor="#fff"
-                              style={{width: 51, height: 31}}
                             />
                           </View>
                         </View>
@@ -451,7 +457,7 @@ const BottomSheet = ({
                         )}
                       </View>
                     </ScrollView>
-                  </KeyboardAvoidingView>
+                  </View>
                 </TouchableWithoutFeedback>
               </Animated.View>
             </GestureDetector>
@@ -473,7 +479,7 @@ const styles = StyleSheet.create({
   },
   bottomSheetContainer: {
     height: '100%',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     backgroundColor: colors.background,
     borderTopLeftRadius: 12,
@@ -614,4 +620,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BottomSheet;
+export default React.memo(BottomSheet);

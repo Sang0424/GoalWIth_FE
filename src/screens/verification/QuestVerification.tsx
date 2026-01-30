@@ -1013,10 +1013,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     textAlign: 'right',
   },
-  menuContainer: {
-    position: 'relative',
-    zIndex: 1000,
-  },
   menuOptions: {
     backgroundColor: 'white',
     borderRadius: 8,
