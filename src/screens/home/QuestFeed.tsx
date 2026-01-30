@@ -45,8 +45,68 @@ import {checkForProfanity} from '../../utils/filter';
 import {Calendar, DateData, LocaleConfig} from 'react-native-calendars';
 import {AnimatedProgressTrack} from '../../components/AnimatedProgressTrack';
 import {ActionStamp} from '../../components/ActionStamp';
-import {format, addDays, startOfWeek, isSameDay, parseISO} from 'date-fns';
+import {
+  format,
+  addDays,
+  startOfWeek,
+  isSameDay,
+  isToday,
+  isAfter,
+  startOfDay,
+  parseISO,
+} from 'date-fns';
 import {ko} from 'date-fns/locale';
+
+const PICO_COMPLETE = require('../../assets/character/pico_complete.png');
+const PICO_SMILE = require('../../assets/character/pico_smile.png');
+const PICO_REST = require('../../assets/character/pico_rest.png');
+
+const PicoDay = ({
+  date,
+  state,
+  marking,
+  onPress,
+}: {
+  date: DateData;
+  state: string;
+  marking?: {hasRecord?: boolean};
+  onPress: (d: DateData) => void;
+}) => {
+  const todayStart = startOfDay(new Date());
+  const isSelected = state === 'selected';
+  const isFuture = isAfter(parseISO(date.dateString), todayStart);
+  const hasRecord = marking?.hasRecord;
+  const picoImage = isFuture
+    ? null
+    : hasRecord
+    ? PICO_COMPLETE
+    : isToday(parseISO(date.dateString))
+    ? PICO_SMILE
+    : PICO_REST;
+
+  return (
+    <TouchableOpacity
+      onPress={() => onPress(date)}
+      style={[picoStyles.dayContainer, isSelected && picoStyles.daySelected]}>
+      <Text
+        style={[
+          picoStyles.dayText,
+          state === 'disabled' && picoStyles.dayDisabled,
+          isToday(parseISO(date.dateString)) && picoStyles.dayToday,
+        ]}>
+        {date.day}
+      </Text>
+
+      <View style={picoStyles.stickerWrap}>
+        <Image
+          source={picoImage}
+          style={[picoStyles.sticker, hasRecord && picoStyles.completedSticker]}
+          resizeMode="contain"
+        />
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 LocaleConfig.locales['ko'] = {
   monthNames: [
@@ -151,19 +211,35 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       const dateKey = format(new Date(record.createdAt), 'yyyy-MM-dd');
 
       if (!marks[dateKey]) {
-        marks[dateKey] = {dots: []};
+        marks[dateKey] = {
+          customStyles: {container: {}, text: {}},
+          dots: [],
+          hasRecord: false,
+          hasImage: false,
+        };
+      }
+
+      marks[dateKey].hasRecord = true;
+      if (record.images?.length) {
+        marks[dateKey].hasImage = true;
       }
       // 중복 점 방지 (이미 점이 있으면 패스)
-      if (!marks[dateKey].dots.find((d: any) => d.color === colors.primary)) {
+      if (
+        !marks[dateKey].dots.some((dot: any) => dot.color === colors.primary)
+      ) {
         marks[dateKey].dots.push({color: colors.primary});
       }
     });
 
     // 현재 선택된 날짜 스타일 적용
     marks[selectedDate] = {
-      ...marks[selectedDate],
+      ...(marks[selectedDate] ?? {
+        dots: [],
+        hasRecord: false,
+        hasImage: false,
+      }),
       selected: true,
-      selectedColor: colors.primary,
+      selectedColor: 'transparent',
       selectedTextColor: 'white',
     };
 
@@ -302,23 +378,6 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       hideSubscription.remove();
     };
   }, []);
-
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.secondary} />
-        <Text>로딩 중... 조금만 기다려주세요</Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (!isLoading && !quest) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>퀘스트를 찾을 수 없습니다.</Text>
-      </View>
-    );
-  }
 
   const handleStampFinish = () => {
     setShowStamp(false);
@@ -509,6 +568,49 @@ const QuestFeed = ({route}: QuestFeedProps) => {
 
   const CARD_WIDTH = width - 32;
 
+  const scrollToDate = (dateString: string) => {
+    console.log('dateString', dateString);
+    console.log('type', typeof dateString);
+    const sectionIndex = sections.findIndex(
+      section => section.title === dateString,
+    );
+    if (sectionIndex >= 0) {
+      sectionListRef.current?.scrollToLocation({
+        sectionIndex,
+        itemIndex: 0,
+        viewPosition: 0,
+        animated: true,
+      });
+    } else {
+      console.log('Section not found');
+    }
+  };
+  const handleDateSelect = useCallback(
+    (dateString: string) => {
+      setSelectedDate(dateString);
+      setIsMonthView(false);
+      setTimeout(() => scrollToDate(dateString), 100);
+    },
+    [sections],
+  );
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={colors.secondary} />
+        <Text>로딩 중... 조금만 기다려주세요</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!isLoading && !quest) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text>퀘스트를 찾을 수 없습니다.</Text>
+      </View>
+    );
+  }
+
   const renderQuestHeader = () => (
     <View>
       <View
@@ -568,9 +670,19 @@ const QuestFeed = ({route}: QuestFeedProps) => {
             <Calendar
               key="month-calendar"
               current={selectedDate}
-              onDayPress={(day: DateData) => setSelectedDate(day.dateString)}
-              markingType={'multi-dot'}
+              onDayPress={(day: DateData) => {
+                handleDateSelect(day.dateString);
+              }}
+              markingType={'custom'}
               markedDates={markedDates}
+              dayComponent={({date, state, marking}: any) => (
+                <PicoDay
+                  date={date}
+                  state={state}
+                  marking={marking}
+                  onPress={d => handleDateSelect(d.dateString)}
+                />
+              )}
               theme={calendarTheme}
             />
           ) : (
@@ -579,34 +691,32 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                 const isSelected = item.dateString === selectedDate;
                 const hasRecord =
                   markedDates[item.dateString]?.dots?.length > 0;
+                const toDateData = (dateString: string): DateData => {
+                  const parsed = parseISO(dateString);
+                  return {
+                    dateString,
+                    day: parsed.getDate(),
+                    month: parsed.getMonth() + 1,
+                    year: parsed.getFullYear(),
+                    timestamp: parsed.getTime(),
+                  };
+                };
 
+                const getDayState = (dateString: string) => {
+                  const date = parseISO(dateString);
+                  if (dateString === selectedDate) return 'selected';
+                  if (isToday(date)) return 'today';
+                  if (isAfter(date, new Date())) return 'disabled';
+                  return 'active';
+                };
                 return (
-                  <TouchableOpacity
+                  <PicoDay
                     key={item.dateString}
-                    style={[
-                      styles.weekDayItem,
-                      isSelected && styles.weekDayItemSelected,
-                    ]}
-                    onPress={() => setSelectedDate(item.dateString)}>
-                    <Text
-                      style={[
-                        styles.weekDayText,
-                        isSelected && styles.weekDayTextSelected,
-                      ]}>
-                      {item.weekDay}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.dayText,
-                        isSelected && styles.dayTextSelected,
-                      ]}>
-                      {item.day}
-                    </Text>
-                    {/* 기록 점 표시 */}
-                    <View style={{height: 6, marginTop: 4}}>
-                      {hasRecord && <View style={styles.dot} />}
-                    </View>
-                  </TouchableOpacity>
+                    date={toDateData(item.dateString)}
+                    state={getDayState(item.dateString)}
+                    marking={markedDates[item.dateString]}
+                    onPress={({dateString: ds}) => handleDateSelect(ds)}
+                  />
                 );
               })}
             </View>
@@ -686,7 +796,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
           !!keyboardHeight && {paddingBottom: keyboardHeight + 120},
         ]}
         keyboardShouldPersistTaps="handled"
-        stickySectionHeadersEnabled={false} // 스크롤 시 날짜가 상단에 고정되는 효과 (false면 같이 스크롤됨)
+        stickySectionHeadersEnabled={true} // 스크롤 시 날짜가 상단에 고정되는 효과 (false면 같이 스크롤됨)
       />
 
       {/* Input Container (Footer) - 기존과 동일하게 Absolute Position 유지 */}
@@ -1170,6 +1280,41 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 200, // InputContainer 공간 확보
+  },
+});
+
+const picoStyles = StyleSheet.create({
+  dayContainer: {
+    width: 42,
+    height: 58,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    borderRadius: 10,
+    paddingVertical: 2,
+  },
+  daySelected: {
+    backgroundColor: '#FFF7E6',
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  dayText: {fontSize: 11, color: '#9BA0A8'},
+  dayToday: {color: colors.primary, fontWeight: '700'},
+  dayDisabled: {color: '#D8DDE5'},
+  stickerWrap: {
+    width: 30,
+    height: 30,
+    marginTop: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sticker: {width: 24, height: 24, opacity: 0.6},
+  completedSticker: {width: 26, height: 26, opacity: 1},
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.primary,
+    marginTop: 3,
   },
 });
 
