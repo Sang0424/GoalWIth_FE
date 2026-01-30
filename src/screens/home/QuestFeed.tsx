@@ -42,11 +42,108 @@ import {Image} from 'expo-image';
 import ImagePickerModal from '../../components/ImagePickerModal';
 import {groupRecordsByDate} from '../../utils/dateUtils';
 import {checkForProfanity} from '../../utils/filter';
+import {Calendar, DateData, LocaleConfig} from 'react-native-calendars';
+import {AnimatedProgressTrack} from '../../components/AnimatedProgressTrack';
+import {ActionStamp} from '../../components/ActionStamp';
+import {
+  format,
+  addDays,
+  startOfWeek,
+  isSameDay,
+  isToday,
+  isAfter,
+  startOfDay,
+  parseISO,
+} from 'date-fns';
+import {ko} from 'date-fns/locale';
+
+const PICO_COMPLETE = require('../../assets/character/pico_complete.png');
+const PICO_SMILE = require('../../assets/character/pico_smile.png');
+const PICO_REST = require('../../assets/character/pico_rest.png');
+
+const PicoDay = ({
+  date,
+  state,
+  marking,
+  onPress,
+}: {
+  date: DateData;
+  state: string;
+  marking?: {hasRecord?: boolean};
+  onPress: (d: DateData) => void;
+}) => {
+  const todayStart = startOfDay(new Date());
+  const isSelected = state === 'selected';
+  const isFuture = isAfter(parseISO(date.dateString), todayStart);
+  const hasRecord = marking?.hasRecord;
+  const picoImage = isFuture
+    ? null
+    : hasRecord
+    ? PICO_COMPLETE
+    : isToday(parseISO(date.dateString))
+    ? PICO_SMILE
+    : PICO_REST;
+
+  return (
+    <TouchableOpacity
+      onPress={() => onPress(date)}
+      style={[picoStyles.dayContainer, isSelected && picoStyles.daySelected]}>
+      <Text
+        style={[
+          picoStyles.dayText,
+          state === 'disabled' && picoStyles.dayDisabled,
+          isToday(parseISO(date.dateString)) && picoStyles.dayToday,
+        ]}>
+        {date.day}
+      </Text>
+
+      <View style={picoStyles.stickerWrap}>
+        <Image
+          source={picoImage}
+          style={[picoStyles.sticker, hasRecord && picoStyles.completedSticker]}
+          resizeMode="contain"
+        />
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+LocaleConfig.locales['ko'] = {
+  monthNames: [
+    '1월',
+    '2월',
+    '3월',
+    '4월',
+    '5월',
+    '6월',
+    '7월',
+    '8월',
+    '9월',
+    '10월',
+    '11월',
+    '12월',
+  ],
+  dayNames: ['일', '월', '화', '수', '목', '금', '토'],
+  dayNamesShort: ['일', '월', '화', '수', '목', '금', '토'],
+};
+LocaleConfig.defaultLocale = 'ko';
+
+const QUICK_INPUTS = [
+  {id: '1', text: '🔥 오늘도 완료!', icon: '🔥'},
+  {id: '2', text: '💪 끈기있게 성공', icon: '💪'},
+  {id: '3', text: '✨ 작은 성취', icon: '✨'},
+  {id: '4', text: '💧 습관 형성 중', icon: '💧'},
+];
 
 const QuestFeed = ({route}: QuestFeedProps) => {
   const navigation = useNavigation();
   const {quest: questParam} = route.params;
   const [newRecordText, setNewRecordText] = useState('');
+  const [selectedDate, setSelectedDate] = useState(
+    format(new Date(), 'yyyy-MM-dd'),
+  );
+  const [isMonthView, setIsMonthView] = useState(false);
+  const [showStamp, setShowStamp] = useState(false);
   const [images, setImages] = useState<Asset[]>([]);
   const [questRecord, setQuestRecord] = useState<QuestRecord[]>([]);
   const {keyboardHeight} = useKeyboardHeight();
@@ -66,6 +163,19 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     startDate: questParam.startDate ? new Date(questParam.startDate) : null,
     endDate: questParam.endDate ? new Date(questParam.endDate) : null,
   };
+
+  const weekDays = useMemo(() => {
+    // 선택된 날짜가 포함된 주의 시작일(일요일) 구하기
+    const start = startOfWeek(parseISO(selectedDate), {weekStartsOn: 0});
+    return Array.from({length: 7}).map((_, index) => {
+      const date = addDays(start, index);
+      return {
+        dateString: format(date, 'yyyy-MM-dd'),
+        day: format(date, 'd'),
+        weekDay: format(date, 'E', {locale: ko}), // 요일 (일, 월...)
+      };
+    });
+  }, [selectedDate]);
 
   const {data, isLoading} = useQuery({
     queryKey: ['QuestRecord', quest.id],
@@ -93,6 +203,49 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     }
   }, [data, quest.records]);
 
+  const markedDates = useMemo(() => {
+    const marks: any = {};
+
+    // 기록이 있는 날짜 마킹
+    questRecord.forEach(record => {
+      const dateKey = format(new Date(record.createdAt), 'yyyy-MM-dd');
+
+      if (!marks[dateKey]) {
+        marks[dateKey] = {
+          customStyles: {container: {}, text: {}},
+          dots: [],
+          hasRecord: false,
+          hasImage: false,
+        };
+      }
+
+      marks[dateKey].hasRecord = true;
+      if (record.images?.length) {
+        marks[dateKey].hasImage = true;
+      }
+      // 중복 점 방지 (이미 점이 있으면 패스)
+      if (
+        !marks[dateKey].dots.some((dot: any) => dot.color === colors.primary)
+      ) {
+        marks[dateKey].dots.push({color: colors.primary});
+      }
+    });
+
+    // 현재 선택된 날짜 스타일 적용
+    marks[selectedDate] = {
+      ...(marks[selectedDate] ?? {
+        dots: [],
+        hasRecord: false,
+        hasImage: false,
+      }),
+      selected: true,
+      selectedColor: 'transparent',
+      selectedTextColor: 'white',
+    };
+
+    return marks;
+  }, [questRecord, selectedDate]);
+
   const createRecord = useCallback(
     async ({questId, text, images: recordImages}: any) => {
       const formData = new FormData();
@@ -115,7 +268,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   const {mutate, isPending: isCreatingRecord} = useMutation({
     mutationFn: createRecord,
     onSuccess: () => {
-      Alert.alert('성공', '기록이 추가되었습니다!');
+      setShowStamp(true);
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
     },
@@ -141,6 +294,17 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       Alert.alert(`${error.response.data.message}`);
     },
   });
+
+  const handleQuickSubmit = useCallback(
+    (text: string) => {
+      mutate({
+        questId: quest.id,
+        text: text,
+        images: [], // 간편 입력은 이미지 없음
+      });
+    },
+    [quest.id, mutate],
+  );
 
   const handleAddRecord = useCallback(async () => {
     if (!newRecordText.trim() && images.length === 0) {
@@ -215,22 +379,11 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     };
   }, []);
 
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.secondary} />
-        <Text>로딩 중... 조금만 기다려주세요</Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (!isLoading && !quest) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>퀘스트를 찾을 수 없습니다.</Text>
-      </View>
-    );
-  }
+  const handleStampFinish = () => {
+    setShowStamp(false);
+    queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
+    queryClient.invalidateQueries({queryKey: ['homeQuests']});
+  };
 
   const handleCompleteQuest = () => {
     Alert.alert('퀘스트 완료', '이 퀘스트를 완료하시겠습니까?', [
@@ -415,6 +568,49 @@ const QuestFeed = ({route}: QuestFeedProps) => {
 
   const CARD_WIDTH = width - 32;
 
+  const scrollToDate = (dateString: string) => {
+    console.log('dateString', dateString);
+    console.log('type', typeof dateString);
+    const sectionIndex = sections.findIndex(
+      section => section.title === dateString,
+    );
+    if (sectionIndex >= 0) {
+      sectionListRef.current?.scrollToLocation({
+        sectionIndex,
+        itemIndex: 0,
+        viewPosition: 0,
+        animated: true,
+      });
+    } else {
+      console.log('Section not found');
+    }
+  };
+  const handleDateSelect = useCallback(
+    (dateString: string) => {
+      setSelectedDate(dateString);
+      setIsMonthView(false);
+      setTimeout(() => scrollToDate(dateString), 100);
+    },
+    [sections],
+  );
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={colors.secondary} />
+        <Text>로딩 중... 조금만 기다려주세요</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!isLoading && !quest) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text>퀘스트를 찾을 수 없습니다.</Text>
+      </View>
+    );
+  }
+
   const renderQuestHeader = () => (
     <View>
       <View
@@ -446,23 +642,85 @@ const QuestFeed = ({route}: QuestFeedProps) => {
             {formatDate(quest.startDate.toString())} -{' '}
             {formatDate(quest.endDate.toString())}
           </Text>
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {width: `${calculateProgressPercentage()}%`},
-                  {backgroundColor: quest.isMain ? '#4a90e2' : '#a0a0a0'},
-                ]}
-              />
-            </View>
-            <Text style={styles.progressText}>
-              {Math.floor(
-                (Date.now() - new Date(quest.startDate).getTime()) / 86400000,
-              ) + 1}
-              일차
-            </Text>
+          <View style={{width: '100%', paddingHorizontal: 10, marginTop: 10}}>
+            <AnimatedProgressTrack progress={calculateProgressPercentage()} />
           </View>
+        </View>
+      </View>
+      <View style={styles.calendarSection}>
+        <View style={styles.calendarHeaderRow}>
+          <Text style={styles.sectionTitle}>
+            {isMonthView ? '월간 기록' : '주간 기록'}
+          </Text>
+          <TouchableOpacity
+            style={styles.toggleButton}
+            onPress={() => setIsMonthView(!isMonthView)}>
+            <Text style={styles.toggleText}>
+              {isMonthView ? '접기 (주간)' : '펼치기 (월간)'}
+            </Text>
+            <Icon
+              name={isMonthView ? 'expand-less' : 'expand-more'}
+              size={20}
+              color={colors.gray}
+            />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.calendarContainer}>
+          {isMonthView ? (
+            <Calendar
+              key="month-calendar"
+              current={selectedDate}
+              onDayPress={(day: DateData) => {
+                handleDateSelect(day.dateString);
+              }}
+              markingType={'custom'}
+              markedDates={markedDates}
+              dayComponent={({date, state, marking}: any) => (
+                <PicoDay
+                  date={date}
+                  state={state}
+                  marking={marking}
+                  onPress={d => handleDateSelect(d.dateString)}
+                />
+              )}
+              theme={calendarTheme}
+            />
+          ) : (
+            <View style={styles.weekViewContainer}>
+              {weekDays.map(item => {
+                const isSelected = item.dateString === selectedDate;
+                const hasRecord =
+                  markedDates[item.dateString]?.dots?.length > 0;
+                const toDateData = (dateString: string): DateData => {
+                  const parsed = parseISO(dateString);
+                  return {
+                    dateString,
+                    day: parsed.getDate(),
+                    month: parsed.getMonth() + 1,
+                    year: parsed.getFullYear(),
+                    timestamp: parsed.getTime(),
+                  };
+                };
+
+                const getDayState = (dateString: string) => {
+                  const date = parseISO(dateString);
+                  if (dateString === selectedDate) return 'selected';
+                  if (isToday(date)) return 'today';
+                  if (isAfter(date, new Date())) return 'disabled';
+                  return 'active';
+                };
+                return (
+                  <PicoDay
+                    key={item.dateString}
+                    date={toDateData(item.dateString)}
+                    state={getDayState(item.dateString)}
+                    marking={markedDates[item.dateString]}
+                    onPress={({dateString: ds}) => handleDateSelect(ds)}
+                  />
+                );
+              })}
+            </View>
+          )}
         </View>
       </View>
       <View style={{paddingHorizontal: 20, paddingTop: 20}}>
@@ -535,10 +793,10 @@ const QuestFeed = ({route}: QuestFeedProps) => {
         keyExtractor={item => item.id.toString()}
         contentContainerStyle={[
           styles.listContent,
-          !!keyboardHeight && {paddingBottom: keyboardHeight + 80},
+          !!keyboardHeight && {paddingBottom: keyboardHeight + 120},
         ]}
         keyboardShouldPersistTaps="handled"
-        stickySectionHeadersEnabled={false} // 스크롤 시 날짜가 상단에 고정되는 효과 (false면 같이 스크롤됨)
+        stickySectionHeadersEnabled={true} // 스크롤 시 날짜가 상단에 고정되는 효과 (false면 같이 스크롤됨)
       />
 
       {/* Input Container (Footer) - 기존과 동일하게 Absolute Position 유지 */}
@@ -548,6 +806,19 @@ const QuestFeed = ({route}: QuestFeedProps) => {
             styles.inputContainer,
             {transform: [{translateY: keyboardOffset}]},
           ]}>
+          <View style={styles.quickInputContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {QUICK_INPUTS.map(input => (
+                <TouchableOpacity
+                  key={input.id}
+                  style={styles.quickButton}
+                  onPress={() => handleQuickSubmit(input.text)}
+                  disabled={isCreatingRecord}>
+                  <Text style={styles.quickButtonText}>{input.text}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
           {/* ... 이미지 프리뷰, 입력창, 버튼들 (기존 코드 그대로) ... */}
           {images.length > 0 && (
             <View style={styles.imagePreviewContainer}>
@@ -651,8 +922,29 @@ const QuestFeed = ({route}: QuestFeedProps) => {
         onCamera={handleCamera}
         onGallery={pickImage}
       />
+      <ActionStamp visible={showStamp} onAnimationFinish={handleStampFinish} />
     </SafeAreaView>
   );
+};
+
+const calendarTheme = {
+  selectedDayBackgroundColor: colors.primary,
+  selectedDayTextColor: '#ffffff',
+  todayTextColor: colors.primary,
+  arrowColor: colors.primary,
+  dotColor: colors.primary,
+  stylesheet: {
+    calendar: {
+      header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingLeft: 10,
+        paddingRight: 10,
+        marginTop: 6,
+        alignItems: 'center',
+      },
+    },
+  },
 };
 
 const styles = StyleSheet.create({
@@ -670,6 +962,7 @@ const styles = StyleSheet.create({
   header: {
     padding: 10,
     borderRadius: 20,
+    backgroundColor: colors.secondary,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.1,
@@ -680,7 +973,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
   },
   subQuestHeader: {
-    backgroundColor: colors.switchBG,
+    backgroundColor: colors.secondary,
   },
   headerContent: {
     alignItems: 'center',
@@ -720,6 +1013,53 @@ const styles = StyleSheet.create({
     minWidth: 50,
     textAlign: 'right',
   },
+  calendarSection: {
+    marginTop: 20,
+    paddingHorizontal: 16,
+  },
+  calendarHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  toggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 4,
+  },
+  toggleText: {
+    fontSize: 13,
+    color: colors.gray,
+    marginRight: 4,
+    fontWeight: '500',
+  },
+  calendarContainer: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'white',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  weekViewContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 15,
+    backgroundColor: 'white',
+  },
+  weekDayItem: {alignItems: 'center', padding: 8, borderRadius: 12, width: 45},
+  weekDayItemSelected: {backgroundColor: colors.primary},
+  weekDayText: {fontSize: 12, color: colors.gray, marginBottom: 4},
+  weekDayTextSelected: {color: 'white', fontWeight: 'bold'},
+  dayText: {fontSize: 16, fontWeight: '600', color: colors.font},
+  dayTextSelected: {color: 'white'},
+  dot: {width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary},
   section: {
     padding: 20,
   },
@@ -796,6 +1136,25 @@ const styles = StyleSheet.create({
     lineHeight: 24, // 줄 간격을 넉넉하게 (중요)
     color: '#333333',
     letterSpacing: -0.2,
+  },
+  quickInputContainer: {
+    marginBottom: 12,
+    height: 40,
+  },
+  quickButton: {
+    backgroundColor: '#FFF8E1', // 연한 노란색 (테마에 맞게 조정)
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    marginRight: 8,
+    justifyContent: 'center',
+  },
+  quickButtonText: {
+    color: '#333',
+    fontSize: 13,
+    fontWeight: '600',
   },
   inputContainer: {
     position: 'absolute',
@@ -920,7 +1279,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   listContent: {
-    paddingBottom: 150, // InputContainer 공간 확보
+    paddingBottom: 200, // InputContainer 공간 확보
+  },
+});
+
+const picoStyles = StyleSheet.create({
+  dayContainer: {
+    width: 42,
+    height: 58,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    borderRadius: 10,
+    paddingVertical: 2,
+  },
+  daySelected: {
+    backgroundColor: '#FFF7E6',
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  dayText: {fontSize: 11, color: '#9BA0A8'},
+  dayToday: {color: colors.primary, fontWeight: '700'},
+  dayDisabled: {color: '#D8DDE5'},
+  stickerWrap: {
+    width: 30,
+    height: 30,
+    marginTop: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sticker: {width: 24, height: 24, opacity: 0.6},
+  completedSticker: {width: 26, height: 26, opacity: 1},
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.primary,
+    marginTop: 3,
   },
 });
 
