@@ -1,6 +1,7 @@
 import {ExpoConfig, ConfigContext} from 'expo/config';
 import * as dotenv from 'dotenv';
 import path from 'path';
+import pkg from './package.json';
 
 // 1. 어떤 환경 파일을 읽을지 결정 (기본값 dev)
 const APP_VARIANT = process.env.APP_VARIANT || 'dev';
@@ -15,31 +16,33 @@ interface CustomExpoConfig extends ExpoConfig {
   };
 }
 
+const convertVersionToNumber = (version: string) => {
+  const [major, minor, patch] = version.split('.').map(Number);
+  // 예: 1.0.3 -> 1000003
+  // 예: 1.1.0 -> 1001000
+  return major * 1000000 + minor * 1000 + patch;
+};
+
 export default ({config}: ConfigContext): CustomExpoConfig => ({
   ...config,
-  name: APP_VARIANT === 'prod' ? 'GoalWith' : 'GoalWith_Dev',
+  name: 'GoalWith',
   slug: 'goalwith',
-  version: APP_VARIANT === 'prod' ? '1.0.2' : '1.0.1', // iOS/Android 버전 차이 대응 가능
+  version: pkg.version,
   runtimeVersion: {
     policy: 'appVersion',
   },
 
   ios: {
-    bundleIdentifier:
-      APP_VARIANT === 'prod'
-        ? 'com.goalwith.goalwith'
-        : 'com.goalwith.goalwith.dev',
-    buildNumber: '2',
+    ...config.ios,
+    bundleIdentifier: 'com.goalwith.goalwith',
+    buildNumber: convertVersionToNumber(pkg.version).toString(),
     // 구글 로그인을 위한 설정
-    googleServicesFile:
-      APP_VARIANT === 'prod'
-        ? './GoogleService-Info.plist'
-        : './GoogleService-Info-Dev.plist',
+    googleServicesFile: './GoogleService-Info.plist',
   },
 
   android: {
-    package: APP_VARIANT === 'prod' ? 'com.goalwith' : 'com.goalwith_dev',
-    versionCode: 2,
+    package: 'com.goalwith',
+    versionCode: convertVersionToNumber(pkg.version),
   },
 
   // 3. 환경 변수(.env) 값을 Expo 앱 내부에서 사용하도록 주입

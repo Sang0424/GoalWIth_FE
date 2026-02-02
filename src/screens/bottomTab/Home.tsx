@@ -222,6 +222,8 @@ export default function Home() {
     quest => quest.procedure === 'verify',
   );
 
+  const canAddSubQuest = filter === 'ONGOING' && filteredSubQuests.length === 0;
+
   // Render empty state
   const renderEmptyState = (isMain: boolean) => (
     <View style={styles.emptyState}>
@@ -257,7 +259,7 @@ export default function Home() {
             : '단 하나의 메인 퀘스트만 생성할 수 있습니다'
           : '마음껏 서브 퀘스트를 생성해보세요'}
       </Text>
-      {filter === 'ONGOING' && canAddMainQuest && !hasVerifyingQuest && (
+      {filter === 'ONGOING' && canAddMainQuest && !hasVerifyingQuest ? (
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => {
@@ -265,10 +267,21 @@ export default function Home() {
             setIsAddingMainQuest(isMain);
             setModalVisible(true);
           }}>
-          <Text style={styles.addButtonText}>
-            {isMain ? '메인 퀘스트 추가' : '서브 퀘스트 추가'}
-          </Text>
+          <Text style={styles.addButtonText}>{'퀘스트 추가'}</Text>
         </TouchableOpacity>
+      ) : (
+        filter === 'ONGOING' &&
+        canAddSubQuest && (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => {
+              setQuestToEdit(null);
+              setIsAddingMainQuest(isMain);
+              setModalVisible(true);
+            }}>
+            <Text style={styles.addButtonText}>{'퀘스트 추가'}</Text>
+          </TouchableOpacity>
+        )
       )}
     </View>
   );

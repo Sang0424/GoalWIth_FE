@@ -14,6 +14,9 @@ import {
   ActivityIndicator,
   SectionList,
   useWindowDimensions,
+  Modal,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import {useRef, useEffect, useCallback, useMemo} from 'react';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -56,6 +59,15 @@ import {
   parseISO,
 } from 'date-fns';
 import {ko} from 'date-fns/locale';
+import {
+  Menu,
+  MenuOptions,
+  MenuOption,
+  MenuTrigger,
+} from 'react-native-popup-menu';
+import BottomSheet from '../../components/BottomSheet';
+import crashlytics from '@react-native-firebase/crashlytics';
+import analytics from '@react-native-firebase/analytics';
 
 const PICO_COMPLETE = require('../../assets/character/pico_complete.png');
 const PICO_SMILE = require('../../assets/character/pico_smile.png');
@@ -145,6 +157,8 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   const [isMonthView, setIsMonthView] = useState(false);
   const [showStamp, setShowStamp] = useState(false);
   const [images, setImages] = useState<Asset[]>([]);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isEditQuest, setIsEditQuest] = useState(false);
   const [questRecord, setQuestRecord] = useState<QuestRecord[]>([]);
   const {keyboardHeight} = useKeyboardHeight();
   // const scrollViewRef = useRef<ScrollView>(null);
@@ -158,11 +172,13 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   const blurhash =
     '|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[';
 
-  const quest = {
-    ...questParam,
-    startDate: questParam.startDate ? new Date(questParam.startDate) : null,
-    endDate: questParam.endDate ? new Date(questParam.endDate) : null,
-  };
+  const quest = useMemo(() => {
+    return {
+      ...questParam,
+      startDate: questParam.startDate ? new Date(questParam.startDate) : null,
+      endDate: questParam.endDate ? new Date(questParam.endDate) : null,
+    };
+  }, [questParam]);
 
   const weekDays = useMemo(() => {
     // 선택된 날짜가 포함된 주의 시작일(일요일) 구하기
@@ -295,6 +311,58 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     },
   });
 
+  const {mutate: deleteQuest} = useMutation({
+    mutationFn: async (questId: number) => {
+      await instance.delete(`/quest/${questId}`);
+    },
+    onSuccess: () => {
+      Alert.alert('퀘스트 삭제!', '퀘스트를 삭제했습니다!');
+      queryClient.invalidateQueries({queryKey: ['homeQuests']});
+    },
+    onError: error => {
+      Alert.alert('오류', '퀘스트 삭제 중 오류가 발생했습니다.');
+      crashlytics().recordError(error);
+      analytics().logEvent('delete_quest_error', {error: error.message});
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({queryKey: ['homeQuests']});
+    },
+  });
+
+  const {mutate: saveQuest} = useMutation({
+    mutationFn: async (questId: number) => {
+      const response = await instance.post(`/quest/${questId}/bookmark`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ['verification']});
+      queryClient.invalidateQueries({queryKey: ['myBookmarkCount']});
+      Alert.alert('저장되었습니다!');
+      setShowSettings(false);
+    },
+    onError: (error: any) => {
+      error.response?.data.status == 400
+        ? cancelSaveQuest(quest.id)
+        : Alert.alert(error.response?.data.message);
+    },
+  });
+
+  const {mutate: cancelSaveQuest} = useMutation({
+    mutationFn: async (questId: number) => {
+      const response = await instance.delete(`/quest/${questId}/bookmark`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ['verification']});
+      queryClient.invalidateQueries({queryKey: ['myBookmarkCount']});
+      Alert.alert('저장을 취소했습니다');
+      setShowSettings(false);
+    },
+    onError: (error: any) => {
+      Alert.alert(error.response.data.message);
+    },
+  });
+
   const handleQuickSubmit = useCallback(
     (text: string) => {
       mutate({
@@ -340,6 +408,19 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       }, 100);
     }
   }, [sections]);
+
+  const handleDeleteQuest = (questId: number) => {
+    Alert.alert('퀘스트 삭제!', '퀘스트를 삭제하시겠습니까?', [
+      {text: '취소', style: 'cancel'},
+      {
+        text: '삭제',
+        onPress: () => {
+          deleteQuest(questId);
+          navigation.goBack();
+        },
+      },
+    ]);
+  };
 
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
@@ -569,22 +650,25 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   const CARD_WIDTH = width - 32;
 
   const scrollToDate = (dateString: string) => {
-    console.log('dateString', dateString);
-    console.log('type', typeof dateString);
+    const [year, month, day] = dateString.split('-').map(Number);
+    const targetTitle = `${year}년 ${month}월 ${day}일`;
     const sectionIndex = sections.findIndex(
-      section => section.title === dateString,
+      section => section.title === targetTitle,
     );
     if (sectionIndex >= 0) {
-      sectionListRef.current?.scrollToLocation({
-        sectionIndex,
-        itemIndex: 0,
-        viewPosition: 0,
-        animated: true,
-      });
+      setTimeout(() => {
+        sectionListRef.current?.scrollToLocation({
+          sectionIndex,
+          itemIndex: 0,
+          viewPosition: 0,
+          animated: true,
+        });
+      }, 100);
     } else {
       console.log('Section not found');
     }
   };
+
   const handleDateSelect = useCallback(
     (dateString: string) => {
       setSelectedDate(dateString);
@@ -636,7 +720,37 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               />
             </Pressable>
             <Text style={styles.questTitle}>{quest.title}</Text>
-            <View style={{width: 40}} />
+            <TouchableOpacity
+              style={{width: 40}}
+              onPress={() => setShowSettings(true)}>
+              {/* <Menu>
+                <MenuTrigger>
+                  <Icon name="more-vert" size={20} color={colors.font} />
+                </MenuTrigger>
+                <MenuOptions optionsContainerStyle={styles.menuOptions}>
+                  <MenuOption style={styles.menuOption}>
+                    <Text style={{textAlign: 'center'}}>수정</Text>
+                  </MenuOption>
+                  <MenuOption
+                    onSelect={() => {
+                      Alert.alert('삭제', '정말로 삭제하시겠습니까?', [
+                        {
+                          text: '취소',
+                          onPress: () => {},
+                        },
+                        {
+                          text: '삭제',
+                          onPress: () => {},
+                        },
+                      ]);
+                    }}
+                    style={[styles.menuOption, styles.deleteOption]}>
+                    <Text style={{textAlign: 'center'}}>삭제</Text>
+                  </MenuOption>
+                </MenuOptions>
+              </Menu> */}
+              <Icon name="more-vert" size={24} color={colors.font} />
+            </TouchableOpacity>
           </View>
           <Text style={styles.questDate}>
             {formatDate(quest.startDate.toString())} -{' '}
@@ -797,6 +911,16 @@ const QuestFeed = ({route}: QuestFeedProps) => {
         ]}
         keyboardShouldPersistTaps="handled"
         stickySectionHeadersEnabled={true} // 스크롤 시 날짜가 상단에 고정되는 효과 (false면 같이 스크롤됨)
+        onScrollToIndexFailed={info => {
+          const wait = new Promise(resolve => setTimeout(resolve, 500));
+          wait.then(() => {
+            sectionListRef.current?.scrollToLocation({
+              sectionIndex: info.index,
+              itemIndex: 0,
+              animated: true,
+            });
+          });
+        }}
       />
 
       {/* Input Container (Footer) - 기존과 동일하게 Absolute Position 유지 */}
@@ -806,19 +930,21 @@ const QuestFeed = ({route}: QuestFeedProps) => {
             styles.inputContainer,
             {transform: [{translateY: keyboardOffset}]},
           ]}>
-          <View style={styles.quickInputContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {QUICK_INPUTS.map(input => (
-                <TouchableOpacity
-                  key={input.id}
-                  style={styles.quickButton}
-                  onPress={() => handleQuickSubmit(input.text)}
-                  disabled={isCreatingRecord}>
-                  <Text style={styles.quickButtonText}>{input.text}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+          {keyboardHeight > 0 && (
+            <View style={styles.quickInputContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {QUICK_INPUTS.map(input => (
+                  <TouchableOpacity
+                    key={input.id}
+                    style={styles.quickButton}
+                    onPress={() => handleQuickSubmit(input.text)}
+                    disabled={isCreatingRecord}>
+                    <Text style={styles.quickButtonText}>{input.text}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
           {/* ... 이미지 프리뷰, 입력창, 버튼들 (기존 코드 그대로) ... */}
           {images.length > 0 && (
             <View style={styles.imagePreviewContainer}>
@@ -922,7 +1048,50 @@ const QuestFeed = ({route}: QuestFeedProps) => {
         onCamera={handleCamera}
         onGallery={pickImage}
       />
+      <BottomSheet
+        questToEdit={quest}
+        todoModalVisible={isEditQuest}
+        settodoModalVisible={setIsEditQuest}
+        isMainQuest={quest.isMain}
+      />
       <ActionStamp visible={showStamp} onAnimationFinish={handleStampFinish} />
+      <Modal
+        visible={showSettings}
+        onRequestClose={() => setShowSettings(false)}
+        animationType="slide"
+        transparent>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.flexEnd}>
+          <TouchableWithoutFeedback onPress={() => setShowSettings(false)}>
+            <View style={styles.overlay} />
+          </TouchableWithoutFeedback>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>퀘스트 설정</Text>
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={() => saveQuest(quest.id)}>
+              <Icon name="bookmark" size={24} color={colors.font} />
+              <Text style={styles.optionText}>저장하기</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={() => {
+                setShowSettings(false);
+                setIsEditQuest(true);
+              }}>
+              <Icon name="edit" size={24} color={colors.font} />
+              <Text style={styles.optionText}>수정하기</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={() => handleDeleteQuest(quest.id)}>
+              <Icon name="delete" size={24} color={'red'} />
+              <Text style={[styles.optionText, {color: 'red'}]}>삭제하기</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -938,8 +1107,8 @@ const calendarTheme = {
       header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingLeft: 10,
-        paddingRight: 10,
+        paddingLeft: 8,
+        paddingRight: 8,
         marginTop: 6,
         alignItems: 'center',
       },
@@ -948,6 +1117,50 @@ const calendarTheme = {
 };
 
 const styles = StyleSheet.create({
+  flexEnd: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    padding: 22,
+    paddingBottom: 40,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    alignItems: 'center',
+  },
+  handle: {
+    width: 40,
+    height: 5,
+    backgroundColor: colors.gray,
+    borderRadius: 2.5,
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  modalOption: {
+    width: '100%',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.lightGray,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionText: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: colors.font,
+    marginLeft: 12,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -962,7 +1175,7 @@ const styles = StyleSheet.create({
   header: {
     padding: 10,
     borderRadius: 20,
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.background,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.1,
@@ -970,16 +1183,16 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   mainQuestHeader: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.background,
   },
   subQuestHeader: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.background,
   },
   headerContent: {
     alignItems: 'center',
   },
   questTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: colors.font,
     marginBottom: 5,
@@ -1280,6 +1493,24 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 200, // InputContainer 공간 확보
+  },
+  menuOptions: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    width: 120,
+    padding: 5,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  menuOption: {
+    padding: 10,
+  },
+  deleteOption: {
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
 });
 

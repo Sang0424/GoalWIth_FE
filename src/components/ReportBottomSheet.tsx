@@ -92,7 +92,7 @@ const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({
       animationType="slide"
       transparent>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flexEnd}>
         <TouchableWithoutFeedback onPress={handleClose}>
           <View style={styles.overlay} />
