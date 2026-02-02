@@ -28,9 +28,7 @@ export default ({config}: ConfigContext): CustomExpoConfig => ({
   name: 'GoalWith',
   slug: 'goalwith',
   version: pkg.version,
-  runtimeVersion: {
-    policy: 'appVersion',
-  },
+  runtimeVersion: pkg.version,
 
   ios: {
     ...config.ios,
