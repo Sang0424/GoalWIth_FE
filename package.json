@@ -23,10 +23,10 @@
     "android:staging-release-apk": "cd android && ./gradlew clean && ./gradlew assembleStagingRelease && cd .. && echo 'find APK in android/app/build/outputs/apk/staging/release'",
     "android:prod-release-apk": "cd android && ./gradlew clean && ./gradlew assembleProdRelease && cd .. && echo 'find APK in android/app/build/outputs/apk/prod/release'",
     "android:prod-release-aab": "cd android && ./gradlew clean && ./gradlew bundleProdRelease && cd .. && echo 'find AAB in android/app/build/outputs/apk/prod/release'",
-    "android": "react-native run-android",
+    "android": "expo run:android",
     "ios:dev": "APP_VARIANT=dev react-native run-ios --scheme Development",
     "ios:prod": "APP_VARIANT=prod react-native run-ios --scheme Production",
-    "ios": "react-native run-ios",
+    "ios": "expo run:ios",
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest"

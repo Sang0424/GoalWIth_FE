@@ -2273,6 +2273,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
+  - react-native-version-check (3.5.0):
+    - React-Core
   - React-NativeModulesApple (0.81.4):
     - boost
     - DoubleConversion
@@ -3479,6 +3481,7 @@ DEPENDENCIES:
   - react-native-config (from `../node_modules/react-native-config`)
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
+  - react-native-version-check (from `../node_modules/react-native-version-check`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-oscompat (from `../node_modules/react-native/ReactCommon/oscompat`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
@@ -3692,6 +3695,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-image-picker"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
+  react-native-version-check:
+    :path: "../node_modules/react-native-version-check"
   React-NativeModulesApple:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-oscompat:
@@ -3882,6 +3887,7 @@ SPEC CHECKSUMS:
   react-native-config: 81fd713bbbc6fbe39588c975edf5485d0e15adf8
   react-native-image-picker: b99d9c1f2ddbef491eb49e1103e5c2ce78b9ab37
   react-native-safe-area-context: fea29ae0275beaa22f72d0a8be1eb0ab09c3feae
+  react-native-version-check: 54a471d70dadf0f72fc142e70f16e4bf473a91a5
   React-NativeModulesApple: dcfbe72c5a47baec0699a2935c080b7de0c8657b
   React-oscompat: 93b5535ea7f7dff46aaee4f78309a70979bdde9d
   React-perflogger: a03d913e3205b00aee4128082abe42fd45ce0c98

@@ -98,15 +98,15 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.goalwith"
+    namespace 'com.goalwith'
 
     
     defaultConfig {
-        applicationId "com.goalwith"
+        applicationId 'com.goalwith'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 22
-        versionName "1.0.1"
+        versionCode 1000003
+        versionName "1.0.3"
         resValue "string", "build_config_package", "com.goalwith"
         resValue "string", "admob_app_id", "ca-app-pub-3479406355847634~3087242073"
     }

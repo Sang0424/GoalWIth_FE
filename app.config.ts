@@ -3,8 +3,8 @@ import * as dotenv from 'dotenv';
 import path from 'path';
 import pkg from './package.json';
 
-// 1. 어떤 환경 파일을 읽을지 결정 (기본값 dev)
-const APP_VARIANT = process.env.APP_VARIANT || 'dev';
+// 1. 어떤 환경 파일을 읽을지 결정 (기본값 prod)
+const APP_VARIANT = process.env.APP_VARIANT || 'prod';
 
 // 2. 해당 .env 파일 로드
 dotenv.config({path: path.resolve(__dirname, `.env.${APP_VARIANT}`)});

@@ -39,6 +39,14 @@ Submit a new Beta Build to Tester
 
 Deploy a new version to the Google Play
 
+### android release_draft
+
+```sh
+[bundle exec] fastlane android release_draft
+```
+
+Deploy a new version to the Google Play (Production)
+
 ### android update_prod
 
 ```sh
