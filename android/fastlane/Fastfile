@@ -1,5 +1,7 @@
 default_platform(:android)
 
+require 'json'
+
 platform :android do
   def increment_version_code()
     path = '../app/build.gradle'
@@ -70,6 +72,11 @@ platform :android do
     end
   end
 
+  def load_package_json
+    package_json_path = File.expand_path("../../package.json", Dir.pwd)
+    JSON.parse(File.read(package_json_path))
+  end
+
   def deep_clean_project
     UI.message("🧹 Starting Deep Clean (Force removing caches)...")
     
@@ -92,56 +99,58 @@ platform :android do
     UI.success("✨ Deep Clean Finished! Ready to build.")
   end
 
-  desc "Submit a new Beta Build to Crashlytics Beta"
-  lane :beta do |options|
-    deep_clean_project
-    updateVersion(options)
+  def build_and_upload(track:, release_status: 'draft')
+    # A. package.json 읽기
+    pkg = load_package_json
+    version_name = pkg['version']
+    
+    UI.message("🚀 Preparing release for Version: #{version_name}")
 
+    # B. 딥 클린
+    deep_clean_project
+
+    # C. [중요] Expo Prebuild 실행 (package.json 버전을 Native 파일에 동기화)
+    # app.config.ts의 로직이 이때 실행되어 build.gradle을 덮어씁니다.
+    UI.message("🔄 Syncing Native Versions via Expo Prebuild...")
+    sh("cd ../.. && npx expo prebuild --platform android --no-install")
+
+    # D. Gradle 빌드
     gradle(task: "bundleProdRelease")
+
+    # E. 스토어 업로드
     upload_to_play_store(
+      track: track,
+      release_status: release_status,
       skip_upload_metadata: true,
       skip_upload_changelogs: true,
       skip_upload_screenshots: true,
       skip_upload_images: true,
       skip_upload_apk: true,
-      track: 'internal',
-      release_status: 'draft'
+      # aab 경로 명시 (가끔 못 찾는 경우 방지)
+      aab: "../app/build/outputs/bundle/prodRelease/app-prod-release.aab"
     )
+  end
+
+  desc "Submit a new Beta Build to Crashlytics Beta"
+  lane :beta do |options|
+    build_and_upload(track: 'internal', release_status: 'draft')
   end
 
   desc "Submit a new Beta Build to Tester"
   lane :test do |options|
-    deep_clean_project
-    updateVersion(options)
-
-    gradle(task: "bundleProdRelease")
-    upload_to_play_store(
-      skip_upload_metadata: true,
-      skip_upload_changelogs: true,
-      skip_upload_screenshots: true,
-      skip_upload_images: true,
-      skip_upload_apk: true,
-      track: 'alpha',
-      release_status: 'completed'
-    )
+    build_and_upload(track: 'alpha', release_status: 'completed')
   end
 
   desc "Deploy a new version to the Google Play"
   lane :release do |options|
-    deep_clean_project
-    updateVersion(options)
-
-    gradle(task: "bundleProdRelease")
-    upload_to_play_store(
-      skip_upload_metadata: true,
-      skip_upload_changelogs: true,
-      skip_upload_screenshots: true,
-      skip_upload_images: true,
-      skip_upload_apk: true,
-      track: 'production',
-      release_status: 'draft'
-    )
+    build_and_upload(track: 'production', release_status: 'completed')
   end
+
+  desc "Deploy a new version to the Google Play (Production)"
+  lane :release_draft do
+    build_and_upload(track: 'production', release_status: 'draft')
+  end
+
   desc "프로덕션 환경으로 JS 업데이트 배포"
   lane :update_prod do
     # 1. APP_VARIANT=prod를 주입하여 .env.prod를 읽게 함

@@ -1,19 +1,6 @@
-# This file contains the fastlane.tools configuration
-# You can find the documentation at https://docs.fastlane.tools
-#
-# For a list of all available actions, check out
-#
-#     https://docs.fastlane.tools/actions
-#
-# For a list of all available plugins, check out
-#
-#     https://docs.fastlane.tools/plugins/available-plugins
-#
-
-# Uncomment the line if you want fastlane to automatically update itself
-# update_fastlane
-
 default_platform(:ios)
+
+require 'json'
 
 platform :ios do
   def updateVersion(options)
@@ -43,12 +30,24 @@ platform :ios do
     capture_screenshots(workspace: "GoalWith.xcworkspace", scheme: "Development")
     upload_to_app_store(skip_binary_upload: true, skip_metadata: true)
   end
+
+  def load_package_json
+    package_json_path = File.expand_path("../../package.json", Dir.pwd)
+    JSON.parse(File.read(package_json_path))
+  end
+
+  def get_calculated_build_number(version)
+    major, minor, patch = version.split(".").map(&:to_i)
+    return major * 1000000 + minor * 1000 + patch
+  end
+
   desc "Push a new beta build to TestFlight"
   lane :beta do |options|
     cert
     sigh(force: true)
-    updateVersion(options)
-    increment_build_number(xcodeproj: "GoalWith.xcodeproj")
+    package_json = load_package_json
+    build_number = get_calculated_build_number(package_json["version"])
+    increment_build_number(xcodeproj: "GoalWith.xcodeproj", build_number: build_number)
     build_app(workspace: "GoalWith.xcworkspace", scheme: "Production")
     upload_to_testflight
   end
@@ -56,9 +55,9 @@ platform :ios do
   lane :release do |options|
     cert
     sigh(force: true)
-    updateVersion(options)
-
-    increment_build_number(xcodeproj: "GoalWith.xcodeproj")
+    package_json = load_package_json
+    build_number = get_calculated_build_number(package_json["version"])
+    increment_build_number(xcodeproj: "GoalWith.xcodeproj", build_number: build_number)
     build_app(workspace: "GoalWith.xcworkspace", scheme: "Production")
     upload_to_app_store(
       force: true,
