@@ -20,7 +20,7 @@ const convertVersionToNumber = (version: string) => {
   const [major, minor, patch] = version.split('.').map(Number);
   // 예: 1.0.3 -> 1000003
   // 예: 1.1.0 -> 1001000
-  return major * 1000000 + minor * 1000 + patch;
+  return major * 1000000 + minor * 1000 + patch + 1;
 };
 
 export default ({config}: ConfigContext): CustomExpoConfig => ({
@@ -35,7 +35,7 @@ export default ({config}: ConfigContext): CustomExpoConfig => ({
     bundleIdentifier: 'com.goalwith.goalwith',
     buildNumber: convertVersionToNumber(pkg.version).toString(),
     // 구글 로그인을 위한 설정
-    googleServicesFile: './GoogleService-Info.plist',
+    googleServicesFile: './ios/GoogleService-Info.plist',
   },
 
   android: {

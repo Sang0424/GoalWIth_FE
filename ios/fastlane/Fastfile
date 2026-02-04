@@ -38,7 +38,7 @@ platform :ios do
 
   def get_calculated_build_number(version)
     major, minor, patch = version.split(".").map(&:to_i)
-    return major * 1000000 + minor * 1000 + patch
+    return major * 1000000 + minor * 1000 + patch + 1
   end
 
   desc "Push a new beta build to TestFlight"
@@ -88,7 +88,6 @@ platform :ios do
   lane :update_prod do
     # 1. 프로젝트 루트(../..)로 이동해서 명령어를 실행해야 package.json을 찾을 수 있음
     Dir.chdir("../..") do
-      sh("ls package.json")
       # 2. APP_VARIANT=prod를 주입하여 .env.prod를 읽게 함
       # 3. --branch production: 채널과 브랜치를 일치시킴
       sh("APP_VARIANT=prod eas update --branch production --message 'Fastlane Update'")
