@@ -3,75 +3,6 @@ default_platform(:android)
 require 'json'
 
 platform :android do
-  def increment_version_code()
-    path = '../app/build.gradle'
-    re = /versionCode\s+(\d+)/
-
-    s = File.read(path)
-    versionCode = s[re, 1].to_i
-    s[re, 1] = (versionCode + 1).to_s
-
-    f = File.new(path, 'w')
-    f.write(s)
-    f.close
-  end
-
-  def increment_version_number(bump_type: nil, version_number: nil)
-    path = '../app/build.gradle'
-    re = /versionName\s+("\d+.\d+.\d+")/
-    s = File.read(path)
-    versionName = s[re, 1].gsub!('"','').split('.')
-
-    major = versionName[0].to_i
-    minor = versionName[1].to_i
-    patch = versionName[2].to_i
-
-    if (bump_type == 'major')
-        major += 1
-        minor = 0
-        patch = 0
-    elsif (bump_type == 'minor')
-        minor += 1
-        patch = 0
-    elsif (bump_type == 'patch')
-        patch += 1
-    end
-
-    if(version_number)
-      s[re, 1] = "\"#{version_number}\""
-    else
-      s[re, 1] = "\"#{major}.#{minor}.#{patch}\""
-    end
-
-    f = File.new(path, 'w')
-    f.write(s)
-    f.close
-    increment_version_code()
-  end
-
-  def updateVersion(options)
-    if options[:version]
-      version = options[:version]
-    else
-      version = prompt(text: "Enter the version type or specific version\n(major, minor, patch or 1.0.0): ")
-    end
-
-    re = /\d+.\d+.\d+/
-    versionNum = version[re, 0]
-
-    if (versionNum)
-      increment_version_number(
-        version_number: versionNum
-      )
-    elsif (version == 'major' || version == 'minor' || version == 'patch')
-      increment_version_number(
-        bump_type: version
-      )
-    else
-      UI.user_error!("[ERROR] Wrong version!!!!!!")
-    end
-  end
-
   def load_package_json
     package_json_path = File.expand_path("../../package.json", Dir.pwd)
     JSON.parse(File.read(package_json_path))
@@ -98,6 +29,24 @@ platform :android do
     
     UI.success("✨ Deep Clean Finished! Ready to build.")
   end
+  def update_native_version(version_name)
+    UI.message("📝 Syncing build.gradle to version: #{version_name}")
+
+    # 버전 코드 계산 (예: 1.0.3 -> 1000003)
+    major, minor, patch = version_name.split('.').map(&:to_i)
+    new_version_code = major * 1_000_000 + minor * 1_000 + patch
+
+    build_gradle_path = "../app/build.gradle"
+    content = File.read(build_gradle_path)
+
+    # 정규식으로 찾아서 교체 (기존 내용을 유지하면서 숫자만 바꿈)
+    # versionCode 123 -> versionCode 1000003
+    new_content = content.gsub(/versionCode\s+\d+/, "versionCode #{new_version_code}")
+    # versionName "1.0.0" -> versionName "1.0.3"
+    new_content = new_content.gsub(/versionName\s+".*"/, "versionName \"#{version_name}\"")
+
+    File.write(build_gradle_path, new_content)
+  end
 
   def build_and_upload(track:, release_status: 'draft')
     # A. package.json 읽기
@@ -111,8 +60,7 @@ platform :android do
 
     # C. [중요] Expo Prebuild 실행 (package.json 버전을 Native 파일에 동기화)
     # app.config.ts의 로직이 이때 실행되어 build.gradle을 덮어씁니다.
-    UI.message("🔄 Syncing Native Versions via Expo Prebuild...")
-    sh("cd ../.. && npx expo prebuild --platform android --no-install")
+    update_native_version(version_name)
 
     # D. Gradle 빌드
     gradle(task: "bundleProdRelease")
@@ -126,8 +74,6 @@ platform :android do
       skip_upload_screenshots: true,
       skip_upload_images: true,
       skip_upload_apk: true,
-      # aab 경로 명시 (가끔 못 찾는 경우 방지)
-      aab: "../app/build/outputs/bundle/prodRelease/app-prod-release.aab"
     )
   end
 

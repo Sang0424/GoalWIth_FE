@@ -57,6 +57,7 @@ import {
   isAfter,
   startOfDay,
   parseISO,
+  isBefore,
 } from 'date-fns';
 import {ko} from 'date-fns/locale';
 import {
@@ -78,43 +79,51 @@ const PicoDay = ({
   state,
   marking,
   onPress,
+  isBeforeStart,
 }: {
   date: DateData;
   state: string;
   marking?: {hasRecord?: boolean};
   onPress: (d: DateData) => void;
+  isBeforeStart?: boolean;
 }) => {
   const todayStart = startOfDay(new Date());
   const isSelected = state === 'selected';
   const isFuture = isAfter(parseISO(date.dateString), todayStart);
   const hasRecord = marking?.hasRecord;
-  const picoImage = isFuture
-    ? null
-    : hasRecord
-    ? PICO_COMPLETE
-    : isToday(parseISO(date.dateString))
-    ? PICO_SMILE
-    : PICO_REST;
+  const picoImage =
+    isBeforeStart || isFuture
+      ? null
+      : hasRecord
+      ? PICO_COMPLETE
+      : isToday(parseISO(date.dateString))
+      ? PICO_SMILE
+      : PICO_REST;
 
   return (
     <TouchableOpacity
-      onPress={() => onPress(date)}
+      onPress={() => !isBeforeStart && onPress(date)}
       style={[picoStyles.dayContainer, isSelected && picoStyles.daySelected]}>
       <Text
         style={[
           picoStyles.dayText,
-          state === 'disabled' && picoStyles.dayDisabled,
+          (isBeforeStart || state === 'disabled') && picoStyles.dayDisabled,
           isToday(parseISO(date.dateString)) && picoStyles.dayToday,
         ]}>
         {date.day}
       </Text>
 
       <View style={picoStyles.stickerWrap}>
-        <Image
-          source={picoImage}
-          style={[picoStyles.sticker, hasRecord && picoStyles.completedSticker]}
-          resizeMode="contain"
-        />
+        {!isBeforeStart && (
+          <Image
+            source={picoImage}
+            style={[
+              picoStyles.sticker,
+              hasRecord && picoStyles.completedSticker,
+            ]}
+            resizeMode="contain"
+          />
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -678,6 +687,12 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     [sections],
   );
 
+  const checkIsBeforeStart = (dateString: string) => {
+    if (!quest.startDate) return false;
+    // quest.startDate의 시간 부분을 제거하고 날짜만 비교하기 위해 startOfDay 사용
+    return isBefore(parseISO(dateString), startOfDay(quest.startDate));
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.centerContainer}>
@@ -723,32 +738,6 @@ const QuestFeed = ({route}: QuestFeedProps) => {
             <TouchableOpacity
               style={{width: 40}}
               onPress={() => setShowSettings(true)}>
-              {/* <Menu>
-                <MenuTrigger>
-                  <Icon name="more-vert" size={20} color={colors.font} />
-                </MenuTrigger>
-                <MenuOptions optionsContainerStyle={styles.menuOptions}>
-                  <MenuOption style={styles.menuOption}>
-                    <Text style={{textAlign: 'center'}}>수정</Text>
-                  </MenuOption>
-                  <MenuOption
-                    onSelect={() => {
-                      Alert.alert('삭제', '정말로 삭제하시겠습니까?', [
-                        {
-                          text: '취소',
-                          onPress: () => {},
-                        },
-                        {
-                          text: '삭제',
-                          onPress: () => {},
-                        },
-                      ]);
-                    }}
-                    style={[styles.menuOption, styles.deleteOption]}>
-                    <Text style={{textAlign: 'center'}}>삭제</Text>
-                  </MenuOption>
-                </MenuOptions>
-              </Menu> */}
               <Icon name="more-vert" size={24} color={colors.font} />
             </TouchableOpacity>
           </View>
@@ -785,7 +774,9 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               key="month-calendar"
               current={selectedDate}
               onDayPress={(day: DateData) => {
-                handleDateSelect(day.dateString);
+                if (!checkIsBeforeStart(day.dateString)) {
+                  handleDateSelect(day.dateString);
+                }
               }}
               markingType={'custom'}
               markedDates={markedDates}
@@ -795,6 +786,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                   state={state}
                   marking={marking}
                   onPress={d => handleDateSelect(d.dateString)}
+                  isBeforeStart={checkIsBeforeStart(date.dateString)}
                 />
               )}
               theme={calendarTheme}
@@ -830,6 +822,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
                     state={getDayState(item.dateString)}
                     marking={markedDates[item.dateString]}
                     onPress={({dateString: ds}) => handleDateSelect(ds)}
+                    isBeforeStart={checkIsBeforeStart(item.dateString)}
                   />
                 );
               })}

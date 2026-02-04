@@ -26,7 +26,10 @@ import {
   AppleRequestResponseFullName,
 } from '@invertase/react-native-apple-authentication';
 import {colors} from '../../styles/theme';
-import {GoogleSigninButton} from '@react-native-google-signin/google-signin';
+import {
+  AppleLoginButton,
+  GoogleLoginButton,
+} from '../../components/SocialLoginBtn';
 
 export default function Onboarding1() {
   const {height, width} = useWindowDimensions();
@@ -57,19 +60,19 @@ export default function Onboarding1() {
       } else {
         // 기존 유저
         const {accessToken, refreshToken} = data;
-        if (!data.nickname || data.userType === '') {
-          navigation.navigate('OnBoarding3', {
-            isSocial: true,
-            registerForm: {email: data.email, name: data.name},
-            accessToken,
-            refreshToken,
-            isGoogle: true,
-          });
-        } else {
-          setAccessToken(accessToken);
-          await AsyncStorage.setItem('refreshToken', refreshToken);
-          await AsyncStorage.setItem('loginType', 'google');
-        }
+        // if (!data.nickname || data.userType === '') {
+        //   navigation.navigate('OnBoarding3', {
+        //     isSocial: true,
+        //     registerForm: {email: data.email, name: data.name},
+        //     accessToken,
+        //     refreshToken,
+        //     isGoogle: true,
+        //   });
+        // } else {
+        setAccessToken(accessToken);
+        await AsyncStorage.setItem('refreshToken', refreshToken);
+        await AsyncStorage.setItem('loginType', 'google');
+        // }
       }
     },
     onError: (error: any) => {
@@ -116,19 +119,19 @@ export default function Onboarding1() {
       } else {
         // 기존 유저
         const {accessToken, refreshToken} = data;
-        if (!data.nickname || data.userType === '') {
-          navigation.navigate('OnBoarding3', {
-            isSocial: true,
-            registerForm: {email: data.email, name: data.name},
-            accessToken,
-            refreshToken,
-            isApple: true,
-          });
-        } else {
-          setAccessToken(accessToken);
-          await AsyncStorage.setItem('refreshToken', refreshToken);
-          await AsyncStorage.setItem('loginType', 'apple');
-        }
+        // if (!data.nickname || data.userType === '') {
+        //   navigation.navigate('OnBoarding3', {
+        //     isSocial: true,
+        //     registerForm: {email: data.email, name: data.name},
+        //     accessToken,
+        //     refreshToken,
+        //     isApple: true,
+        //   });
+        // } else {
+        setAccessToken(accessToken);
+        await AsyncStorage.setItem('refreshToken', refreshToken);
+        await AsyncStorage.setItem('loginType', 'apple');
+        //}
       }
     },
     onError: (error: any) => {
@@ -234,34 +237,15 @@ export default function Onboarding1() {
         </Text>
       </View>
       <View style={styles.registers}>
-        <Pressable style={styles.oauthBtn} onPress={() => handleGoogleLogin()}>
-          <Image
-            source={require('../../assets/images/google_ios_ctn.png')}
-            style={{resizeMode: 'stretch', width: width - 54, height: 72}}
-          />
-        </Pressable>
-
-        {/* <Pressable style={styles.oauthBtn} onPress={() => handleKakaoLogin()}>
-          <Image
-            source={require('../../assets/images/kakao_login.png')}
-            style={{resizeMode: 'stretch', width: width - 54, height: 72}}
-          />
-        </Pressable> */}
+        <GoogleLoginButton
+          onPress={() => handleGoogleLogin()}
+          style={{width: width - 54, height: 64}}
+        />
         {Platform.OS === 'ios' && (
-          <View>
-            <AppleButton
-              buttonStyle={AppleButton.Style.WHITE}
-              buttonType={AppleButton.Type.SIGN_IN}
-              style={{
-                width: width - 54,
-                height: 72,
-                borderWidth: 1.5,
-                borderRadius: 12,
-                borderColor: '#a9a9a9',
-              }}
-              onPress={() => onAppleButtonPress()}
-            />
-          </View>
+          <AppleLoginButton
+            onPress={() => onAppleButtonPress()}
+            style={{width: width - 54, height: 64}}
+          />
         )}
         <DividerWithText text={'또는 or'} />
         <Pressable

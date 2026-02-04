@@ -208,21 +208,32 @@ export default function Home() {
     }
   };
 
+  // 주요 퀘스트를 필터링한 배열을 생성한다.
+  // 주요 퀘스트가 존재하는 경우, 현재 선택된 필터에 맞는 주요 퀘스트를 필터링해서 배열을 생성한다.
+  // 주요 퀘스트가 존재하지 않는 경우, 빈 배열을 생성한다.
   const filteredMainQuest =
     mainQuest && mainQuest.length > 0
       ? mainQuest.filter(matchesCurrentFilter)
       : [];
 
+  // 부 퀘스트를 필터링한 배열을 생성한다.
+  // 부 퀘스트를 필터링해서 최대 10개의 부 퀘스트를 추출한 배열을 생성한다.
   const filteredSubQuests = subQuests.filter(matchesCurrentFilter);
 
-  const canAddMainQuest =
-    filter === 'ONGOING' && filteredMainQuest && filteredMainQuest.length === 0;
-
-  const hasVerifyingQuest = mainQuest?.some(
-    quest => quest.procedure === 'verify',
+  const activeMainQuest = mainQuest.find(
+    q => isQuestProgress(q) || isQuestVerify(q),
   );
 
-  const canAddSubQuest = filter === 'ONGOING' && filteredSubQuests.length === 0;
+  // 주요 퀘스트를 추가할 수 있는지 확인한다.
+  // 현재 선택된 필터가 'ONGOING'이고, 필터링된 주요 퀘스트의 길이가 0인 경우 true를 반환한다.
+  const canAddMainQuest = filter === 'ONGOING' && !activeMainQuest;
+
+  // 확인 중인 퀘스트가 존재하는지 확인한다.
+  // 주요 퀘스트 중에서 프로시저가 'verify'인 퀘스트가 존재하는지 확인한다.
+  // 존재하는 경우 true를 반환한다.
+  const hasVerifyingQuest = mainQuest.some(isQuestVerify);
+
+  const canAddSubQuest = filter === 'ONGOING';
 
   // Render empty state
   const renderEmptyState = (isMain: boolean) => (
@@ -259,30 +270,31 @@ export default function Home() {
             : '단 하나의 메인 퀘스트만 생성할 수 있습니다'
           : '마음껏 서브 퀘스트를 생성해보세요'}
       </Text>
-      {filter === 'ONGOING' && canAddMainQuest && !hasVerifyingQuest ? (
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => {
-            setQuestToEdit(null);
-            setIsAddingMainQuest(isMain);
-            setModalVisible(true);
-          }}>
-          <Text style={styles.addButtonText}>{'퀘스트 추가'}</Text>
-        </TouchableOpacity>
-      ) : (
-        filter === 'ONGOING' &&
-        canAddSubQuest && (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => {
-              setQuestToEdit(null);
-              setIsAddingMainQuest(isMain);
-              setModalVisible(true);
-            }}>
-            <Text style={styles.addButtonText}>{'퀘스트 추가'}</Text>
-          </TouchableOpacity>
-        )
-      )}
+      {isMain
+        ? // 메인 퀘스트 영역일 때
+          canAddMainQuest && (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => {
+                setQuestToEdit(null);
+                setIsAddingMainQuest(true); // 명시적으로 true
+                setModalVisible(true);
+              }}>
+              <Text style={styles.addButtonText}>{'메인 퀘스트 추가'}</Text>
+            </TouchableOpacity>
+          )
+        : // 서브 퀘스트 영역일 때
+          canAddSubQuest && (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => {
+                setQuestToEdit(null);
+                setIsAddingMainQuest(false); // 명시적으로 false
+                setModalVisible(true);
+              }}>
+              <Text style={styles.addButtonText}>{'서브 퀘스트 추가'}</Text>
+            </TouchableOpacity>
+          )}
     </View>
   );
   const QuestItem = ({

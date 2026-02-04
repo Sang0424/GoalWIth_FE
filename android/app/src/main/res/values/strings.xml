@@ -1,5 +1,5 @@
 <resources>
   <string name="app_name">GoalWith</string>
   <string name="server_client_id">470348844526-3ltopccruquc0grj285n81pild492nof.apps.googleusercontent.com</string>
-  <string name="expo_runtime_version">1.0.0</string>
+  <string name="expo_runtime_version">1.0.4</string>
 </resources>

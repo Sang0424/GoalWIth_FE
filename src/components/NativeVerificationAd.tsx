@@ -19,8 +19,8 @@ import {colors} from '../styles/theme';
 import Config from 'react-native-config';
 
 const NATIVE_AD_ID = Platform.select({
-  ios: Config.ADMOB_ID_IOS,
-  android: Config.ADMOB_ID_ANDROID,
+  ios: Config.ADMOB_UNIT_ID_IOS,
+  android: Config.ADMOB_UNIT_ID_ANDROID,
 });
 
 const NATIVE_VERIFICATION_AD_UNIT =
@@ -36,6 +36,8 @@ export const NativeVerificationAd = () => {
       .then(setNativeAd)
       .catch(console.error);
   }, []);
+
+  console.log(nativeAd);
 
   if (!nativeAd) {
     return null;

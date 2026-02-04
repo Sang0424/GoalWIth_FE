@@ -1,6 +1,6 @@
 {
   "name": "goalwith",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "description": "![GoalWith Logo](src/assets/images/Logo.png) <!-- Add your logo path here -->",
   "homepage": "https://github.com/Sang0424/GoalWIth_FE#readme",
@@ -23,10 +23,10 @@
     "android:staging-release-apk": "cd android && ./gradlew clean && ./gradlew assembleStagingRelease && cd .. && echo 'find APK in android/app/build/outputs/apk/staging/release'",
     "android:prod-release-apk": "cd android && ./gradlew clean && ./gradlew assembleProdRelease && cd .. && echo 'find APK in android/app/build/outputs/apk/prod/release'",
     "android:prod-release-aab": "cd android && ./gradlew clean && ./gradlew bundleProdRelease && cd .. && echo 'find AAB in android/app/build/outputs/apk/prod/release'",
-    "android": "react-native run-android",
+    "android": "expo run:android",
     "ios:dev": "APP_VARIANT=dev react-native run-ios --scheme Development",
     "ios:prod": "APP_VARIANT=prod react-native run-ios --scheme Production",
-    "ios": "react-native run-ios",
+    "ios": "expo run:ios",
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest"
@@ -74,8 +74,10 @@
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "^5.4.1",
     "react-native-screens": "~4.16.0",
+    "react-native-svg": "^15.15.1",
     "react-native-toast-message": "^2.3.3",
     "react-native-vector-icons": "^10.2.0",
+    "react-native-version-check": "^3.5.0",
     "react-native-worklets": "^0.7.2",
     "zustand": "^5.0.3"
   },

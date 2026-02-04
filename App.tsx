@@ -26,11 +26,13 @@ import Toast from 'react-native-toast-message';
 import mobileAds from 'react-native-google-mobile-ads';
 import {useRewardSync} from './src/utils/hooks/useRewardSync';
 import analytics from '@react-native-firebase/analytics';
+import useAppUpdate from './src/utils/hooks/useAppUpdate';
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   useRewardSync(); // 여기서 훅을 호출합니다.
+  useAppUpdate();
   const accessToken = tokenStore(state => state.accessToken);
   return accessToken ? <MainNav /> : <OnBoardingNav />;
 };
