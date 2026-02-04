@@ -60,19 +60,19 @@ export default function Onboarding1() {
       } else {
         // 기존 유저
         const {accessToken, refreshToken} = data;
-        if (!data.nickname || data.userType === '') {
-          navigation.navigate('OnBoarding3', {
-            isSocial: true,
-            registerForm: {email: data.email, name: data.name},
-            accessToken,
-            refreshToken,
-            isGoogle: true,
-          });
-        } else {
-          setAccessToken(accessToken);
-          await AsyncStorage.setItem('refreshToken', refreshToken);
-          await AsyncStorage.setItem('loginType', 'google');
-        }
+        // if (!data.nickname || data.userType === '') {
+        //   navigation.navigate('OnBoarding3', {
+        //     isSocial: true,
+        //     registerForm: {email: data.email, name: data.name},
+        //     accessToken,
+        //     refreshToken,
+        //     isGoogle: true,
+        //   });
+        // } else {
+        setAccessToken(accessToken);
+        await AsyncStorage.setItem('refreshToken', refreshToken);
+        await AsyncStorage.setItem('loginType', 'google');
+        // }
       }
     },
     onError: (error: any) => {
@@ -119,19 +119,19 @@ export default function Onboarding1() {
       } else {
         // 기존 유저
         const {accessToken, refreshToken} = data;
-        if (!data.nickname || data.userType === '') {
-          navigation.navigate('OnBoarding3', {
-            isSocial: true,
-            registerForm: {email: data.email, name: data.name},
-            accessToken,
-            refreshToken,
-            isApple: true,
-          });
-        } else {
-          setAccessToken(accessToken);
-          await AsyncStorage.setItem('refreshToken', refreshToken);
-          await AsyncStorage.setItem('loginType', 'apple');
-        }
+        // if (!data.nickname || data.userType === '') {
+        //   navigation.navigate('OnBoarding3', {
+        //     isSocial: true,
+        //     registerForm: {email: data.email, name: data.name},
+        //     accessToken,
+        //     refreshToken,
+        //     isApple: true,
+        //   });
+        // } else {
+        setAccessToken(accessToken);
+        await AsyncStorage.setItem('refreshToken', refreshToken);
+        await AsyncStorage.setItem('loginType', 'apple');
+        //}
       }
     },
     onError: (error: any) => {

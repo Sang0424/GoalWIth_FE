@@ -46,6 +46,7 @@ platform :ios do
     cert
     sigh(force: true)
     package_json = load_package_json
+    updateVersion(version: package_json["version"])
     build_number = get_calculated_build_number(package_json["version"])
     increment_build_number(xcodeproj: "GoalWith.xcodeproj", build_number: build_number)
     build_app(workspace: "GoalWith.xcworkspace", scheme: "Production")
@@ -56,6 +57,7 @@ platform :ios do
     cert
     sigh(force: true)
     package_json = load_package_json
+    updateVersion(version: package_json["version"])
     build_number = get_calculated_build_number(package_json["version"])
     increment_build_number(xcodeproj: "GoalWith.xcodeproj", build_number: build_number)
     build_app(workspace: "GoalWith.xcworkspace", scheme: "Production")
