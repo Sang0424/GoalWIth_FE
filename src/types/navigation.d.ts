@@ -111,6 +111,7 @@ export type MyPageNavParamList = {
   MyBookmark: undefined;
   QuestVerification: {quest: Quest};
   InquiryPage: undefined;
+  CharacterSelection: {currentCharacter: string};
 };
 
 export type RootStackParamList = {

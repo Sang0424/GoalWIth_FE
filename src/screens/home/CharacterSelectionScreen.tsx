@@ -120,7 +120,7 @@ const CharacterSelectionScreen = ({route, navigation}: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.navigate('Home')}>
+        <Pressable onPress={() => navigation.goBack()}>
           <Icon name="chevron-left" size={32} />
         </Pressable>
         <Text style={styles.title}>캐릭터 선택</Text>
