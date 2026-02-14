@@ -16,7 +16,7 @@ import {
   MenuOptions,
   MenuTrigger,
 } from 'react-native-popup-menu';
-import {StyleSheet} from 'react-native';
+import {StyleSheet, Alert} from 'react-native';
 import useReactionData from '../utils/hooks/useReactionData';
 import {userStore} from '../store/userStore';
 import ProfileBottomSheet from './ProfileBottomSheet';
@@ -29,7 +29,7 @@ const VerificationCard = ({item}: {item: any}) => {
     useNavigation<NativeStackNavigationProp<VerificationNavParamList>>();
   const [isProfileVisible, setProfileVisible] = useState(false);
   const [isReportVisible, setReportVisible] = useState(false);
-  const [selecteUser, setSelectUser] = useState<number | undefined>(undefined);
+  const [selecteUser, setSelectUser] = useState<number | undefined>(item.user.id);
   const reactions = useReactionData(item.id);
   const queryClient = useQueryClient();
   const {mutate: saveQuest} = useMutation({
@@ -63,6 +63,7 @@ const VerificationCard = ({item}: {item: any}) => {
   });
 
   const alreadyVerification = item.verified;
+
 
   const handleGoQuest = () => {
     navigation.navigate('QuestVerification', {
@@ -208,12 +209,12 @@ const VerificationCard = ({item}: {item: any}) => {
           )}
         </TouchableOpacity>
       </TouchableOpacity>
-      <ProfileBottomSheet
+       <ProfileBottomSheet
         visible={isProfileVisible}
         onClose={() => setProfileVisible(false)}
         userId={selecteUser}
         fromContext="general"
-      />
+      /> 
       <ReportBottomSheet
         visible={isReportVisible}
         onClose={() => setReportVisible(false)}

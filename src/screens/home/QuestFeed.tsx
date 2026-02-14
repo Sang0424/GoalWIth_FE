@@ -660,6 +660,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   }, [quest.startDate, quest.endDate]);
 
   const CARD_WIDTH = width - 32;
+  
 
   const scrollToDate = (dateString: string) => {
     const [year, month, day] = dateString.split('-').map(Number);
@@ -689,30 +690,11 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     },
     [sections],
   );
-
   const checkIsBeforeStart = (dateString: string) => {
     if (!quest.startDate) return false;
     // quest.startDate의 시간 부분을 제거하고 날짜만 비교하기 위해 startOfDay 사용
     return isBefore(parseISO(dateString), startOfDay(quest.startDate));
   };
-
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.secondary} />
-        <Text>로딩 중... 조금만 기다려주세요</Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (!isLoading && !quest) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>퀘스트를 찾을 수 없습니다.</Text>
-      </View>
-    );
-  }
-
   const questHeader = useMemo(
     () => (
       <View>
@@ -854,6 +836,24 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       handleDateSelect,
     ],
   );
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={colors.secondary} />
+        <Text>로딩 중... 조금만 기다려주세요</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!isLoading && !quest) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text>퀘스트를 찾을 수 없습니다.</Text>
+      </View>
+    );
+  }
+
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>

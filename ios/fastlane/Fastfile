@@ -38,7 +38,7 @@ platform :ios do
 
   def get_calculated_build_number(version)
     major, minor, patch = version.split(".").map(&:to_i)
-    return major * 1000000 + minor * 1000 + patch + 1
+    return major * 1000000 + minor * 1000 + patch + 5
   end
 
   desc "Push a new beta build to TestFlight"

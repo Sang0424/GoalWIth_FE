@@ -292,7 +292,7 @@ export default function Home() {
                 setIsAddingMainQuest(false); // 명시적으로 false
                 setModalVisible(true);
               }}>
-              <Text style={styles.addButtonText}>{'서브 퀘스트 추가1'}</Text>
+              <Text style={styles.addButtonText}>{'서브 퀘스트 추가'}</Text>
             </TouchableOpacity>
           )}
     </View>

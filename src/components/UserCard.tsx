@@ -27,7 +27,7 @@ export default function UserCard({user, from}: {user?: any; from: string}) {
   const {width} = useWindowDimensions();
   const queryClient = useQueryClient();
   const [isProfileVisible, setProfileVisible] = useState(false);
-  const [selecteUser, setSelectUser] = useState<number | undefined>(undefined);
+  const [selecteUser, setSelectUser] = useState<number | undefined>(user?.id);
 
   const cancelRequestPeer = useCancelRequestPeer();
 

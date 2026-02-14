@@ -76,7 +76,7 @@ export default function Peers() {
       return undefined;
     },
     initialPageParam: 0,
-    enabled: Config.API_URL !== '',
+    enabled: Config.API_URL !== '' && activeTab === 'myPeers',
   });
 
   const {
@@ -127,7 +127,7 @@ export default function Peers() {
       return undefined;
     },
     initialPageParam: 0,
-    enabled: Config.API_URL !== '',
+    enabled: Config.API_URL !== '' && activeTab === 'searchPeers',
   });
 
   const {
@@ -220,17 +220,28 @@ export default function Peers() {
     myPeersIsFetchingNextPage,
   ]);
 
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    activeTab === 'myPeers'
-      ? myPeersRefetch()
-      : activeTab === 'searchPeers'
-      ? peersRefetch()
-      : activeTab === 'requestedPeers'
-      ? requestedPeersRefetch()
-      : peersRefetch();
+    if (activeTab === 'myPeers') {
+      await myPeersRefetch();
+    } else if (activeTab === 'requestedPeers') {
+      await requestedPeersRefetch();
+    } else {
+      if (debouncedSearchQuery.length > 0) {
+        await searchRefetch();
+      } else {
+        await peersRefetch();
+      }
+    }
     setIsRefreshing(false);
-  }, [peersRefetch, requestedPeersRefetch]);
+  }, [
+    activeTab,
+    debouncedSearchQuery.length,
+    myPeersRefetch,
+    requestedPeersRefetch,
+    searchRefetch,
+    peersRefetch,
+  ]);
 
   const renderItems = (item: any) => {
     return (

@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Pressable,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {GestureDetector, Gesture} from 'react-native-gesture-handler';
@@ -162,8 +163,13 @@ const ProfileBottomSheet = ({
       transform: [{translateY: translateY.value}],
     };
   });
+  
+  if (!visible) return null;
 
-  if (!visible || !user) return null;
+  if (!userId) {
+    Alert.alert('볼 수 없는 유저입니다');
+    return null;
+  }
 
   return (
     <SafeAreaView>
@@ -188,58 +194,70 @@ const ProfileBottomSheet = ({
             <Animated.View style={[styles.bottomSheetContainer, animatedStyle]}>
               <SafeAreaView style={styles.safeArea}>
                 <View style={styles.grabber} />
-                <ScrollView contentContainerStyle={styles.contentContainer}>
-                  <View style={styles.profileHeader}>
-                    <Image
-                      source={{uri: user.character}}
-                      style={styles.characterImage}
-                    />
-                    <View style={styles.profileInfo}>
-                      <Text style={styles.badgeText}>
-                        {user.badge ? user.badge : null}
-                      </Text>
-                      <Text style={styles.nickname}>{user.nickname}</Text>
-                      {/* <Text style={styles.email}>{user.email}</Text> */}
-                      <Text style={styles.userType}>
-                        {user.userType === 'none' ? '기타' : user.userType}
-                      </Text>
-                    </View>
+                {isLoading || !user ? (
+                  <View
+                    style={{
+                      flex: 1,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}>
+                    <ActivityIndicator size="large" color={colors.primary} />
                   </View>
-                  <View style={styles.statsContainer}>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>Lv.</Text>
-                      <Text style={styles.statValue}>{user.level}</Text>
+                ) : (
+                  <ScrollView contentContainerStyle={styles.contentContainer}>
+                    <View style={styles.profileHeader}>
+                      <Image
+                        source={{uri: user.character}}
+                        style={styles.characterImage}
+                      />
+                      <View style={styles.profileInfo}>
+                        <Text style={styles.badgeText}>
+                          {user.badge ? user.badge : null}
+                        </Text>
+                        <Text style={styles.nickname}>{user.nickname}</Text>
+                        {/* <Text style={styles.email}>{user.email}</Text> */}
+                        <Text style={styles.userType}>
+                          {user.userType === 'none' ? '기타' : user.userType}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>EXP</Text>
-                      <Text style={styles.statValue}>{user.exp}</Text>
+                    <View style={styles.statsContainer}>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>Lv.</Text>
+                        <Text style={styles.statValue}>{user.level}</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>EXP</Text>
+                        <Text style={styles.statValue}>{user.exp}</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>실행력</Text>
+                        <Text style={styles.statValue}>
+                          {user.actionPoints}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>실행력</Text>
-                      <Text style={styles.statValue}>{user.actionPoints}</Text>
-                    </View>
-                  </View>
 
-                  {user.main_quest ? (
-                    <View style={styles.questContainer}>
-                      <Text style={styles.sectionTitle}>메인퀘스트</Text>
-                      <TouchableOpacity
-                        style={styles.questCard}
-                        onPress={() => {
-                          closeModalWithAnimation();
-                          fromContext === 'drawer'
-                            ? navigation.navigate('PeersDrawer', {
-                                screen: 'PeersNav',
-                                params: {
-                                  screen: 'QuestVerification',
-                                  params: {id: user.main_quest.id},
-                                },
-                              })
-                            : navigation.navigate('QuestVerification', {
-                                id: user.main_quest.id,
-                                authorId: user.id,
-                              });
-                        }}>
+                    {user.main_quest ? (
+                      <View style={styles.questContainer}>
+                        <Text style={styles.sectionTitle}>메인퀘스트</Text>
+                        <TouchableOpacity
+                          style={styles.questCard}
+                          onPress={() => {
+                            closeModalWithAnimation();
+                            fromContext === 'drawer'
+                              ? navigation.navigate('PeersDrawer', {
+                                  screen: 'PeersNav',
+                                  params: {
+                                    screen: 'QuestVerification',
+                                    params: {id: user.main_quest.id},
+                                  },
+                                })
+                              : navigation.navigate('QuestVerification', {
+                                  id: user.main_quest.id,
+                                  authorId: user.id,
+                                });
+                          }}>
                         <Text style={styles.questTitle}>
                           {user.main_quest.title}
                         </Text>
@@ -322,7 +340,8 @@ const ProfileBottomSheet = ({
                       <Text style={styles.secondaryText}>차단하기</Text>
                     </TouchableOpacity>
                   </View>
-                </ScrollView>
+                  </ScrollView>
+                )}
               </SafeAreaView>
             </Animated.View>
           </GestureDetector>
