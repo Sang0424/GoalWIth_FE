@@ -25,6 +25,7 @@ import {tokenStore} from '../../store/tokenStore';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {colors} from '../../styles/theme';
+import {logLogin} from '../../utils/analyticsEvents';
 
 export default function Login() {
   const {width} = useWindowDimensions();
@@ -81,7 +82,7 @@ export default function Login() {
     onSuccess: async ({accessToken, refreshToken}) => {
       setAccessToken(accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);
-
+      logLogin('email');
       // navigation.navigate('MainNav');
     },
     onError: (error: any) => {

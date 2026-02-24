@@ -69,6 +69,11 @@ import {
 import BottomSheet from '../../components/BottomSheet';
 import crashlytics from '@react-native-firebase/crashlytics';
 import analytics from '@react-native-firebase/analytics';
+import {
+  logCompleteQuest,
+  logDeleteQuest,
+  logDeleteQuestError,
+} from '../../utils/analyticsEvents';
 
 const PICO_COMPLETE = require('../../assets/character/pico_complete.png');
 const PICO_SMILE = require('../../assets/character/pico_smile.png');
@@ -311,6 +316,12 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     },
     onSuccess: () => {
       Alert.alert('성공', '퀘스트가 완료되었습니다!');
+      logCompleteQuest({
+        quest_id: quest.id,
+        quest_title: quest.title,
+        is_main: quest.isMain,
+        verification_required: quest.verificationRequired,
+      });
       navigation.goBack();
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
@@ -326,14 +337,15 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     mutationFn: async (questId: number) => {
       await instance.delete(`/quest/${questId}`);
     },
-    onSuccess: () => {
+    onSuccess: (_data, questId) => {
       Alert.alert('퀘스트 삭제!', '퀘스트를 삭제했습니다!');
+      logDeleteQuest(questId);
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
     },
     onError: error => {
       Alert.alert('오류', '퀘스트 삭제 중 오류가 발생했습니다.');
       crashlytics().recordError(error);
-      analytics().logEvent('delete_quest_error', {error: error.message});
+      logDeleteQuestError(error.message);
     },
     onSettled: () => {
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
@@ -660,7 +672,6 @@ const QuestFeed = ({route}: QuestFeedProps) => {
   }, [quest.startDate, quest.endDate]);
 
   const CARD_WIDTH = width - 32;
-  
 
   const scrollToDate = (dateString: string) => {
     const [year, month, day] = dateString.split('-').map(Number);
@@ -731,8 +742,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
               {formatDate(quest.startDate.toString())} -{' '}
               {formatDate(quest.endDate.toString())}
             </Text>
-            <View
-              style={{width: '100%', paddingHorizontal: 10, marginTop: 10}}>
+            <View style={{width: '100%', paddingHorizontal: 10, marginTop: 10}}>
               <AnimatedProgressTrack progress={progressPercentage} />
             </View>
           </View>
@@ -853,7 +863,6 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       </View>
     );
   }
-
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>

@@ -30,6 +30,7 @@ import {tokenStore} from '../../store/tokenStore';
 import {userStore} from '../../store/userStore';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {colors} from '../../styles/theme';
+import {logSignUp} from '../../utils/analyticsEvents';
 
 const UserTypes = [
   '학생',
@@ -169,6 +170,14 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
   const {mutate} = useMutation({
     mutationFn: register,
     onSuccess: () => {
+      const method = isGoogle
+        ? 'google'
+        : isApple
+        ? 'apple'
+        : isKakao
+        ? 'kakao'
+        : 'email';
+      logSignUp(method, userInfo.userType);
       // navigation.navigate('MainNav');
     },
     onError: (error: any) => {
