@@ -178,7 +178,6 @@ export default function OnBoarding3({route}: OnBoarding3Props) {
         ? 'kakao'
         : 'email';
       logSignUp(method, userInfo.userType);
-      // navigation.navigate('MainNav');
     },
     onError: (error: any) => {
       Alert.alert('가입 실패', error.response.data.message);

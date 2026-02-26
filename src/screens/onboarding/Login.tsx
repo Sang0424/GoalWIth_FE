@@ -83,7 +83,6 @@ export default function Login() {
       setAccessToken(accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);
       logLogin('email');
-      // navigation.navigate('MainNav');
     },
     onError: (error: any) => {
       Alert.alert('로그인 실패', error.response.data.message);
