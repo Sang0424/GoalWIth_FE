@@ -69,65 +69,72 @@ import {
 import BottomSheet from '../../components/BottomSheet';
 import crashlytics from '@react-native-firebase/crashlytics';
 import analytics from '@react-native-firebase/analytics';
+import {
+  logCompleteQuest,
+  logDeleteQuest,
+  logDeleteQuestError,
+} from '../../utils/analyticsEvents';
 
 const PICO_COMPLETE = require('../../assets/character/pico_complete.png');
 const PICO_SMILE = require('../../assets/character/pico_smile.png');
 const PICO_REST = require('../../assets/character/pico_rest.png');
 
-const PicoDay = ({
-  date,
-  state,
-  marking,
-  onPress,
-  isBeforeStart,
-}: {
-  date: DateData;
-  state: string;
-  marking?: {hasRecord?: boolean};
-  onPress: (d: DateData) => void;
-  isBeforeStart?: boolean;
-}) => {
-  const todayStart = startOfDay(new Date());
-  const isSelected = state === 'selected';
-  const isFuture = isAfter(parseISO(date.dateString), todayStart);
-  const hasRecord = marking?.hasRecord;
-  const picoImage =
-    isBeforeStart || isFuture
-      ? null
-      : hasRecord
-      ? PICO_COMPLETE
-      : isToday(parseISO(date.dateString))
-      ? PICO_SMILE
-      : PICO_REST;
+const PicoDay = React.memo(
+  ({
+    date,
+    state,
+    marking,
+    onPress,
+    isBeforeStart,
+  }: {
+    date: DateData;
+    state: string;
+    marking?: {hasRecord?: boolean};
+    onPress: (d: DateData) => void;
+    isBeforeStart?: boolean;
+  }) => {
+    const todayStart = startOfDay(new Date());
+    const isSelected = state === 'selected';
+    const isFuture = isAfter(parseISO(date.dateString), todayStart);
+    const hasRecord = marking?.hasRecord;
+    const picoImage =
+      isBeforeStart || isFuture
+        ? null
+        : hasRecord
+        ? PICO_COMPLETE
+        : isToday(parseISO(date.dateString))
+        ? PICO_SMILE
+        : PICO_REST;
 
-  return (
-    <TouchableOpacity
-      onPress={() => !isBeforeStart && onPress(date)}
-      style={[picoStyles.dayContainer, isSelected && picoStyles.daySelected]}>
-      <Text
-        style={[
-          picoStyles.dayText,
-          (isBeforeStart || state === 'disabled') && picoStyles.dayDisabled,
-          isToday(parseISO(date.dateString)) && picoStyles.dayToday,
-        ]}>
-        {date.day}
-      </Text>
+    return (
+      <TouchableOpacity
+        onPress={() => !isBeforeStart && onPress(date)}
+        style={[picoStyles.dayContainer, isSelected && picoStyles.daySelected]}>
+        <Text
+          style={[
+            picoStyles.dayText,
+            (isBeforeStart || state === 'disabled') && picoStyles.dayDisabled,
+            isToday(parseISO(date.dateString)) && picoStyles.dayToday,
+          ]}>
+          {date.day}
+        </Text>
 
-      <View style={picoStyles.stickerWrap}>
-        {!isBeforeStart && (
-          <Image
-            source={picoImage}
-            style={[
-              picoStyles.sticker,
-              hasRecord && picoStyles.completedSticker,
-            ]}
-            resizeMode="contain"
-          />
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-};
+        <View style={picoStyles.stickerWrap}>
+          {!isBeforeStart && (
+            <Image
+              source={picoImage}
+              style={[
+                picoStyles.sticker,
+                hasRecord && picoStyles.completedSticker,
+              ]}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  },
+);
 
 LocaleConfig.locales['ko'] = {
   monthNames: [
@@ -309,6 +316,12 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     },
     onSuccess: () => {
       Alert.alert('성공', '퀘스트가 완료되었습니다!');
+      logCompleteQuest({
+        quest_id: quest.id,
+        quest_title: quest.title,
+        is_main: quest.isMain,
+        verification_required: quest.verificationRequired,
+      });
       navigation.goBack();
       queryClient.invalidateQueries({queryKey: ['QuestRecord', quest.id]});
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
@@ -324,14 +337,15 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     mutationFn: async (questId: number) => {
       await instance.delete(`/quest/${questId}`);
     },
-    onSuccess: () => {
+    onSuccess: (_data, questId) => {
       Alert.alert('퀘스트 삭제!', '퀘스트를 삭제했습니다!');
+      logDeleteQuest(questId);
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
     },
     onError: error => {
       Alert.alert('오류', '퀘스트 삭제 중 오류가 발생했습니다.');
       crashlytics().recordError(error);
-      analytics().logEvent('delete_quest_error', {error: error.message});
+      logDeleteQuestError(error.message);
     },
     onSettled: () => {
       queryClient.invalidateQueries({queryKey: ['homeQuests']});
@@ -374,6 +388,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
 
   const handleQuickSubmit = useCallback(
     (text: string) => {
+      Keyboard.dismiss();
       mutate({
         questId: quest.id,
         text: text,
@@ -643,7 +658,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     }월 ${date.getDate()}일`;
   };
 
-  const calculateProgressPercentage = () => {
+  const progressPercentage = useMemo(() => {
     if (!quest.startDate || !quest.endDate) return 0;
 
     const start = new Date(quest.startDate).getTime();
@@ -654,7 +669,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     const elapsed = now - start;
 
     return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
-  };
+  }, [quest.startDate, quest.endDate]);
 
   const CARD_WIDTH = width - 32;
 
@@ -686,12 +701,151 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     },
     [sections],
   );
-
   const checkIsBeforeStart = (dateString: string) => {
     if (!quest.startDate) return false;
     // quest.startDate의 시간 부분을 제거하고 날짜만 비교하기 위해 startOfDay 사용
     return isBefore(parseISO(dateString), startOfDay(quest.startDate));
   };
+  const questHeader = useMemo(
+    () => (
+      <View>
+        <View
+          style={[
+            styles.header,
+            quest.isMain ? styles.mainQuestHeader : styles.subQuestHeader,
+          ]}>
+          <View style={styles.headerContent}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                width: CARD_WIDTH,
+              }}>
+              <Pressable
+                onPress={() => navigation.goBack()}
+                style={{padding: 10}}>
+                <Icon
+                  name={Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back'}
+                  size={20}
+                  color={colors.font}
+                />
+              </Pressable>
+              <Text style={styles.questTitle}>{quest.title}</Text>
+              <TouchableOpacity
+                style={{width: 40}}
+                onPress={() => setShowSettings(true)}>
+                <Icon name="more-vert" size={24} color={colors.font} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.questDate}>
+              {formatDate(quest.startDate.toString())} -{' '}
+              {formatDate(quest.endDate.toString())}
+            </Text>
+            <View style={{width: '100%', paddingHorizontal: 10, marginTop: 10}}>
+              <AnimatedProgressTrack progress={progressPercentage} />
+            </View>
+          </View>
+        </View>
+        <View style={styles.calendarSection}>
+          <View style={styles.calendarHeaderRow}>
+            <Text style={styles.sectionTitle}>
+              {isMonthView ? '월간 기록' : '주간 기록'}
+            </Text>
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => setIsMonthView(!isMonthView)}>
+              <Text style={styles.toggleText}>
+                {isMonthView ? '접기 (주간)' : '펼치기 (월간)'}
+              </Text>
+              <Icon
+                name={isMonthView ? 'expand-less' : 'expand-more'}
+                size={20}
+                color={colors.gray}
+              />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.calendarContainer}>
+            {isMonthView ? (
+              <Calendar
+                key={selectedDate.substring(0, 7)}
+                initialDate={selectedDate}
+                onMonthChange={(month: DateData) => {
+                  setSelectedDate(month.dateString);
+                }}
+                onDayPress={(day: DateData) => {
+                  if (!checkIsBeforeStart(day.dateString)) {
+                    handleDateSelect(day.dateString);
+                  }
+                }}
+                markingType={'custom'}
+                markedDates={markedDates}
+                dayComponent={({date, state, marking}: any) => (
+                  <PicoDay
+                    date={date}
+                    state={state}
+                    marking={marking}
+                    onPress={d => handleDateSelect(d.dateString)}
+                    isBeforeStart={checkIsBeforeStart(date.dateString)}
+                  />
+                )}
+                theme={calendarTheme}
+              />
+            ) : (
+              <View style={styles.weekViewContainer}>
+                {weekDays.map(item => {
+                  const isSelected = item.dateString === selectedDate;
+                  const hasRecord =
+                    markedDates[item.dateString]?.dots?.length > 0;
+                  const toDateData = (dateString: string): DateData => {
+                    const parsed = parseISO(dateString);
+                    return {
+                      dateString,
+                      day: parsed.getDate(),
+                      month: parsed.getMonth() + 1,
+                      year: parsed.getFullYear(),
+                      timestamp: parsed.getTime(),
+                    };
+                  };
+
+                  const getDayState = (dateString: string) => {
+                    const date = parseISO(dateString);
+                    if (dateString === selectedDate) return 'selected';
+                    if (isToday(date)) return 'today';
+                    if (isAfter(date, new Date())) return 'disabled';
+                    return 'active';
+                  };
+                  return (
+                    <PicoDay
+                      key={item.dateString}
+                      date={toDateData(item.dateString)}
+                      state={getDayState(item.dateString)}
+                      marking={markedDates[item.dateString]}
+                      onPress={({dateString: ds}) => handleDateSelect(ds)}
+                      isBeforeStart={checkIsBeforeStart(item.dateString)}
+                    />
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        </View>
+        <View style={{paddingHorizontal: 20, paddingTop: 20}}>
+          <Text style={styles.sectionTitle}>기록 타임라인</Text>
+        </View>
+      </View>
+    ),
+    [
+      quest,
+      progressPercentage,
+      isMonthView,
+      selectedDate,
+      markedDates,
+      weekDays,
+      CARD_WIDTH,
+      handleDateSelect,
+    ],
+  );
 
   if (isLoading) {
     return (
@@ -710,132 +864,6 @@ const QuestFeed = ({route}: QuestFeedProps) => {
     );
   }
 
-  const renderQuestHeader = () => (
-    <View>
-      <View
-        style={[
-          styles.header,
-          quest.isMain ? styles.mainQuestHeader : styles.subQuestHeader,
-        ]}>
-        <View style={styles.headerContent}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'baseline',
-              justifyContent: 'space-between',
-              width: CARD_WIDTH,
-            }}>
-            <Pressable
-              onPress={() => navigation.goBack()}
-              style={{padding: 10}}>
-              <Icon
-                name={Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back'}
-                size={20}
-                color={colors.font}
-              />
-            </Pressable>
-            <Text style={styles.questTitle}>{quest.title}</Text>
-            <TouchableOpacity
-              style={{width: 40}}
-              onPress={() => setShowSettings(true)}>
-              <Icon name="more-vert" size={24} color={colors.font} />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.questDate}>
-            {formatDate(quest.startDate.toString())} -{' '}
-            {formatDate(quest.endDate.toString())}
-          </Text>
-          <View style={{width: '100%', paddingHorizontal: 10, marginTop: 10}}>
-            <AnimatedProgressTrack progress={calculateProgressPercentage()} />
-          </View>
-        </View>
-      </View>
-      <View style={styles.calendarSection}>
-        <View style={styles.calendarHeaderRow}>
-          <Text style={styles.sectionTitle}>
-            {isMonthView ? '월간 기록' : '주간 기록'}
-          </Text>
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => setIsMonthView(!isMonthView)}>
-            <Text style={styles.toggleText}>
-              {isMonthView ? '접기 (주간)' : '펼치기 (월간)'}
-            </Text>
-            <Icon
-              name={isMonthView ? 'expand-less' : 'expand-more'}
-              size={20}
-              color={colors.gray}
-            />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.calendarContainer}>
-          {isMonthView ? (
-            <Calendar
-              key="month-calendar"
-              current={selectedDate}
-              onDayPress={(day: DateData) => {
-                if (!checkIsBeforeStart(day.dateString)) {
-                  handleDateSelect(day.dateString);
-                }
-              }}
-              markingType={'custom'}
-              markedDates={markedDates}
-              dayComponent={({date, state, marking}: any) => (
-                <PicoDay
-                  date={date}
-                  state={state}
-                  marking={marking}
-                  onPress={d => handleDateSelect(d.dateString)}
-                  isBeforeStart={checkIsBeforeStart(date.dateString)}
-                />
-              )}
-              theme={calendarTheme}
-            />
-          ) : (
-            <View style={styles.weekViewContainer}>
-              {weekDays.map(item => {
-                const isSelected = item.dateString === selectedDate;
-                const hasRecord =
-                  markedDates[item.dateString]?.dots?.length > 0;
-                const toDateData = (dateString: string): DateData => {
-                  const parsed = parseISO(dateString);
-                  return {
-                    dateString,
-                    day: parsed.getDate(),
-                    month: parsed.getMonth() + 1,
-                    year: parsed.getFullYear(),
-                    timestamp: parsed.getTime(),
-                  };
-                };
-
-                const getDayState = (dateString: string) => {
-                  const date = parseISO(dateString);
-                  if (dateString === selectedDate) return 'selected';
-                  if (isToday(date)) return 'today';
-                  if (isAfter(date, new Date())) return 'disabled';
-                  return 'active';
-                };
-                return (
-                  <PicoDay
-                    key={item.dateString}
-                    date={toDateData(item.dateString)}
-                    state={getDayState(item.dateString)}
-                    marking={markedDates[item.dateString]}
-                    onPress={({dateString: ds}) => handleDateSelect(ds)}
-                    isBeforeStart={checkIsBeforeStart(item.dateString)}
-                  />
-                );
-              })}
-            </View>
-          )}
-        </View>
-      </View>
-      <View style={{paddingHorizontal: 20, paddingTop: 20}}>
-        <Text style={styles.sectionTitle}>기록 타임라인</Text>
-      </View>
-    </View>
-  );
-
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Icon name="access-time" size={50} color={colors.font} />
@@ -853,7 +881,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
       <SectionList
         ref={sectionListRef}
         sections={sections}
-        ListHeaderComponent={renderQuestHeader}
+        ListHeaderComponent={questHeader}
         ListEmptyComponent={renderEmptyState}
         renderSectionHeader={({section: {title}}) => (
           <View style={styles.dateHeaderContainer}>
@@ -902,7 +930,7 @@ const QuestFeed = ({route}: QuestFeedProps) => {
           styles.listContent,
           !!keyboardHeight && {paddingBottom: keyboardHeight + 120},
         ]}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
         stickySectionHeadersEnabled={true} // 스크롤 시 날짜가 상단에 고정되는 효과 (false면 같이 스크롤됨)
         onScrollToIndexFailed={info => {
           const wait = new Promise(resolve => setTimeout(resolve, 500));
@@ -923,17 +951,22 @@ const QuestFeed = ({route}: QuestFeedProps) => {
             styles.inputContainer,
             {transform: [{translateY: keyboardOffset}]},
           ]}>
-          {keyboardHeight > 0 && (
+          {(keyboardHeight > 0 || isCreatingRecord) && (
             <View style={styles.quickInputContainer}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="always">
                 {QUICK_INPUTS.map(input => (
-                  <TouchableOpacity
+                  <Pressable
                     key={input.id}
                     style={styles.quickButton}
-                    onPress={() => handleQuickSubmit(input.text)}
+                    onPress={() => {
+                      handleQuickSubmit(input.text);
+                    }}
                     disabled={isCreatingRecord}>
                     <Text style={styles.quickButtonText}>{input.text}</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </ScrollView>
             </View>

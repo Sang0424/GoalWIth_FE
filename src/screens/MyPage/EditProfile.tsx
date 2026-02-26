@@ -162,7 +162,7 @@ const EditProfile = () => {
             <TouchableOpacity style={styles.avatarWrapper}>
               <CharacterAvatar avatar={user.character} size={120} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.avatarEditButton}>
+            <TouchableOpacity style={styles.avatarEditButton} onPress={() => navigation.navigate('CharacterSelection', {currentCharacter: user.character})}>
               <Text style={styles.avatarEditButtonText}>프로필 사진 변경</Text>
             </TouchableOpacity>
           </View>

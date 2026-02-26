@@ -2782,7 +2782,7 @@ PODS:
     - SocketRocket
   - RNAppleAuthentication (2.5.1):
     - React-Core
-  - RNBootSplash (6.3.12):
+  - RNBootSplash (7.0.2):
     - boost
     - DoubleConversion
     - fast_float
@@ -3283,7 +3283,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNSVG (15.15.2):
+  - RNSVG (15.15.3):
     - boost
     - DoubleConversion
     - fast_float
@@ -3309,10 +3309,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNSVG/common (= 15.15.2)
+    - RNSVG/common (= 15.15.3)
     - SocketRocket
     - Yoga
-  - RNSVG/common (15.15.2):
+  - RNSVG/common (15.15.3):
     - boost
     - DoubleConversion
     - fast_float
@@ -3368,7 +3368,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNWorklets (0.7.2):
+  - RNWorklets (0.7.3):
     - boost
     - DoubleConversion
     - fast_float
@@ -3395,10 +3395,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNWorklets/worklets (= 0.7.2)
+    - RNWorklets/worklets (= 0.7.3)
     - SocketRocket
     - Yoga
-  - RNWorklets/worklets (0.7.2):
+  - RNWorklets/worklets (0.7.3):
     - boost
     - DoubleConversion
     - fast_float
@@ -3425,10 +3425,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNWorklets/worklets/apple (= 0.7.2)
+    - RNWorklets/worklets/apple (= 0.7.3)
     - SocketRocket
     - Yoga
-  - RNWorklets/worklets/apple (0.7.2):
+  - RNWorklets/worklets/apple (0.7.3):
     - boost
     - DoubleConversion
     - fast_float
@@ -3979,7 +3979,7 @@ SPEC CHECKSUMS:
   ReactCodegen: 07322ec16b66c5f5d7ce7a7cadaba401ecb81908
   ReactCommon: a42100667ef42807c485a579847a5ec2c99e0a82
   RNAppleAuthentication: d6fe579e5f43cf8db54bdc48518bccea61c592a4
-  RNBootSplash: e5ea938b6c6bf9351d9bd19e6892a90ffb867e21
+  RNBootSplash: 97630bb521b0516f638b9ac3a3f4463aa43b8820
   RNCAsyncStorage: 8857fb173af29664cb90897903902dc8533e36cc
   RNCKakaoCore: aa98e367ecc839c9bfa6dafd2f708eec29c468fd
   RNCKakaoUser: 6e5c052c9faa4023c05c1c62df8771db7e369415
@@ -3993,9 +3993,9 @@ SPEC CHECKSUMS:
   RNPermissions: 36830bcdd5a9a98d02f3b79c37be7a32552fd112
   RNReanimated: b08164c6ffd3e5a32e25006d8cbd45fe3a0e3f87
   RNScreens: 871305075ddf1291411b051d86da9e0d9289de02
-  RNSVG: d55b3acb11c50f03ed62cd31536545ba5ed75f5e
+  RNSVG: c5c7114bf0cd57e71509fbad6146180bce61416d
   RNVectorIcons: 96c832d9134dfee90ce0be7a1e0bf4c1e41a8d11
-  RNWorklets: 83bb3e603b946e9954fce17a10a1e341db70b3ef
+  RNWorklets: 1cec291ce753c890ea5e384990db865960b0631c
   SDWebImage: e9c98383c7572d713c1a0d7dd2783b10599b9838
   SDWebImageAVIFCoder: afe194a084e851f70228e4be35ef651df0fc5c57
   SDWebImageSVGCoder: 15a300a97ec1c8ac958f009c02220ac0402e936c

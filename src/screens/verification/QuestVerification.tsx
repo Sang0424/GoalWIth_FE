@@ -45,6 +45,10 @@ import {groupRecordsByDate} from '../../utils/dateUtils';
 import {Quest} from '../../types/quest.types';
 import analytics from '@react-native-firebase/analytics';
 import {checkForProfanity} from '../../utils/filter';
+import {
+  logCompleteQuest,
+  logAddVerificationComment,
+} from '../../utils/analyticsEvents';
 
 type QuestVerificationScreenNavigationProp = StackNavigationProp<
   QuestVerificationProps,
@@ -188,7 +192,7 @@ const QuestVerification = () => {
       queryClient.invalidateQueries({
         queryKey: ['myBadges'],
       });
-      analytics().logEvent('add_verification_comment');
+      logAddVerificationComment(id);
       Alert.alert('인증 댓글이 추가되었습니다.');
       Keyboard.dismiss();
     },
@@ -268,6 +272,7 @@ const QuestVerification = () => {
       await instance.put(`/quest/complete/${id}`);
     },
     onSuccess: () => {
+      logCompleteQuest({quest_id: id});
       Alert.alert('성공', '퀘스트가 완료되었습니다!');
       navigation.goBack();
       queryClient.invalidateQueries({queryKey: ['QuestRecord', id]});

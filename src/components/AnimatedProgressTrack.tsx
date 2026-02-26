@@ -21,7 +21,7 @@ interface Props {
   progress: number; // 0 ~ 100
 }
 
-export const AnimatedProgressTrack = ({progress}: Props) => {
+export const AnimatedProgressTrack = React.memo(({progress}: Props) => {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
 
@@ -68,7 +68,7 @@ export const AnimatedProgressTrack = ({progress}: Props) => {
       </Animated.View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

@@ -11,6 +11,7 @@ import MyBookmark from '../screens/MyPage/MyBookmark';
 import QuestVerification from '../screens/verification/QuestVerification';
 import InquiryPage from '../screens/MyPage/InquiryPage';
 import Onboarding1 from '../screens/onboarding/OnBoarding1';
+import CharacterSelection from '../screens/home/CharacterSelectionScreen';
 
 const Stack = createNativeStackNavigator<MyPageNavParamList>();
 
@@ -31,6 +32,7 @@ export default function MyPageNav() {
       <Stack.Screen name={'MyBookmark'} component={MyBookmark} />
       <Stack.Screen name={'QuestVerification'} component={QuestVerification} />
       <Stack.Screen name={'InquiryPage'} component={InquiryPage} />
+      <Stack.Screen name={'CharacterSelection'} component={CharacterSelection} />
     </Stack.Navigator>
   );
 }

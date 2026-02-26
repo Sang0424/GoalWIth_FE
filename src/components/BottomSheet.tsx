@@ -31,6 +31,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  runOnJS,
 } from 'react-native-reanimated';
 import type {Quest} from '../types/quest.types';
 import {colors} from '../styles/theme';
@@ -159,7 +160,7 @@ const BottomSheet = ({
     })
     .onEnd(event => {
       if (event.translationY > 100) {
-        closeModalWithAnimation();
+        runOnJS(closeModalWithAnimation)();
       } else {
         translateY.value = withSpring(screenHeight * 0.1, {damping: 50});
       }
@@ -276,7 +277,7 @@ const BottomSheet = ({
     <SafeAreaView style={{flex: 1}}>
       <TouchableWithoutFeedback
         onPress={() => {
-          closeModalImmediately();
+          runOnJS(closeModalImmediately)();
           Keyboard.dismiss();
         }}>
         <View style={styles.background} />
@@ -298,7 +299,7 @@ const BottomSheet = ({
                   <View style={styles.addTodo}>
                     <View style={styles.header}>
                       <TouchableOpacity
-                        onPress={() => closeModalImmediately()}
+                        onPress={() => runOnJS(closeModalImmediately)()}
                         style={styles.headerButton}>
                         <Text style={styles.cancelButtonText}>취소</Text>
                       </TouchableOpacity>

@@ -30,6 +30,7 @@ import {
   AppleLoginButton,
   GoogleLoginButton,
 } from '../../components/SocialLoginBtn';
+import {logLogin} from '../../utils/analyticsEvents';
 
 export default function Onboarding1() {
   const {height, width} = useWindowDimensions();
@@ -72,6 +73,7 @@ export default function Onboarding1() {
         setAccessToken(accessToken);
         await AsyncStorage.setItem('refreshToken', refreshToken);
         await AsyncStorage.setItem('loginType', 'google');
+        logLogin('google');
         // }
       }
     },
@@ -131,6 +133,7 @@ export default function Onboarding1() {
         setAccessToken(accessToken);
         await AsyncStorage.setItem('refreshToken', refreshToken);
         await AsyncStorage.setItem('loginType', 'apple');
+        logLogin('apple');
         //}
       }
     },

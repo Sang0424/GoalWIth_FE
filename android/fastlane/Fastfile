@@ -34,7 +34,7 @@ platform :android do
 
     # 버전 코드 계산 (예: 1.0.3 -> 1000003)
     major, minor, patch = version_name.split('.').map(&:to_i)
-    new_version_code = major * 1_000_000 + minor * 1_000 + patch
+    new_version_code = major * 1_000_000 + minor * 1_000 + patch + 5
 
     build_gradle_path = "../app/build.gradle"
     content = File.read(build_gradle_path)
